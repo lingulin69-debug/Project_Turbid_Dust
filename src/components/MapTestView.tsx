@@ -186,13 +186,6 @@ export const MapTestView: React.FC = () => {
   const [selectedExhaleItem, setSelectedExhaleItem] = useState<string | null>(null);
   const [exhaleMessage, setExhaleMessage] = useState('');
 
-  // Gacha System State
-  const [isGachaOpen, setIsGachaOpen] = useState(false);
-  const [isGachaAnimating, setIsGachaAnimating] = useState(false);
-  const [gachaResultOpen, setGachaResultOpen] = useState(false);
-  const [gachaResult, setGachaResult] = useState<{ message: string, item: any } | null>(null);
-  const [gachaTiltTriggered, setGachaTiltTriggered] = useState(false);
-  
   // Apostate System State
   const [apostateMenuOpen, setApostateMenuOpen] = useState(false);
   const [liquidatorMenuOpen, setLiquidatorMenuOpen] = useState(false);
@@ -201,88 +194,6 @@ export const MapTestView: React.FC = () => {
   // 0 = Balanced, >0 = Order (Pure), <0 = Chaos (Turbid)
   const [balanceWeight, setBalanceWeight] = useState(0);
   
-  // Gacha Items Pool (Mock Data - In real app, fetch from blind_box_items)
-  const GACHA_POOL = [
-    { id: 'c1', name: '霧行者風衣', type: 'raiment', rarity: 'rare', dropRate: 0.1 },
-    { id: 'c2', name: '舊日學徒制服', type: 'raiment', rarity: 'common', dropRate: 0.3 },
-    { id: 'c3', name: '觀測員斗篷', type: 'raiment', rarity: 'legendary', dropRate: 0.05 },
-    // Fillers
-    { id: 'f1', name: '記憶碎片', type: 'fragment', rarity: 'common', dropRate: 0.55 },
-  ];
-
-  const handleGachaDraw = () => {
-    if (!currentUser) return;
-    const COST = 8;
-
-    if (currentUser.coins < COST) {
-      alert('您的行囊太輕，無法轉動命運的齒輪。');
-      return;
-    }
-
-    // 1. Deduct Cost
-    setCurrentUser(prev => prev ? ({ ...prev, coins: prev.coins - COST }) : null);
-    
-    // 2. Start Animation
-    setIsGachaAnimating(true);
-    // Play sound effect here (mock)
-    console.log('[Audio] Playing: Wood Creak & Bell Chime');
-
-    // 3. Calculate Result (after delay)
-    setTimeout(() => {
-      const rand = Math.random();
-      let cumulative = 0;
-      let result = GACHA_POOL[GACHA_POOL.length - 1]; // Default fallback
-
-      for (const item of GACHA_POOL) {
-        cumulative += item.dropRate;
-        if (rand <= cumulative) {
-          result = item;
-          break;
-        }
-      }
-
-      // 4. Handle Result Logic
-      let message = '';
-      let newState = { ...currentUser };
-      
-      if (result.type === 'raiment') {
-        if (currentUser.wardrobe.includes(result.id)) {
-          // Duplicate -> Convert to Shards
-          newState.collected_shards = (newState.collected_shards || 0) + 2;
-          message = `抽中已擁有的【${result.name}】，已轉化為 2 個碎片。`;
-        } else {
-          // New Item
-          newState.wardrobe = [...newState.wardrobe, result.id];
-          message = `獲得新衣裝：【${result.name}】`;
-        }
-      } else {
-        // Fragment
-        newState.collected_shards = (newState.collected_shards || 0) + 1;
-        message = `獲得：【${result.name}】 x1`;
-      }
-
-      // Update State
-      setCurrentUser(prev => prev ? ({ ...prev, ...newState }) : null);
-      setIsGachaAnimating(false);
-      
-      // 5. Balance Scale Tilt
-      // 30% chance to trigger scale tilt
-      const shouldTilt = Math.random() < 0.3;
-      setGachaTiltTriggered(shouldTilt);
-      
-      if (shouldTilt) {
-        const tiltDirection = Math.random() > 0.5 ? 'Order' : 'Chaos';
-        const tiltValue = tiltDirection === 'Order' ? 0.5 : -0.5;
-        setBalanceWeight(prev => prev + tiltValue);
-        console.log(`[Balance] Scale tilted by ${tiltValue} units towards ${tiltDirection}.`);
-      }
-      
-      setGachaResult({ message, item: result });
-      setGachaResultOpen(true);
-
-    }, 2000); // 2s Animation Duration
-  };
-
   // Breathing Gift Items (Limited List)
   const BREATHING_ITEMS = [
     { id: 'B001', name: '微光燈蕊', cost: 1 },
@@ -923,64 +834,6 @@ export const MapTestView: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 10. Gacha Result Modal */}
-      <AnimatePresence>
-        {gachaResultOpen && gachaResult && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md"
-            onClick={() => setGachaResultOpen(false)}
-          >
-            <div className="w-[500px] bg-[#0a0a0a] border border-[#3a3a3a] p-10 shadow-2xl relative overflow-hidden text-center" onClick={e => e.stopPropagation()}>
-              {/* Grainy Texture Overlay */}
-              <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat"></div>
-              
-              <h3 className="text-2xl font-serif text-[#e5e5e5] mb-2 tracking-[0.3em] italic">舊日衣櫃的殘響</h3>
-              <div className="w-16 h-[1px] bg-gray-600 mx-auto mb-8"></div>
-              
-              {/* Item Display */}
-              <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="mb-8"
-              >
-                 <div className="w-24 h-24 mx-auto bg-gray-900 border border-gray-700 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                   {gachaResult.item.type === 'raiment' ? <Shirt className="w-10 h-10 text-gray-400" /> : <Puzzle className="w-10 h-10 text-gray-400" />}
-                 </div>
-                 <p className="text-lg text-gray-300 font-serif tracking-widest">{gachaResult.message}</p>
-              </motion.div>
-
-              {/* Flavor Text (Conditional) */}
-              {gachaTiltTriggered && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.6 }}
-                  transition={{ delay: 1, duration: 2 }}
-                  className="mt-12 text-left"
-                >
-                  <p className="text-[10px] font-serif leading-loose tracking-wider animate-pulse" style={{ color: '#D1C7B7', animationDuration: '4s' }}>
-                    『並非每一次的貪婪都會引來雷鳴。<br/>
-                    有時候，您只是安靜地穿上一件舊衣；<br/>
-                    而有時候，那 0.5 的重量，卻足以讓迷霧中的某人失去平衡。<br/>
-                    賭局開始了，而您永遠不知道這一次，誰會為您的優雅買單。』
-                  </p>
-                </motion.div>
-              )}
-
-              <button 
-                onClick={() => setGachaResultOpen(false)}
-                className="mt-12 px-8 py-2 border border-gray-700 text-gray-500 text-xs hover:text-white hover:border-gray-500 transition-colors uppercase tracking-widest"
-              >
-                收納 (Accept)
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* 5. Modals System */}
       <AnimatePresence>
         {activeTab && activeTab !== 'none' && (
@@ -1205,32 +1058,15 @@ export const MapTestView: React.FC = () => {
                   </div>
                   
                   {collectionTab === 'raiment' && (
-                    <div className="mb-6 p-4 bg-gray-900/30 border border-gray-800 rounded text-center">
-                       <p className="text-xs text-gray-400 font-serif mb-4 italic">
-                         「命運的輪盤正在轉動...」
+                    <div className="mb-6 p-6 bg-gray-900/30 border border-gray-800 rounded text-center">
+                       <p className="text-xs text-gray-500 font-serif mb-4 italic leading-relaxed">
+                         『命運的輪盤已不再此處轉動...<br/>
+                         舊日的衣裝已悉數移往據點商店。』
                        </p>
-                       <button 
-                         onClick={() => {
-                            if (!currentUser) return;
-                            if (currentUser.coins < 8) {
-                               alert('您的行囊太輕，無法轉動命運的齒輪。');
-                               return;
-                            }
-                            handleGachaDraw();
-                         }}
-                         disabled={isGachaAnimating}
-                         className={`w-full py-3 text-xs font-bold tracking-widest uppercase transition-all
-                           ${isGachaAnimating 
-                             ? 'bg-gray-800 text-gray-500 cursor-wait' 
-                             : 'bg-gradient-to-r from-yellow-900/50 to-yellow-800/50 border border-yellow-700 text-yellow-100 hover:border-yellow-500 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]'}`}
-                       >
-                         {isGachaAnimating ? '開啟中...' : '喚醒舊日衣櫃 (8 殘幣)'}
-                       </button>
-                       {currentUser && (
-                         <p className="mt-2 text-[10px] text-gray-500 font-mono">
-                           持有碎片: {currentUser.collected_shards || 0}
-                         </p>
-                       )}
+                       <div className="flex items-center justify-center gap-2 text-[10px] text-cyan-700 font-mono uppercase tracking-[0.2em]">
+                         <Settings className="w-3 h-3 animate-spin-slow" />
+                         Transferred to Landmark Shop
+                       </div>
                     </div>
                   )}
 
