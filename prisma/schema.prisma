@@ -1,0 +1,20 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model td_users {
+  id                         Int      @id @default(autoincrement())
+  username                   String   @unique
+  faction                    String
+  identity_role              String   @default("citizen")
+  is_high_affinity_candidate Boolean  @default(false)
+  created_at                 DateTime @default(now())
+}

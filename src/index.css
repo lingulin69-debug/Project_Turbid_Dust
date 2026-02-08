@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.origin-bottom-left {
+  transform-origin: bottom left;
+}
+
+:root {
+  font-family: 'Noto Sans TC', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #0a0a0a;
+  color: #ffffff;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+/* iOS Modal Animations */
+.ios-modal-overlay {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.ios-fade-out {
+  animation: fadeOut 0.3s ease-in forwards;
+}
+
+.ios-modal-content {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.ios-scale-out {
+  animation: scaleOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes scaleOut {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.9) translateY(20px); }
+}
+
+/* 1999 Typer & Blink Effects */
+@keyframes typer {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent; }
+  50% { border-color: currentColor; }
+}
+
+@keyframes blink-opacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.typewriter-text {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid transparent;
+  width: 0;
+  animation: 
+    typer 1s steps(20, end) forwards,
+    blink-caret 0.75s step-end 2; /* Blinks cursor twice then stops */
+  animation-delay: var(--type-delay, 0s);
+  animation-fill-mode: forwards; /* Stays at width 100% */
+}
+
+/* Ensure the text is invisible before animation starts */
+.typewriter-text-wrapper {
+  display: inline-block;
+  width: fit-content;
+}
+
+.blink-once {
+  animation: blink-opacity 0.3s ease-in-out 2; /* Blinks twice quickly on entry */
+  will-change: opacity; /* GPU Hint */
+}

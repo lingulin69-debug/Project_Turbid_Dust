@@ -1,0 +1,104 @@
+{
+  "consumables": [
+    {
+      "id": "item_serum_001",
+      "name": "血清藥劑",
+      "type": "Serum",
+      "faction": "Pure",
+      "description": "淨塵者每日必須服用的穩定劑，能抑制白瓷化。瓶身刻有細小的編號。",
+      "lore": "瓶底標註著 [SER-042]。藥劑之所以讓人成癮且不安，是因為其中蘊含了哥哥扭曲的情感。副作用發作時，你會聽見憤怒的低語：『為什麼...只有你活在光下？』",
+      "visual_effect": "glow_pure",
+      "audio_effect": "crystal_ping"
+    },
+    {
+      "id": "item_seed_001",
+      "name": "風暴之種",
+      "type": "Mist_Item",
+      "faction": "Turbid",
+      "description": "濁息者用來短暫吹散黑霧的結晶體。使用時會散發出奇異的熱量。",
+      "lore": "將它貼近耳邊，在呼嘯的風聲中，似乎能聽見兩個重疊的聲音在低語：『哥哥...你在哪？』、『我就在這裡...』",
+      "visual_effect": "mist_disperse",
+      "audio_effect": "twin_whispers"
+    }
+  ],
+  "relics": [
+    {
+      "id": "relic_broken_flute",
+      "name": "斷裂的木笛",
+      "series": "昔日的餘溫",
+      "faction": "Common",
+      "description": "斷成兩截的舊木笛，上面刻著笨拙的白鴉圖案。",
+      "lore": "這是弟弟送給哥哥的最後禮物。在哥哥的記憶裡，笛聲停止的那一刻，就是他被拋棄的開始。",
+      "audio_trigger": "triggerFluteRitual"
+    },
+    {
+      "id": "relic_sugar_cloak",
+      "name": "沾有糖分的斗篷邊角",
+      "series": "昔日的餘溫",
+      "faction": "Common",
+      "description": "一小塊粗糙的布料，邊緣有些焦黑，卻帶著淡淡的甜味。",
+      "lore": "「祭典那天，哥哥偷偷在斗篷裡藏了兩塊蜜糖，說那是給聽話弟弟的獎勵。後來，哥哥被披上了教宗的華服，那上面只有冰冷的金線，再也沒有糖果的香氣。」"
+    },
+    {
+      "id": "relic_broken_plate",
+      "name": "缺了一角的白瓷盤",
+      "series": "昔日的餘溫",
+      "faction": "Common",
+      "description": "普通的家用瓷盤，斷裂面異常平整。",
+      "lore": "「他們曾約定誰打破盤子誰就要洗碗。那天盤子碎了，弟弟伸手去撿，被劃出一道紅痕。哥哥驚慌地幫他包紮。如今，哥哥全身都是裂痕，弟弟卻再也找不到能幫他止血的繃帶。」"
+    },
+    {
+      "id": "relic_white_feather",
+      "name": "褪色的白鴉羽毛",
+      "series": "昔日的餘溫",
+      "faction": "Common",
+      "description": "一片被夾在舊書裡的羽毛，已經因為年代久遠而泛黃。",
+      "lore": "「『白鴉象徵著不可能的奇蹟。』哥哥曾對著天空這樣許願。災難後，白鴉真的出現了，卻是扇動著瓷化的翅膀，在受難者的哀嚎中盤旋。奇蹟誕生了，以噩夢的形式。」"
+    },
+    {
+      "id": "relic_iron_rings",
+      "name": "生鏽的鐵環遊戲",
+      "series": "昔日的餘溫",
+      "faction": "Common",
+      "description": "兩個扣在一起、怎麼也解不開的鐵環。",
+      "lore": "「弟弟曾抱怨這個解謎遊戲太難，哥哥溫柔地說：『只要兩個人不放手，總能找到出路。』後來，一個被鎖在光芒裡，一個被鎖在黑暗中。他們依然沒有放手，卻將世界拉進了永恆的拉鋸戰。」"
+    },
+    {
+      "id": "relic_woven_rope",
+      "name": "沾染灰塵的編織繩",
+      "series": "昔日的餘溫",
+      "faction": "Common",
+      "description": "一條細長的、由乾草 and 麻繩編織的手環。",
+      "lore": "「為了防止在霧中走散，弟弟把繩子的一頭繫在哥哥腕上。那道光落下時，繩子斷了。哥哥看著手中空蕩蕩的斷口，以為是弟弟選擇了鬆手。從此，他在繭中等待了一萬年，等待著那個早已不存在的道歉。」"
+    },
+    {
+      "id": "relic_blood_coffin",
+      "name": "染血的棺木夾縫",
+      "series": "真實的碎片",
+      "faction": "Common",
+      "description": "聖座深處「繭」的碎片，夾縫中殘留著乾涸的暗紅色血跡。",
+      "lore": "「這不是星隕的顏色，而是掙扎的痕跡。哥哥在繭中抓撓了無數次，每一道血痕都在質問：為什麼那個說好要拉住他的人，此刻卻在外面呼吸著自由的空氣？」"
+    },
+    {
+      "id": "relic_blurred_pupil",
+      "name": "模糊的瞳孔倒影",
+      "series": "真實的碎片",
+      "faction": "Common",
+      "description": "一塊晶體化的眼球碎片，表面映射著最後一刻的殘像。",
+      "lore": "「倒影中，弟弟的手並沒有鬆開，而是被強光強行震斷。然而，在哥哥被仇恨扭曲的視野裡，那截斷掉的繩索，成了永恆的背叛證據。」"
+    }
+  ],
+  "album_logic": {
+    "series_warmth": {
+      "name": "昔日的餘溫",
+      "required_count": 3,
+      "reward_event": "unlock_full_screen_poem",
+      "reward_name": "雙生子：最初的告別",
+      "ui_style": {
+        "typewriter_effect": true,
+        "paper_texture_filter": true
+      },
+      "completion_visual": "white_feather_particles"
+    }
+  }
+}

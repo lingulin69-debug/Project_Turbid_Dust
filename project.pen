@@ -1,0 +1,13 @@
+{
+  "version": "1.0.1",
+  "project_name": "Project_Turbid_Dust",
+  "project_id": "ca687ac5-db00-448b-b459-44714ad7ef13",
+  "url": "http://localhost:3088",
+  "nodes": [],
+  "settings": {
+    "auto_mapping": true,
+    "exposed_port": 3088,
+    "framework": "react",
+    "src_dir": "src"
+  }
+}
