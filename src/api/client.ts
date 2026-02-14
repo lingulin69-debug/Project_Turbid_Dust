@@ -1,7 +1,7 @@
 // Helper to switch between Supabase and Local API seamlessly
 // Currently switched to Local API mode for Admin/System features.
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export const apiClient = {
   admin: {

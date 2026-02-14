@@ -12,13 +12,19 @@ interface LiquidatorSystemProps {
   setMenuOpen: (open: boolean) => void;
 }
 
-export const LiquidatorLensIcon: React.FC<{ onClick: () => void, isAvailable: boolean }> = ({ onClick, isAvailable }) => {
+export const LiquidatorLensIcon: React.FC<{ 
+  onClick: () => void, 
+  isAvailable: boolean, 
+  isDevMode?: boolean,
+  dragProps?: any 
+}> = ({ onClick, isAvailable, isDevMode, dragProps }) => {
   return (
     <motion.button
       onClick={onClick}
-      className="relative w-10 h-10 flex items-center justify-center group"
+      className={`relative w-10 h-10 flex items-center justify-center group ${isDevMode ? 'cursor-move' : ''}`}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
+      {...dragProps}
     >
       {/* Background Ring */}
       <div className="absolute inset-0 border-2 border-red-500/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
@@ -27,13 +33,18 @@ export const LiquidatorLensIcon: React.FC<{ onClick: () => void, isAvailable: bo
       {/* Icon */}
       <Scan className="w-5 h-5 text-red-500 group-hover:text-red-400 transition-colors" />
 
+      {/* Dev Mode Indicator */}
+      {isDevMode && <div className="absolute inset-0 border border-cyan-500/30 border-dashed rounded-lg -m-1 pointer-events-none"></div>}
+
       {/* Tooltip */}
-      <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 w-48 text-right opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-        <p className="text-xs text-red-200 font-serif tracking-widest bg-black/90 p-2 rounded border border-red-900/50 backdrop-blur-sm">
-          『透視鏡』<br/>
-          <span className="text-[10px] text-gray-400">異常信號掃描...</span>
-        </p>
-      </div>
+      {!isDevMode && (
+        <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 w-48 text-right opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+          <p className="text-xs text-red-200 font-serif tracking-widest bg-black/90 p-2 rounded border border-red-900/50 backdrop-blur-sm">
+            『透視鏡』<br/>
+            <span className="text-[10px] text-gray-400">異常信號掃描...</span>
+          </p>
+        </div>
+      )}
     </motion.button>
   );
 };

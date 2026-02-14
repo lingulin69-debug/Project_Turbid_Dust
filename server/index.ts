@@ -13,7 +13,8 @@ const adapter = new PrismaBetterSqlite3({
 
 const prisma = new PrismaClient({ adapter });
 const app = express();
-const port = 3000;
+
+const port = 3001; // 匹配 README.md 中的端口文档
 
 app.use(cors());
 app.use(express.json());
@@ -286,4 +287,6 @@ app.get('/api/admin/registry', async (req, res) => {
 
 // Start Server
 app.listen(port, () => {
+  console.log(`[Turbid Dust Server] Running on port ${port}`);
+  console.log(`[Turbid Dust Server] API Base: http://localhost:${port}/api`);
 });

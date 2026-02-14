@@ -24,28 +24,29 @@ import {
   Minus,
   Feather,
   Gift,
-  Heart
+  Heart,
+  Activity
 } from 'lucide-react';
 import { ApostateSystem, ApostateGeometryIcon } from './ApostateSystem';
 import { AdminApostateControl } from './AdminApostateControl';
 import { LiquidatorSystem, LiquidatorLensIcon } from './LiquidatorSystem';
+import { DevControlPanel } from './DevControlPanel';
 
-interface Landmark {
-  id: string;
-  name: string;
-  x: string;
-  y: string;
-  faction: 'Turbid' | 'Pure' | 'Common';
-  status: 'open' | 'closed';
-  occupants: number;
-  capacity: number;
+import { MapLandmark, LandmarkData, LandmarkType } from './MapLandmark';
+import { CentralBalanceScale } from './CentralBalanceScale';
+import { DraggableUIButton } from './DraggableUIButton';
+
+// Extended Landmark Interface
+interface Landmark extends LandmarkData {
+  // Inherits from LandmarkData
 }
 
+// Updated Data with Types
 const landmarks: Landmark[] = [
-  { id: 'l1', name: '空衣街區', x: '20%', y: '40%', faction: 'Turbid', status: 'open', occupants: 2, capacity: 5 },
-  { id: 'l2', name: '舊觀測站', x: '45%', y: '30%', faction: 'Turbid', status: 'closed', occupants: 0, capacity: 3 },
-  { id: 'l3', name: '淨化尖塔', x: '75%', y: '50%', faction: 'Pure', status: 'open', occupants: 5, capacity: 10 },
-  { id: 'l4', name: '中央圖書館', x: '60%', y: '65%', faction: 'Pure', status: 'open', occupants: 1, capacity: 8 },
+  { id: 'l1', name: '空衣街區', x: 20, y: 40, faction: 'Turbid', status: 'open', occupants: 2, capacity: 5, type: 'town' },
+  { id: 'l2', name: '舊觀測站', x: 45, y: 30, faction: 'Turbid', status: 'closed', occupants: 0, capacity: 3, type: 'school' },
+  { id: 'l3', name: '淨化尖塔', x: 75, y: 50, faction: 'Pure', status: 'open', occupants: 5, capacity: 10, type: 'church' },
+  { id: 'l4', name: '中央圖書館', x: 60, y: 65, faction: 'Pure', status: 'open', occupants: 1, capacity: 8, type: 'school' },
 ];
 
 interface Announcement {
@@ -191,8 +192,8 @@ export const MapTestView: React.FC = () => {
   const [liquidatorMenuOpen, setLiquidatorMenuOpen] = useState(false);
   
   // 2. 天平核心計演算法 (Tilt Algorithm)
-  // 0 = Balanced, >0 = Order (Pure), <0 = Chaos (Turbid)
-  const [balanceWeight, setBalanceWeight] = useState(0);
+  // 0-100, 50 = Balanced
+  const [balanceWeight, setBalanceWeight] = useState(50);
   
   // Breathing Gift Items (Limited List)
   const BREATHING_ITEMS = [
@@ -208,8 +209,7 @@ export const MapTestView: React.FC = () => {
   // Check for unclaimed gifts on mount or login
   useEffect(() => {
     if (currentUser) {
-       // Mock check logic: In real app, check `breath_pool` table
-       // For demo, we assume there's always a gift if not claimed in this session
+       // Mock check logic
        const claimed = localStorage.getItem(`gift_claimed_${currentUser.oc_name}_${CURRENT_CHAPTER}`);
        setHasUnclaimedGift(!claimed);
     }
@@ -254,9 +254,9 @@ export const MapTestView: React.FC = () => {
     setCurrentUser(prev => prev ? ({ ...prev, coins: prev.coins - item.cost }) : null);
     
     // Update Balance Scale
-    const TILT_AMOUNT = item.cost * 5.0;
+    const TILT_AMOUNT = item.cost * 1.0;
     const direction = playerFaction === 'Pure' ? 1 : -1;
-    setBalanceWeight(prev => prev + (TILT_AMOUNT * direction));
+    setBalanceWeight(prev => Math.min(100, Math.max(0, prev + (TILT_AMOUNT * direction))));
     
     setExhaleModalOpen(false);
     setSelectedExhaleItem(null);
@@ -278,7 +278,6 @@ export const MapTestView: React.FC = () => {
   }, [activeTab]);
 
   const handleLikeSnippet = async (id: string) => {
-    // 1. 樂觀更新 UI (Optimistic Update)
     setDailySnippets(prev => prev.map(s => {
       if (s.id === id) {
         return { 
@@ -289,20 +288,15 @@ export const MapTestView: React.FC = () => {
       }
       return s;
     }));
-
-    // 2. 真實資料庫同步 (Real DB Sync)
-    // 這裡模擬資料庫操作，實際應調用 supabase.from('daily_snippets').update(...)
     console.log(`[DB Sync] Updated likes for snippet ${id}`);
   };
 
   const handleMissionJoin = (mission: Mission) => {
-    // 1. 常駐/支線任務 (Side Quests) - 永遠開放
     if (mission.type === 'side') {
       alert(`已加入支線任務：${mission.title}。請前往現場進行支援。`);
       return;
     }
 
-    // 2. 主線任務 (Main Story) - 受鎖定機制限制
     if (hasReportedMain) {
       alert('本章節的主線回報已記錄。命運的齒輪暫時靜止，請等待下一次版本更新。');
       return;
@@ -313,16 +307,12 @@ export const MapTestView: React.FC = () => {
       return;
     }
 
-    // 鎖定玩家
     setIsLocked(true);
     alert('已加入主線任務。系統已鎖定您的參與權限，請前往「回報任務」頁面提交進度。');
   };
 
   const handleReportSubmit = () => {
     const subject = reportSubject.trim();
-    
-    // 1. 格式驗證 (Format Validation)
-    // Regex: 任意字符-任意字符-任意字符 (簡單驗證連字符存在)
     const formatRegex = /^.+-.+-.+$/;
     
     if (!subject) {
@@ -335,10 +325,6 @@ export const MapTestView: React.FC = () => {
       return;
     }
 
-    // 2. 模擬送出回報 (Simulate Submission)
-    // 在真實環境中，這裡會寫入 participation_records 表
-    
-    // Reward Logic (Daily Limit Check)
     const REWARD_AMOUNT = Math.floor(Math.random() * 3) + 3; // 3-5 coins
     const DAILY_LIMIT = 15;
     
@@ -357,15 +343,13 @@ export const MapTestView: React.FC = () => {
     }
     
     setReportSubject('');
-    setIsLocked(false); // 解除報名鎖定
-    setHasReportedMain(true); // 標記為已回報主線 (單次鎖定)
+    setIsLocked(false);
+    setHasReportedMain(true);
   };
 
-  
   const handleMapClick = (e: React.MouseEvent) => {
     if (!isDriftMode || !currentUser) return;
     
-    // Check cost
     if (currentUser.coins < 5) {
       alert('您的行囊太輕，不足以承載這段訊息的重量。');
       return;
@@ -380,20 +364,17 @@ export const MapTestView: React.FC = () => {
       return;
     }
 
-    // Deduct cost (Optimistic)
     setCurrentUser(prev => prev ? ({ ...prev, coins: prev.coins - 5 }) : null);
 
-    // Update Balance Scale (Chaos vs Order)
-    // Formula: Tilt_Offset = Amount * 5.0 (Amplified for small amounts)
-    const TILT_AMOUNT = 5 * 5.0;
-    const direction = playerFaction === 'Pure' ? 1 : -1; // Pure adds Order (+), Turbid adds Chaos (-)
-    setBalanceWeight(prev => prev + (TILT_AMOUNT * direction));
+    // Update Balance Scale
+    const TILT_AMOUNT = 5 * 1.0;
+    const direction = playerFaction === 'Pure' ? 1 : -1;
+    setBalanceWeight(prev => Math.min(100, Math.max(0, prev + (TILT_AMOUNT * direction))));
     console.log(`[Balance] Scale tilted by ${TILT_AMOUNT * direction} units.`);
 
-    // Place fragment at random nearby location (Simulated)
     const newFragment = {
       id: `frag-${Date.now()}`,
-      x: 50 + (Math.random() * 40 - 20), // Center-ish random
+      x: 50 + (Math.random() * 40 - 20),
       y: 50 + (Math.random() * 40 - 20),
       content: driftMessage.join(' '),
       sender: currentUser?.oc_name || 'Unknown'
@@ -406,39 +387,118 @@ export const MapTestView: React.FC = () => {
     alert('殘卷已遺落在荒原之中...');
   };
 
-  const handleFragmentClick = (frag: {id: string, content: string, sender: string}, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedFragment(frag);
+  const handleWordSelect = (word: string) => {
+    if (driftMessage.length >= 5) return;
+    setDriftMessage(prev => [...prev, word]);
   };
 
-  const handleWordSelect = (word: string) => {
-    if (driftMessage.length >= 5) return; // Max 5 words
-    setDriftMessage(prev => [...prev, word]);
+  const handleFragmentClick = (frag: {id: string, content: string, sender: string}, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedFragment({ id: frag.id, content: frag.content, sender: frag.sender });
   };
 
   // Login Inputs
   const [inputUsername, setInputUsername] = useState('');
   const [inputPassword, setInputPassword] = useState('');
   
-  // Map Interaction State
+  // --- Map Interaction State (Pinch & Zoom) ---
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Use Gesture for Drag & Pinch (Zoom)
+  // Dev Mode State
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [geometryPos, setGeometryPos] = useState({ x: 50, y: 50 }); // percentage
+  const [liquidatorPos, setLiquidatorPos] = useState({ x: 50, y: 50 }); // percentage
+  const [lastReleasedPos, setLastReleasedPos] = useState<{name: string, x: number | string, y: number | string} | null>(null);
+  const [dynamicLandmarks, setDynamicLandmarks] = useState(landmarks);
+
+  const [inhalePos, setInhalePos] = useState({ x: 0, y: 0 });
+  const [exhalePos, setExhalePos] = useState({ x: 0, y: 0 });
+  const [driftTogglePos, setDriftTogglePos] = useState({ x: 0, y: 0 });
+  const [zoomControlsPos, setZoomControlsPos] = useState({ x: 0, y: 0 });
+  const [navPositions, setNavPositions] = useState<Record<string, {x: number, y: number}>>({});
+  
+  // Dev Control Panel State
+  const [selectedDevId, setSelectedDevId] = useState<string | null>(null);
+
+  // --- Helper Functions for DEV Mode ---
+  
+  // Dev Panel Helpers
+  const getDevItems = () => {
+    const items = [];
+    
+    // Landmarks
+    dynamicLandmarks.forEach(l => {
+       items.push({ id: l.id, name: l.name, x: l.x, y: l.y, type: 'landmark' as const });
+    });
+
+    // Nav Buttons
+    ['announcement', 'quest', 'daily', 'collection', 'inventory', 'settings'].forEach(id => {
+       const pos = navPositions[id] || { x: 0, y: 0 };
+       items.push({ id, name: `${id} Button`, x: pos.x, y: pos.y, type: 'ui' as const });
+    });
+
+    // Special Icons
+    items.push({ id: 'inhale', name: 'Inhale Button', x: inhalePos.x, y: inhalePos.y, type: 'ui' as const });
+    items.push({ id: 'exhale', name: 'Exhale Button', x: exhalePos.x, y: exhalePos.y, type: 'ui' as const });
+    items.push({ id: 'drift', name: 'Drift Toggle', x: driftTogglePos.x, y: driftTogglePos.y, type: 'ui' as const });
+    items.push({ id: 'zoom', name: 'Zoom Controls', x: zoomControlsPos.x, y: zoomControlsPos.y, type: 'ui' as const });
+
+    return items;
+  };
+
+  const handleDevUpdate = (id: string, x: number | string, y: number | string) => {
+    // 1. Landmarks
+    const landmarkMatch = dynamicLandmarks.find(l => l.id === id);
+    if (landmarkMatch) {
+       setDynamicLandmarks(prev => prev.map(l => l.id === id ? { ...l, x: Number(x), y: Number(y) } : l));
+       return;
+    }
+
+    // 2. Nav Buttons
+    if (['announcement', 'quest', 'daily', 'collection', 'inventory', 'settings'].includes(id)) {
+       setNavPositions(prev => ({ ...prev, [id]: { x: Number(x), y: Number(y) } }));
+       return;
+    }
+
+    // 3. Special Icons
+    if (id === 'inhale') setInhalePos({ x: Number(x), y: Number(y) });
+    if (id === 'exhale') setExhalePos({ x: Number(x), y: Number(y) });
+    if (id === 'drift') setDriftTogglePos({ x: Number(x), y: Number(y) });
+    if (id === 'zoom') setZoomControlsPos({ x: Number(x), y: Number(y) });
+  };
+
+  // --- Use Gesture for Drag & Pinch (Map Movement) ---
+  // Using native browser pinch-zoom is often smoother for mobile, but we want custom control
+  // to clamp bounds and add UI layers that don't zoom.
+  // So we use useGesture to update transform of the map container.
+
   const bind = useGesture({
     onDrag: ({ offset: [dx, dy] }) => {
+      // Clamp position? Optional. For now let it flow.
       setPosition({ x: dx, y: dy });
     },
     onPinch: ({ offset: [d] }) => {
       setScale(1 + d / 200);
     },
     onWheel: ({ delta: [, dy] }) => {
-      setScale(s => Math.min(Math.max(0.5, s - dy * 0.001), 3));
+      // Mouse wheel zoom
+      setScale(s => Math.min(3, Math.max(0.5, s - dy * 0.001)));
     }
   }, {
-    drag: { from: () => [position.x, position.y] },
-    pinch: { scaleBounds: { min: 0.5, max: 3 }, rubberband: true },
+    drag: { 
+      from: () => [position.x, position.y],
+      filterTaps: true 
+    },
+    pinch: { 
+      scaleBounds: { min: 0.5, max: 3 }, 
+      rubberband: true 
+    },
+    wheel: {
+      eventOptions: { passive: false } // Important for preventing default scroll
+    }
   });
 
   // Login Handler
@@ -467,165 +527,130 @@ export const MapTestView: React.FC = () => {
     return '殘幣';
   };
 
-  // 判斷是否可見 (Fog of War Logic) - Optimized with useCallback
+  // 判斷是否可見 (Fog of War Logic)
   const isVisible = React.useCallback((targetFaction: string) => {
     if (isAdmin) return true;
     if (targetFaction === 'Common') return true;
-    // Common 玩家邏輯：顯示模糊輪廓但不顯示詳細資訊
+    // Common 玩家邏輯：顯示模糊輪廓但不顯示詳細資訊 (或隱藏)
     if (playerFaction === 'Common') return false; 
     return playerFaction === targetFaction;
   }, [isAdmin, playerFaction]);
 
   return (
-    <div className="w-full h-screen bg-black overflow-hidden relative font-sans text-gray-200">
+    <div 
+      className="w-full h-screen bg-black overflow-hidden relative font-sans text-gray-200"
+      ref={containerRef}
+    >
       
-      {/* --- Map Container (Draggable & Zoomable) --- */}
-      <div 
+      {/* Dev Control Panel */}
+      <AnimatePresence>
+        {isDevMode && (
+          <DevControlPanel
+            items={getDevItems()}
+            selectedId={selectedDevId}
+            onSelect={setSelectedDevId}
+            onUpdate={handleDevUpdate}
+            onClose={() => setIsDevMode(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* --- Central Balance Scale (HUD) --- */}
+      <CentralBalanceScale balance={balanceWeight} />
+
+      {/* --- Map Container (Single Large Layer) --- */}
+      <div
         ref={mapRef}
         {...bind()}
-        className={`w-full h-full cursor-grab active:cursor-grabbing touch-none absolute top-0 left-0 will-change-transform origin-center transition-[filter] duration-1000 ${!currentUser ? 'blur-[20px] pointer-events-none grayscale' : ''}`}
-        style={{ 
+        className={`absolute top-0 left-0 cursor-grab active:cursor-grabbing touch-none will-change-transform transition-[filter] duration-1000 ${!currentUser ? 'blur-[4px] pointer-events-none grayscale' : ''}`}
+        style={{
           transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+          transformOrigin: 'center center',
+          width: '2048px', // 优化：减少地图尺寸以提升性能 (从 4096px)
+          height: '1080px', // 优化：从 2160px 减半
           cursor: isDriftMode ? 'copy' : undefined
         }}
         onClick={handleMapClick}
       >
-        <div className="w-[1920px] h-[1080px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex shadow-2xl">
+        {/* 1. Base Map Image (Placeholder for >4000px image) */}
+        {/* Using a gradient placeholder for now, user can replace with <img> */}
+        <div className="absolute inset-0 bg-[#0a0a0a] overflow-hidden">
+          {/* Grid lines for reference */}
+          <div className="absolute inset-0 opacity-10" 
+               style={{ 
+                 backgroundImage: 'linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)',
+                 backgroundSize: '100px 100px'
+               }} 
+          />
           
-          {/* --- 左側：濁息陣營 (Turbid) --- */}
-          <div className="w-1/2 h-full relative overflow-hidden transition-all duration-1000"
-               style={{ backgroundColor: '#1a1a1a' }}>
-            
-            {/* 靜態雜訊背景 - Optimized: reduce opacity or use CSS only noise if possible */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat"></div>
-            {/* 動態黑霧層 - Optimized: simple gradient pulse */}
-            <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-transparent to-black/60 animate-pulse pointer-events-none duration-[3000ms]"></div>
+          {/* --- Turbid/Pure Zone Visuals (Baked into map usually, but simulated here) --- */}
+          
+          {/* Left Side (Turbid) */}
+          <div className="absolute left-0 top-0 w-1/2 h-full bg-gradient-to-r from-[#111] to-[#0a0a0a] opacity-50"></div>
+          
+          {/* Right Side (Pure) */}
+          <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-[#0f1a0f] to-[#0a0a0a] opacity-50"></div>
 
-            {/* 陣營標題 */}
-            <div className="absolute top-20 left-20 z-10 pointer-events-none">
-              <h2 className="text-5xl font-bold text-gray-500 tracking-[0.2em] mb-4 opacity-30 select-none">TURBID</h2>
-              <p className="text-lg text-gray-400 italic max-w-md leading-relaxed border-l-2 border-gray-700 pl-4">
-                「此處已被濁息侵蝕，<br/>
-                眾議會 (The Council) 的低語在霧中迴盪...<br/>
-                迷途者，切勿回頭。」
-              </p>
-            </div>
-
-            {/* 據點渲染 */}
-            {landmarks.filter(l => l.faction === 'Turbid').map(landmark => (
-              <div key={landmark.id}
-                   className={`absolute transform -translate-x-1/2 -translate-y-1/2 group transition-transform
-                              ${landmark.status === 'open' ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-50 grayscale pointer-events-none'}`}
-                   style={{ left: landmark.x, top: landmark.y }}>
-                 
-                 <div className={`w-8 h-8 rounded-full border-2 transition-all duration-300 relative flex items-center justify-center
-                                ${isVisible('Turbid') ? 'bg-gray-800 border-gray-400 shadow-[0_0_20px_rgba(200,200,200,0.3)]' : 'bg-black border-gray-800 opacity-20'}`}>
-                    {isVisible('Turbid') && landmark.status === 'open' && <div className="w-3 h-3 bg-gray-200 rounded-full animate-ping absolute"></div>}
-                    {isVisible('Turbid') && <div className="w-3 h-3 bg-gray-200 rounded-full absolute"></div>}
-                 </div>
-
-                 {isVisible('Turbid') && (
-                   <div className="absolute top-10 left-1/2 transform -translate-x-1/2 text-base whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-500 tracking-widest bg-black/80 px-3 py-1 rounded backdrop-blur-sm border border-gray-700 flex flex-col items-center gap-1 z-50 pointer-events-none">
-                     <span className="text-gray-300">{landmark.name}</span>
-                     <span className={`text-[10px] font-mono ${landmark.status === 'open' ? 'text-green-400' : 'text-gray-500'}`}>
-                       {landmark.status === 'open' ? `(參與: ${landmark.occupants}/${landmark.capacity})` : '【封鎖區域】'}
-                     </span>
-                   </div>
-                 )}
-              </div>
-            ))}
-
-            {/* 黑霧遮罩 */}
-            {!isVisible('Turbid') && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                 <div className="absolute inset-0 bg-black opacity-90 mix-blend-multiply"></div>
-                 <div className="w-[200%] h-[200%] absolute bg-gradient-to-tr from-transparent via-gray-900 to-transparent opacity-30 animate-spin-slow" style={{ animationDuration: '60s' }}></div>
-                 <p className="relative z-30 text-gray-500 tracking-[0.5em] text-2xl font-light border-y border-gray-800 py-4 bg-black/60 backdrop-blur-md">
-                   [ 禁忌之地 · 視線隔絕 ]
-                 </p>
-              </div>
-            )}
-          </div>
-
-          {/* --- 分隔線 --- */}
-          <div className="w-[6px] h-full bg-black z-30 relative shrink-0 shadow-[0_0_30px_black]">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-gray-600 to-transparent opacity-30"></div>
-          </div>
-
-          {/* --- 右側：淨塵陣營 (Pure) --- */}
-          <div className="w-1/2 h-full relative overflow-hidden transition-all duration-1000"
-               style={{ backgroundColor: '#1b2e1b' }}>
-            
-            {/* 靜態光斑背景 - Optimized */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_top_right,_rgba(74,222,128,0.2),_transparent_60%)]"></div>
-            
-            {/* 陣營標題 */}
-            <div className="absolute top-20 right-20 z-10 text-right pointer-events-none">
-              <h2 className="text-5xl font-bold text-green-800 tracking-[0.2em] mb-4 opacity-30 select-none">PURE</h2>
-              <p className="text-lg text-green-400 italic max-w-md ml-auto leading-relaxed border-r-2 border-green-800 pr-4">
-                「秩序於混沌中新生，<br/>
-                教會 (The Church) 的鐘聲將指引方向。<br/>
-                守望者，請保持清醒。」
-              </p>
-            </div>
-
-            {/* 據點渲染 */}
-            {landmarks.filter(l => l.faction === 'Pure').map(landmark => (
-              <div key={landmark.id}
-                   className={`absolute transform -translate-x-1/2 -translate-y-1/2 group transition-transform
-                              ${landmark.status === 'open' ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-50 grayscale pointer-events-none'}`}
-                   style={{ left: landmark.x, top: landmark.y }}>
-                 
-                 <div className={`w-8 h-8 rounded-full border-2 transition-all duration-300 relative flex items-center justify-center
-                                ${isVisible('Pure') ? 'bg-[#0f2a0f] border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.4)]' : 'bg-[#051005] border-green-900 opacity-20'}`}>
-                    {isVisible('Pure') && landmark.status === 'open' && <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse absolute"></div>}
-                 </div>
-
-                 {isVisible('Pure') && (
-                   <div className="absolute top-10 left-1/2 transform -translate-x-1/2 text-base whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-500 tracking-widest bg-[#051005]/80 px-3 py-1 rounded backdrop-blur-sm border border-green-800 flex flex-col items-center gap-1 z-50 pointer-events-none">
-                     <span className="text-green-300">{landmark.name}</span>
-                     <span className={`text-[10px] font-mono ${landmark.status === 'open' ? 'text-green-400' : 'text-gray-500'}`}>
-                       {landmark.status === 'open' ? `(參與: ${landmark.occupants}/${landmark.capacity})` : '【封鎖區域】'}
-                     </span>
-                   </div>
-                 )}
-              </div>
-            ))}
-
-            {/* 黑霧遮罩 */}
-            {!isVisible('Pure') && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                 <div className="absolute inset-0 bg-[#020502] opacity-90 mix-blend-multiply"></div>
-                 <div className="w-[200%] h-[200%] absolute bg-gradient-to-bl from-transparent via-[#0a1a0a] to-transparent opacity-40 animate-pulse duration-[3000ms]"></div>
-                 <p className="relative z-30 text-green-800 tracking-[0.5em] text-2xl font-light border-y border-green-900 py-4 bg-[#051005]/60 backdrop-blur-md">
-                   [ 權限不足 · 淨土隱匿 ]
-                 </p>
-              </div>
-            )}
-            {/* 放置的殘卷 (Placed Fragments) */}
-            {placedFragments.map(frag => (
-              <div 
-                key={frag.id}
-                className="absolute z-40 cursor-pointer hover:scale-110 transition-transform group"
-                style={{ left: `${frag.x}%`, top: `${frag.y}%` }}
-                onClick={(e) => handleFragmentClick(frag, e)}
-              >
-                <Feather className="w-6 h-6 text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.8)] animate-bounce" />
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/80 px-2 py-1 text-[10px] text-gray-300 rounded border border-gray-700 pointer-events-none">
-                  拾取殘卷
-                </div>
-              </div>
-            ))}
-
-          </div>
-
+          {/* Central Divide (The Scale's fulcrum area visually) */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-gray-800 to-transparent"></div>
         </div>
+
+        {/* 2. Fog of War / Zone Masking */}
+        {/* If user is Turbid, darken/blur Pure side, and vice versa */}
+        {!isAdmin && playerFaction === 'Turbid' && (
+          <div className="absolute right-0 top-0 w-1/2 h-full bg-black/60 backdrop-blur-sm transition-all duration-1000 pointer-events-none flex items-center justify-center">
+             <div className="text-gray-600 tracking-[1em] opacity-50 font-light">[ PURE TERRITORY ]</div>
+          </div>
+        )}
+        {!isAdmin && playerFaction === 'Pure' && (
+          <div className="absolute left-0 top-0 w-1/2 h-full bg-black/60 backdrop-blur-sm transition-all duration-1000 pointer-events-none flex items-center justify-center">
+             <div className="text-gray-600 tracking-[1em] opacity-50 font-light">[ TURBID TERRITORY ]</div>
+          </div>
+        )}
+
+        {/* 3. Landmarks Layer */}
+        {dynamicLandmarks.map(landmark => (
+          <MapLandmark
+            key={landmark.id}
+            landmark={landmark}
+            isDevMode={isDevMode}
+            isVisible={isVisible(landmark.faction)}
+            scale={scale}
+          />
+        ))}
+
+        {/* 4. Placed Fragments (Drift Bottles) */}
+        {placedFragments.map(frag => (
+          <MapLandmark
+            key={frag.id}
+            landmark={{
+              id: frag.id,
+              name: '遺落殘卷',
+              x: frag.x,
+              y: frag.y,
+              faction: 'Common',
+              status: 'open',
+              type: 'default'
+            }}
+            isDevMode={isDevMode}
+            isVisible={true}
+            scale={scale}
+            onClick={(e: any) => handleFragmentClick(frag, e)}
+          />
+        ))}
+
+        {/* 5. Special Roles Icons (Apostate/Liquidator) positioned on Map */}
+        {/* Note: In previous code they were UI elements. Now they should probably be on the map or UI? */}
+        {/* User said: "Apostate System... hidden entrance... floating geometry icon" */}
+        {/* If they are "UI Icons", they should stay in HUD. If they are "Map Entities", they go here. */}
+        {/* Let's keep them in HUD for now as per original design, but ensure they don't block map */}
       </div>
+
 
       {/* --- HUD Layer (Fixed UI) --- */}
       
       {/* 1. Left Sidebar Navigation */}
-      <div className="fixed left-0 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 p-3">
+      <div className="fixed left-0 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 p-3 pointer-events-none">
          {[
            { icon: Bell, label: '公告', id: 'announcement' },
            { icon: ScrollText, label: '任務', id: 'quest' },
@@ -633,26 +658,35 @@ export const MapTestView: React.FC = () => {
            { icon: BookOpen, label: '圖鑑', id: 'collection' },
            { icon: Backpack, label: '背包', id: 'inventory' },
            { icon: Settings, label: '設定', id: 'settings' },
-         ].map((item) => (
-           <motion.button 
-             key={item.id}
-             onClick={() => setActiveTab(item.id)}
-             whileHover={{ x: 5, scale: 1.1 }}
-             whileTap={{ scale: 0.95 }}
-             className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-lg backdrop-blur-sm
-                        ${activeTab === item.id ? 'bg-gray-700 border-white text-white' : 'bg-black/80 border-gray-700 text-gray-300 hover:border-gray-400 hover:bg-gray-800'}`}
-           >
-             <item.icon className="w-3.5 h-3.5" />
-             {/* Tooltip */}
-             <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-xs text-gray-200 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 pointer-events-none">
-               {item.label}
-             </span>
-           </motion.button>
-         ))}
+         ].map((item) => {
+           const pos = navPositions[item.id] || { x: 0, y: 0 };
+           return (
+             <DraggableUIButton
+               key={item.id}
+               id={item.id}
+               pos={pos}
+               isDevMode={isDevMode}
+               onClick={() => !isDevMode && setActiveTab(item.id)}
+               whileHover={{ x: (navPositions[item.id]?.x || 0) + 5, scale: 1.1 }}
+               whileTap={{ scale: 0.95 }}
+               className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-lg backdrop-blur-sm pointer-events-auto
+                          ${activeTab === item.id ? 'bg-gray-700 border-white text-white' : 'bg-black/80 border-gray-700 text-gray-300 hover:border-gray-400 hover:bg-gray-800'}
+                          ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+             >
+               <item.icon className="w-3.5 h-3.5" />
+               {/* Tooltip */}
+               {!isDevMode && (
+                 <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-xs text-gray-200 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 pointer-events-none">
+                   {item.label}
+                 </span>
+               )}
+             </DraggableUIButton>
+           );
+         })}
       </div>
 
       {/* 2. Top Right: Currency & Profile */}
-      <div className="fixed top-6 right-8 z-50 flex items-center gap-6">
+      <div className="fixed top-6 right-8 z-[100] flex items-center gap-6">
         {/* Currency Display */}
         {currentUser && (
           <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-gray-800 backdrop-blur-md">
@@ -684,85 +718,151 @@ export const MapTestView: React.FC = () => {
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
+
+        {/* Developer Mode Toggle */}
+        {currentUser && currentUser.oc_name === 'vonn' && (
+          <button 
+            onClick={() => setIsDevMode(!isDevMode)}
+            className={`p-2 border rounded-full transition-all flex items-center gap-2 px-3
+              ${isDevMode ? 'bg-cyan-900/40 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(34,211,238,0.3)]' : 'bg-gray-900/80 border-gray-600 text-gray-500 hover:text-gray-300'}`}
+          >
+            <Activity className={`w-3.5 h-3.5 ${isDevMode ? 'animate-pulse' : ''}`} />
+            <span className="text-[10px] font-mono tracking-widest uppercase">{isDevMode ? 'DEV ON' : 'DEV OFF'}</span>
+          </button>
+        )}
       </div>
+
+      {/* Developer Coordinate Display */}
+      <AnimatePresence>
+        {isDevMode && lastReleasedPos && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] bg-black/90 border border-cyan-500/50 p-4 backdrop-blur-md rounded shadow-2xl pointer-events-none"
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-[10px] text-cyan-500 font-mono tracking-[0.3em] uppercase">Coordinate Detected</span>
+              <div className="flex gap-4 items-center">
+                <span className="text-sm text-gray-200 font-serif italic">『{lastReleasedPos.name}』</span>
+                <span className="text-lg font-mono text-white bg-cyan-950/50 px-3 py-1 border border-cyan-900/50">
+                  X: {typeof lastReleasedPos.x === 'number' ? lastReleasedPos.x.toFixed(1) : lastReleasedPos.x} , 
+                  Y: {typeof lastReleasedPos.y === 'number' ? lastReleasedPos.y.toFixed(1) : lastReleasedPos.y}
+                </span>
+              </div>
+              <p className="text-[9px] text-gray-500 mt-1 font-sans">請將此座標回報給管理員進行固定</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Right Toolbar Container */}
       <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-8 pointer-events-none">
         
         {/* Upper Tools Group */}
         <div className="flex flex-col gap-3 pointer-events-auto">
+          
           {/* Breathing Icon (Gift System) */}
           <div className="flex flex-col items-center gap-3">
              {/* Inhale (Receive) */}
-             <motion.button
-               onClick={handleInhale}
+             <DraggableUIButton
+               key="inhale"
+               id="inhale"
+               pos={inhalePos}
+               isDevMode={isDevMode}
+               onClick={() => !isDevMode && handleInhale()}
                disabled={!hasUnclaimedGift}
-               animate={hasUnclaimedGift ? { 
-                 boxShadow: [
-                   "0 0 0 0px rgba(250, 204, 21, 0)",
-                   "0 0 0 10px rgba(250, 204, 21, 0.1)",
-                   "0 0 0 20px rgba(250, 204, 21, 0)"
-                 ],
-                 transition: { duration: 2, repeat: Infinity }
-               } : {}}
                className={`relative group w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500
                  ${hasUnclaimedGift 
-                   ? 'bg-yellow-900/20 border-yellow-500/50 text-yellow-500 cursor-pointer hover:bg-yellow-900/40 hover:scale-110' 
-                   : 'bg-gray-900/50 border-gray-700 text-gray-600 cursor-default grayscale opacity-50'}`}
+                   ? 'bg-yellow-900/20 border-yellow-500/50 text-yellow-500 cursor-pointer hover:bg-yellow-900/40 hover:scale-110 shadow-[0_0_0_0px_rgba(250,204,21,0)] animate-[pulse_2s_infinite]' 
+                   : 'bg-gray-900/50 border-gray-700 text-gray-600 cursor-default grayscale opacity-50'}
+                 ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
              >
                <Gift className={`w-4 h-4 ${hasUnclaimedGift ? 'animate-pulse' : ''}`} />
                
                {/* Tooltip */}
-               {hasUnclaimedGift && (
+               {hasUnclaimedGift && !isDevMode && (
                  <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 w-48 text-right opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                    <p className="text-xs text-yellow-200 font-serif tracking-widest bg-black/80 p-2 rounded border border-yellow-900/50">
                      『捕捉到一段跨越荒原的頻率。』
                    </p>
                  </div>
                )}
-             </motion.button>
+             </DraggableUIButton>
 
              {/* Exhale (Send) */}
-             <button
-               onClick={() => setExhaleModalOpen(true)}
-               className="w-8 h-8 rounded-full border border-gray-600 bg-black/50 text-gray-400 hover:text-white hover:border-white transition-colors flex items-center justify-center backdrop-blur-sm"
+             <DraggableUIButton
+               key="exhale"
+               id="exhale"
+               pos={exhalePos}
+               isDevMode={isDevMode}
+               onClick={() => !isDevMode && setExhaleModalOpen(true)}
+               className={`w-8 h-8 rounded-full border border-gray-600 bg-black/50 text-gray-400 hover:text-white hover:border-white transition-colors flex items-center justify-center backdrop-blur-sm
+                 ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
                title="呼出贈禮"
              >
                <Feather className="w-3 h-3 transform rotate-180" />
-             </button>
+             </DraggableUIButton>
           </div>
 
-          {/* Drift Bottle Mode Toggle */}
-          <button
-            onClick={() => setIsDriftMode(!isDriftMode)}
+          <DraggableUIButton
+            key="drift"
+            id="drift"
+            pos={driftTogglePos}
+            isDevMode={isDevMode}
+            onClick={() => !isDevMode && setIsDriftMode(!isDriftMode)}
             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mx-auto
-              ${isDriftMode ? 'bg-white text-black border-white' : 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800'}`}
+              ${isDriftMode ? 'bg-white text-black border-white' : 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800'}
+              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
             title="荒原拾遺"
           >
             <Feather className="w-3.5 h-3.5" />
-          </button>
+          </DraggableUIButton>
 
           {/* Apostate Icon (Only if role is apostate) */}
            {currentUser && currentUser.identity_role === 'apostate' && (
               <ApostateGeometryIcon 
-                onClick={() => setApostateMenuOpen(true)} 
+                key={`apostate-${geometryPos.x}-${geometryPos.y}`}
+                onClick={() => !isDevMode && setApostateMenuOpen(true)} 
                 isAvailable={true} 
+                isDevMode={isDevMode}
+                dragProps={{
+                  // Position controlled by DevPanel or defaults
+                  // We removed direct drag logic here to prefer DevPanel, but we need to render it correctly.
+                  // ApostateGeometryIcon might expect dragProps.
+                  // For now, passing dummy drag props if we want to rely on DevPanel
+                  // Or we can keep it draggable if it's not part of the unified map layer.
+                  // Since it's UI, let's keep it simple.
+                  style: { position: 'relative' }
+                }}
               />
            )}
 
-           {/* Liquidator Icon (Only if role is liquidator) */}
+           {/* Liquidator Icon */}
            {currentUser && currentUser.identity_role === 'liquidator' && (
               <LiquidatorLensIcon 
-                onClick={() => setLiquidatorMenuOpen(true)} 
+                key={`liquidator-${liquidatorPos.x}-${liquidatorPos.y}`}
+                onClick={() => !isDevMode && setLiquidatorMenuOpen(true)} 
                 isAvailable={true} 
+                isDevMode={isDevMode}
+                dragProps={{
+                  style: { position: 'relative' }
+                }}
               />
            )}
         </div>
 
         {/* Zoom Controls Group */}
-        <div className="flex flex-col bg-gray-900/80 border border-gray-600 rounded-lg overflow-hidden backdrop-blur-sm pointer-events-auto shadow-lg">
+        <DraggableUIButton
+          key="zoom"
+          id="zoom"
+          pos={zoomControlsPos}
+          isDevMode={isDevMode}
+          className={`flex flex-col bg-gray-900/80 border border-gray-600 rounded-lg overflow-hidden backdrop-blur-sm pointer-events-auto shadow-lg
+            ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+        >
           <button
-            onClick={() => setScale(s => Math.min(1.5, s + 0.1))}
+            onClick={() => setScale(s => Math.min(3, s + 0.1))}
             className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-800 transition-colors border-b border-gray-700/50"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -773,7 +873,7 @@ export const MapTestView: React.FC = () => {
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
-        </div>
+        </DraggableUIButton>
 
       </div>
 
@@ -1336,8 +1436,6 @@ export const MapTestView: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Common Player Call to Action (if not logged in) - Removed as Login is mandatory now */}
 
       {currentUser && (
         <>

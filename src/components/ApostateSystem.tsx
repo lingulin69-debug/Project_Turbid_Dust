@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserData } from './ReportSystemLogic';
-import { Triangle, Hexagon, Circle, Box, Eye, Activity, Zap } from 'lucide-react';
+import { Diamond, Hexagon, Circle, Box, Eye, Activity, Zap } from 'lucide-react';
 
 import quizConfig from './apostate_quiz_config.json';
 
@@ -27,25 +27,24 @@ const QUESTION_POOL = quizConfig.questions.map(q => ({
 
 // --- Components ---
 
-export const ApostateGeometryIcon: React.FC<{ onClick: () => void, isAvailable: boolean }> = ({ onClick, isAvailable }) => {
+export const ApostateGeometryIcon: React.FC<{ onClick: () => void, isAvailable: boolean, dragProps?: any, isDevMode?: boolean }> = ({ onClick, isAvailable, dragProps, isDevMode }) => {
   return (
     <motion.button
       onClick={onClick}
-      className="relative w-10 h-10 flex items-center justify-center group"
+      {...dragProps}
+      className={`relative w-10 h-10 flex items-center justify-center group ${isDevMode ? 'cursor-move' : ''}`}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
     >
       {/* Background Glow */}
-      <div className="absolute inset-0 bg-cyan-900/20 blur-md rounded-full animate-pulse"></div>
+      <div className="absolute inset-0 bg-cyan-900/20 blur-md rounded-full"></div>
       
-      {/* Rotating Geometry (Tetrahedron representation) */}
-      <motion.div
-        animate={{ rotate: 360, rotateX: 360, rotateY: 180 }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        className="w-full h-full flex items-center justify-center text-cyan-500/80"
-      >
-        <Box className="w-6 h-6 stroke-[1px]" />
-      </motion.div>
+      {/* Static Geometry (Diamond) */}
+      <div className="w-full h-full flex items-center justify-center text-cyan-500/80">
+        <Diamond className="w-5 h-5 stroke-[1.5px]" />
+      </div>
+
+      {isDevMode && <div className="absolute inset-0 border border-cyan-500/30 border-dashed rounded-lg -m-2 pointer-events-none"></div>}
 
       {/* Stroboscopic Light */}
       <motion.div
@@ -93,9 +92,13 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
     const isInPool = (currentUser as any).is_in_lottery_pool;
     
     if (!isInPool && !showScreening && !localStorage.getItem('apostate_screening_done')) {
-      // Pick 3 random questions
+      // Pick 3 random questions and shuffle their options once
       const shuffled = [...QUESTION_POOL].sort(() => 0.5 - Math.random());
-      setQuestions(shuffled.slice(0, 3));
+      const selectedQuestions = shuffled.slice(0, 3).map(q => ({
+        ...q,
+        options: [...q.options].sort(() => 0.5 - 0.5) // 保持原始顺序，避免每次渲染都打乱
+      }));
+      setQuestions(selectedQuestions);
       setShowScreening(true);
     }
   }, [currentUser, currentChapter]);
@@ -213,7 +216,7 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
               </p>
               
               <div className="space-y-4">
-                {questions[currentQIndex].options.sort(() => Math.random() - 0.5).map((opt, idx) => (
+                {questions[currentQIndex].options.map((opt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleScreeningAnswer(opt.affinity)}
