@@ -11,6 +11,7 @@ import {
   CalendarDays, 
   Coins, 
   User,
+  Cloud,
   Settings,
   X,
   Scale,
@@ -35,6 +36,9 @@ import { DevControlPanel } from './DevControlPanel';
 import { MapLandmark, LandmarkData, LandmarkType } from './MapLandmark';
 import { CentralBalanceScale } from './CentralBalanceScale';
 import { DraggableUIButton } from './DraggableUIButton';
+import { FogLayer } from './FogLayer';
+import { DesignOverlay } from './DesignOverlay';
+import { LoginModal } from './auth/LoginModal';
 
 // Extended Landmark Interface
 interface Landmark extends LandmarkData {
@@ -419,6 +423,14 @@ export const MapTestView: React.FC = () => {
   const [driftTogglePos, setDriftTogglePos] = useState({ x: 0, y: 0 });
   const [zoomControlsPos, setZoomControlsPos] = useState({ x: 0, y: 0 });
   const [navPositions, setNavPositions] = useState<Record<string, {x: number, y: number}>>({});
+  const [fogButtonPos, setFogButtonPos] = useState({ x: 0, y: 0 });
+  const [fogActive, setFogActive] = useState(true);
+  const [fogDispersing, setFogDispersing] = useState(false);
+  const [overlayEnabled, setOverlayEnabled] = useState(false);
+  const [overlayOpacity, setOverlayOpacity] = useState(0.4);
+  const [overlayScale, setOverlayScale] = useState(1);
+  const [overlayOffset, setOverlayOffset] = useState({ x: 0, y: 0 });
+  const [overlayBtnPos, setOverlayBtnPos] = useState({ x: 0, y: 0 });
   
   // Dev Control Panel State
   const [selectedDevId, setSelectedDevId] = useState<string | null>(null);
@@ -445,6 +457,8 @@ export const MapTestView: React.FC = () => {
     items.push({ id: 'exhale', name: 'Exhale Button', x: exhalePos.x, y: exhalePos.y, type: 'ui' as const });
     items.push({ id: 'drift', name: 'Drift Toggle', x: driftTogglePos.x, y: driftTogglePos.y, type: 'ui' as const });
     items.push({ id: 'zoom', name: 'Zoom Controls', x: zoomControlsPos.x, y: zoomControlsPos.y, type: 'ui' as const });
+    items.push({ id: 'fog', name: 'Fog Control', x: fogButtonPos.x, y: fogButtonPos.y, type: 'ui' as const });
+    items.push({ id: 'overlay', name: 'Overlay Toggle', x: overlayBtnPos.x, y: overlayBtnPos.y, type: 'ui' as const });
 
     return items;
   };
@@ -468,6 +482,8 @@ export const MapTestView: React.FC = () => {
     if (id === 'exhale') setExhalePos({ x: Number(x), y: Number(y) });
     if (id === 'drift') setDriftTogglePos({ x: Number(x), y: Number(y) });
     if (id === 'zoom') setZoomControlsPos({ x: Number(x), y: Number(y) });
+    if (id === 'fog') setFogButtonPos({ x: Number(x), y: Number(y) });
+    if (id === 'overlay') setOverlayBtnPos({ x: Number(x), y: Number(y) });
   };
 
   // --- Use Gesture for Drag & Pinch (Map Movement) ---
@@ -594,6 +610,23 @@ export const MapTestView: React.FC = () => {
           {/* Central Divide (The Scale's fulcrum area visually) */}
           <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-gray-800 to-transparent"></div>
         </div>
+
+        <FogLayer
+          active={fogActive}
+          dispersing={fogDispersing}
+          onDisperseEnd={() => {
+            setFogActive(false);
+            setFogDispersing(false);
+          }}
+        />
+        <DesignOverlay
+          src="/mock/ui_overlay.png"
+          enabled={overlayEnabled}
+          opacity={overlayOpacity}
+          scale={overlayScale}
+          offsetX={overlayOffset.x}
+          offsetY={overlayOffset.y}
+        />
 
         {/* 2. Fog of War / Zone Masking */}
         {/* If user is Turbid, darken/blur Pure side, and vice versa */}
@@ -819,6 +852,42 @@ export const MapTestView: React.FC = () => {
             <Feather className="w-3.5 h-3.5" />
           </DraggableUIButton>
 
+          <DraggableUIButton
+            key="fog"
+            id="fog"
+            pos={fogButtonPos}
+            isDevMode={isDevMode}
+            onClick={() => {
+              if (!isDevMode) {
+                setFogDispersing(true);
+              }
+            }}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mx-auto
+              ${fogActive ? 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800' : 'bg-gray-800/60 text-gray-600 border-gray-700'}
+              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+            title="驅散迷霧"
+          >
+            <Cloud className="w-3.5 h-3.5" />
+          </DraggableUIButton>
+
+          <DraggableUIButton
+            key="overlay"
+            id="overlay"
+            pos={overlayBtnPos}
+            isDevMode={isDevMode}
+            onClick={() => {
+              if (!isDevMode) {
+                setOverlayEnabled(!overlayEnabled);
+              }
+            }}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mx-auto
+              ${overlayEnabled ? 'bg-white text-black border-white' : 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800'}
+              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+            title="設計疊圖"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </DraggableUIButton>
+
           {/* Apostate Icon (Only if role is apostate) */}
            {currentUser && currentUser.identity_role === 'apostate' && (
               <ApostateGeometryIcon 
@@ -874,7 +943,54 @@ export const MapTestView: React.FC = () => {
             <Minus className="w-3.5 h-3.5" />
           </button>
         </DraggableUIButton>
-
+        {overlayEnabled && (
+          <div className="mt-3 bg-gray-900/80 border border-gray-700 rounded-lg p-2 text-[10px] text-gray-300 pointer-events-auto">
+            <div className="flex items-center gap-2">
+              <span>Opacity</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={overlayOpacity}
+                onChange={(e) => setOverlayOpacity(Number(e.target.value))}
+              />
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span>Scale</span>
+              <input
+                type="range"
+                min={0.2}
+                max={3}
+                step={0.05}
+                value={overlayScale}
+                onChange={(e) => setOverlayScale(Number(e.target.value))}
+              />
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span>OffsetX</span>
+              <input
+                type="range"
+                min={-3000}
+                max={3000}
+                step={1}
+                value={overlayOffset.x}
+                onChange={(e) => setOverlayOffset(prev => ({ ...prev, x: Number(e.target.value) }))}
+              />
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span>OffsetY</span>
+              <input
+                type="range"
+                min={-3000}
+                max={3000}
+                step={1}
+                value={overlayOffset.y}
+                onChange={(e) => setOverlayOffset(prev => ({ ...prev, y: Number(e.target.value) }))}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 9. Exhale Modal */}
@@ -1383,59 +1499,14 @@ export const MapTestView: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 4. Login Modal */}
-      <AnimatePresence>
-        {showLogin && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
-          >
-            <div className="w-[400px] p-8 border border-gray-800 bg-black relative overflow-hidden shadow-2xl">
-              {/* Decorative Lines */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent"></div>
-              
-              <h3 className="text-2xl font-light text-center text-gray-200 tracking-[0.4em] mb-4 font-serif">IDENTITY VERIFICATION</h3>
-              <p className="text-xs text-center text-gray-500 mb-8 font-mono leading-relaxed px-4">
-                初次連結者，請署名你的代號。<br/>
-                那串銘刻於靈魂的密鑰，將是你回歸的唯一憑證。
-              </p>
-              
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs text-gray-500 uppercase tracking-widest">OC Name</label>
-                  <input 
-                    type="text" 
-                    value={inputUsername}
-                    onChange={(e) => setInputUsername(e.target.value)}
-                    placeholder="Enter OC Name..." 
-                    className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs text-gray-500 uppercase tracking-widest">Passcode</label>
-                  <input 
-                    type="password" 
-                    value={inputPassword}
-                    onChange={(e) => setInputPassword(e.target.value)}
-                    placeholder="••••••••" 
-                    className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono" 
-                  />
-                </div>
-                
-                <button 
-                  onClick={() => handleLogin(inputUsername, inputPassword)} 
-                  className="w-full py-3 mt-4 bg-gray-200 text-black text-sm font-bold tracking-widest hover:bg-white transition-colors uppercase"
-                >
-                  Connect to Terminal
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <LoginModal
+        visible={showLogin}
+        username={inputUsername}
+        password={inputPassword}
+        onUsernameChange={setInputUsername}
+        onPasswordChange={setInputPassword}
+        onSubmit={handleLogin}
+      />
 
       {currentUser && (
         <>
