@@ -396,8 +396,8 @@ export const MapTestView: React.FC = () => {
     setDriftMessage(prev => [...prev, word]);
   };
 
-  const handleFragmentClick = (frag: {id: string, content: string, sender: string}, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleFragmentClick = (frag: {id: string, content: string, sender: string}, e?: React.MouseEvent | null) => {
+    e?.stopPropagation();
     setSelectedFragment({ id: frag.id, content: frag.content, sender: frag.sender });
   };
 
@@ -668,7 +668,7 @@ export const MapTestView: React.FC = () => {
             isDevMode={isDevMode}
             isVisible={true}
             scale={scale}
-            onClick={(e: any) => handleFragmentClick(frag, e)}
+            onClick={() => handleFragmentClick(frag, null)}
           />
         ))}
 
