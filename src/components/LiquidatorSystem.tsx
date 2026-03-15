@@ -78,7 +78,7 @@ export const LiquidatorSystem: React.FC<LiquidatorSystemProps> = ({ currentUser,
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // 2. Query via API
-      const result = await apiClient.liquidator.scan(targetUid, currentUser.faction);
+      const result = await apiClient.liquidator.scan(currentUser.oc_name, targetUid, currentChapter);
       
       // 3. Update Result
       setScanResult(result.result);

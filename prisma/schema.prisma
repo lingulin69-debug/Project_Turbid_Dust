@@ -1,20 +1,258 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model td_users {
-  id                         Int      @id @default(autoincrement())
-  username                   String   @unique
+  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  oc_name                    String    @unique
+  simple_password            String    @default("0000")
+  created_at                 DateTime? @default(now()) @db.Timestamptz(6)
+  last_login                 DateTime? @default(now()) @db.Timestamptz(6)
   faction                    String
-  identity_role              String   @default("citizen")
-  is_high_affinity_candidate Boolean  @default(false)
-  created_at                 DateTime @default(now())
+  identity_role              String?   @default("citizen")
+  is_in_lottery_pool         Boolean?  @default(false)
+  is_high_affinity_candidate Boolean?  @default(false)
+  coins                      Int?      @default(10)
+  weekly_coin_earned         Int?      @default(0)
+  last_reset_time            DateTime? @default(now()) @db.Timestamptz(6)
+  inventory                  Json?     @default("[]")
+  wardrobe                   Json?     @default("[]")
+  current_outfit             String?
+  current_hp                 Int?      @default(10)
+  max_hp                     Int?      @default(10)
+  is_lost                    Boolean?  @default(false)
+  lost_until                 DateTime? @db.Timestamptz(6)
+  is_in_party                Boolean?  @default(false)
+  status_tags                Json?     @default("[]")
+  karma_tags                 Json?     @default("[]")
+  alias_name                 String?
+  cursed_name_prefix         String?
+  npc_role                   String?
+  is_shop_open               Boolean?  @default(false)
+  movement_points            Int?      @default(10)
+  current_landmark_id        String?
+  prestige                   Int?      @default(0)
+  leader_evil_points         Int?      @default(3)
+  leader_treasury            Int?      @default(0)
+  is_taxed_this_chapter      Boolean?  @default(false)
+  apostate_skill_used        Boolean?  @default(false)
+  apostate_current_skill     String?
+  daily_coin_earned          Int?      @default(0)
+  witness_records            Json?     @default("[]")
+  mission_bonus_coins        Int?      @default(0)
+
+  @@index([faction], map: "idx_td_users_faction")
+  @@index([identity_role], map: "idx_td_users_identity_role")
+  @@index([npc_role], map: "idx_td_users_npc_role")
+  @@index([oc_name], map: "idx_td_users_oc_name")
+}
+
+model global_stats {
+  id            String    @id @default("singleton")
+  balance_value Int?      @default(50)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model landmark_messages {
+  id                     String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  landmark_id            String
+  oc_name                String
+  faction                String
+  content                String
+  chapter_version        String
+  created_at             DateTime?              @default(now()) @db.Timestamptz(6)
+  td_world_map_landmarks td_world_map_landmarks @relation(fields: [landmark_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([landmark_id, oc_name])
+  @@index([faction], map: "idx_landmark_msg_faction")
+  @@index([landmark_id], map: "idx_landmark_msg_landmark")
+}
+
+model leader_decrees {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leader_oc           String
+  faction             String
+  decree_type         String
+  content             String?
+  target_oc           String?
+  target_landmark_id  String?
+  bounty_amount       Int?
+  bounty_completed    Boolean?  @default(false)
+  bounty_completed_by String?
+  evil_points_cost    Int?      @default(0)
+  chapter_version     String
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([bounty_completed], map: "idx_leader_decrees_bounty")
+  @@index([chapter_version], map: "idx_leader_decrees_chapter")
+  @@index([faction], map: "idx_leader_decrees_faction")
+}
+
+model market_slots {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seller_oc          String
+  seller_type        String
+  item_type          String
+  item_id            String?
+  custom_name        String?
+  custom_description String?
+  price              Int?      @default(1)
+  chapter_version    String
+  is_sold            Boolean?  @default(false)
+  buyer_oc           String?
+  requires_dice      Boolean?  @default(false)
+  dice_type          String?
+  dice_results       Json?
+  listed_at          DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([chapter_version], map: "idx_market_chapter")
+  @@index([seller_oc], map: "idx_market_seller")
+  @@index([is_sold], map: "idx_market_unsold")
+}
+
+model mission_logs {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  oc_name         String
+  mission_id      String
+  landmark_id     String?
+  report_content  String?
+  status          String?   @default("reported")
+  chapter_version String
+  gazette_type    String?   @default("mission")
+  gazette_content String?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+  coins_earned    Int?      @default(0)
+  party_id        String?   @db.Uuid
+
+  @@index([chapter_version], map: "idx_mission_logs_chapter")
+  @@index([gazette_type], map: "idx_mission_logs_gazette")
+  @@index([landmark_id], map: "idx_mission_logs_landmark")
+  @@index([oc_name], map: "idx_mission_logs_oc")
+}
+
+model npc_actions {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  npc_oc          String
+  action_type     String
+  target_oc       String?
+  landmark_id     String?
+  coins_delta     Int?
+  result          String?
+  chapter_version String
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([npc_oc], map: "idx_npc_actions_npc")
+  @@index([action_type], map: "idx_npc_actions_type")
+}
+
+model party_event_logs {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  party_slot_id   String?      @db.Uuid
+  landmark_id     String
+  landmark_name   String
+  members         Json
+  event_type      String
+  chapter_version String
+  created_at      DateTime?    @default(now()) @db.Timestamptz(6)
+  party_slots     party_slots? @relation(fields: [party_slot_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model party_slots {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  landmark_id          String
+  chapter_version      String
+  required_count       Int
+  current_members      Json?              @default("[]")
+  status               String?            @default("open")
+  triggered_event_type String?
+  event_id             String?
+  danger_card_position Int?
+  card_results         Json?              @default("[]")
+  expires_at           DateTime?          @db.Timestamptz(6)
+  created_at           DateTime?          @default(now()) @db.Timestamptz(6)
+  party_event_logs     party_event_logs[]
+
+  @@index([landmark_id], map: "idx_party_slots_landmark")
+  @@index([status], map: "idx_party_slots_status")
+}
+
+model pets {
+  id              String        @id
+  name            String
+  description     String?
+  is_preset       Boolean?      @default(true)
+  is_listed       Boolean?      @default(false)
+  price           Int?          @default(2)
+  seller_oc       String?
+  chapter_version String?
+  created_at      DateTime?     @default(now()) @db.Timestamptz(6)
+  player_pets     player_pets[]
+}
+
+model player_notifications {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  target_oc         String
+  content           String
+  notification_type String?   @default("private")
+  is_read           Boolean?  @default(false)
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([target_oc], map: "idx_notifications_target")
+  @@index([target_oc, is_read], map: "idx_notifications_unread")
+}
+
+model player_pets {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_oc    String
+  pet_id      String?
+  is_released Boolean?  @default(false)
+  released_at DateTime? @db.Timestamptz(6)
+  acquired_at DateTime? @default(now()) @db.Timestamptz(6)
+  personality String?
+  habit       String?
+  pets        pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([owner_oc, pet_id])
+  @@index([owner_oc, is_released], map: "idx_player_pets_active")
+  @@index([owner_oc], map: "idx_player_pets_owner")
+}
+
+model td_factions {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String    @unique
+  color_primary   String?
+  color_highlight String?
+  description     String?
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model td_karma_tags {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tag_name     String    @unique
+  alias_prefix String
+  description  String?
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model td_world_map_landmarks {
+  id                String              @id
+  name              String
+  x_percent         Float
+  y_percent         Float
+  faction           String
+  status            String?             @default("closed")
+  landmark_type     String?             @default("default")
+  capacity          Int?                @default(1)
+  chapter_unlock    String?             @default("1.0")
+  description       String?
+  leaked_to_faction String?
+  leaked_chapter    String?
+  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  landmark_messages landmark_messages[]
 }

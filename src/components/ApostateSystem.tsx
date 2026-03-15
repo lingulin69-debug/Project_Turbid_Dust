@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserData } from './ReportSystemLogic';
 import { Diamond, Hexagon, Circle, Box, Eye, Activity, Zap } from 'lucide-react';
+import { apiClient } from '@/api/client';
 
 import quizConfig from './apostate_quiz_config.json';
 
@@ -20,8 +21,8 @@ const QUESTION_POOL = quizConfig.questions.map(q => ({
   id: q.id.toString(),
   text: q.q,
   options: [
-    { text: q.a, affinity: 0 }, // Option A is usually conformity/survival (low affinity)
-    { text: q.b, affinity: 2 }, // Option B is usually rebellion/truth (high affinity)
+    { key: 'A', text: q.a, affinity: 0 },
+    { key: 'B', text: q.b, affinity: 2 },
   ]
 }));
 
@@ -74,6 +75,8 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
   const [questions, setQuestions] = useState<typeof QUESTION_POOL>([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [totalAffinity, setTotalAffinity] = useState(0);
+  const [screeningAnswers, setScreeningAnswers] = useState<{ question_id: string; answer: string }[]>([]);
+  const [screeningSubmitting, setScreeningSubmitting] = useState(false);
   
   // Ability State
   const [assignedAction, setAssignedAction] = useState<'A' | 'B' | 'C' | null>(null);
@@ -90,8 +93,9 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
     // (In real logic, check `is_in_lottery_pool` from DB. Here we use local mock or prop)
     // We assume `is_in_lottery_pool` is on currentUser (need to update type definition in ReportSystemLogic)
     const isInPool = (currentUser as any).is_in_lottery_pool;
+    const screeningDoneKey = `apostate_screening_done_${currentUser.oc_name}`;
     
-    if (!isInPool && !showScreening && !localStorage.getItem('apostate_screening_done')) {
+    if (!isInPool && !showScreening && !localStorage.getItem(screeningDoneKey)) {
       // Pick 3 random questions and shuffle their options once
       const shuffled = [...QUESTION_POOL].sort(() => 0.5 - Math.random());
       const selectedQuestions = shuffled.slice(0, 3).map(q => ({
@@ -99,6 +103,9 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
         options: [...q.options].sort(() => 0.5 - 0.5) // 保持原始顺序，避免每次渲染都打乱
       }));
       setQuestions(selectedQuestions);
+      setCurrentQIndex(0);
+      setTotalAffinity(0);
+      setScreeningAnswers([]);
       setShowScreening(true);
     }
   }, [currentUser, currentChapter]);
@@ -127,39 +134,38 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
 
   // --- Handlers ---
 
-  const handleScreeningAnswer = (affinity: number) => {
-    const newTotal = totalAffinity + affinity;
+  const handleScreeningAnswer = (option: { key: string; affinity: number }) => {
+    if (screeningSubmitting) return;
+    const newTotal = totalAffinity + option.affinity;
     setTotalAffinity(newTotal);
+    const questionId = questions[currentQIndex]?.id;
+    const nextAnswers = questionId
+      ? [...screeningAnswers, { question_id: questionId, answer: option.key }]
+      : [...screeningAnswers];
+    setScreeningAnswers(nextAnswers);
 
     if (currentQIndex < 2) {
       setCurrentQIndex(prev => prev + 1);
     } else {
-      // Finished
-      finishScreening(newTotal + affinity); // Include current answer
+      setScreeningSubmitting(true);
+      void finishScreening(newTotal, nextAnswers);
     }
   };
 
-  const finishScreening = (score: number) => {
-    // 3 questions, max score 6 (2 * 3).
-    // Logic: if target answers >= 2 (score >= 4), set high affinity.
-    const isHighAffinity = score >= 4; 
-    
-    // Update User (Mock)
-    onUpdateUser({
-      ...currentUser!,
-      // @ts-ignore
-      is_in_lottery_pool: true,
-      is_high_affinity_candidate: isHighAffinity
-    });
-    
-    localStorage.setItem('apostate_screening_done', 'true');
-    setShowScreening(false);
-    
-    if (isHighAffinity) {
-      alert('『幾何體已在您的視網膜上凝結。您不再僅僅是您自己，您是這場棋局中的一道裂痕。』\n(已標記為高適性候選者)');
-    } else {
-      alert('『您眨了眨眼，幻覺消失了。世界依然穩固。』\n(已完成適性檢測)');
+  const finishScreening = async (score: number, answers: { question_id: string; answer: string }[]) => {
+    try {
+      await apiClient.apostate.submitScreening(currentUser!.oc_name, answers);
+    } catch (e) {
+      console.error('[ApostateSystem] submit-screening failed:', e);
+    } finally {
+      setScreeningSubmitting(false);
     }
+
+    localStorage.setItem(`apostate_screening_done_${currentUser!.oc_name}`, 'true');
+    onUpdateUser({ is_in_lottery_pool: true });
+    setShowScreening(false);
+
+    alert('『您眨了眨眼，幻覺消失了。世界依然穩固。』\n(問卷已記錄)');
   };
 
   const handleExecuteAction = () => {
@@ -219,8 +225,9 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
                 {questions[currentQIndex].options.map((opt, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleScreeningAnswer(opt.affinity)}
-                    className="w-full py-4 px-6 border border-gray-800 text-gray-500 hover:text-cyan-200 hover:border-cyan-800 hover:bg-cyan-900/10 transition-all duration-500 tracking-widest text-sm uppercase text-left leading-relaxed font-serif"
+                    onClick={() => handleScreeningAnswer(opt)}
+                    disabled={screeningSubmitting}
+                    className="w-full py-4 px-6 border border-gray-800 text-gray-500 hover:text-cyan-200 hover:border-cyan-800 hover:bg-cyan-900/10 transition-all duration-500 tracking-widest text-sm uppercase text-left leading-relaxed font-serif disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {opt.text}
                   </button>

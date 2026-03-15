@@ -1,0 +1,236 @@
+[
+  {
+    "id": "event_l1_001",
+    "landmark_id": "l1",
+    "landmark_name": "空衣街區",
+    "required_count": 3,
+    "safe_version": {
+      "scenes": [
+        {
+          "id": "s1",
+          "text": "【在此填入場景描述文字，建議2-4句，短句優先】",
+          "pause_ms": 2000
+        },
+        {
+          "id": "s2",
+          "text": "【繼續場景描述】",
+          "pause_ms": 2000
+        },
+        {
+          "id": "s3",
+          "text": "【結尾，暗示平安度過】",
+          "pause_ms": 2000
+        }
+      ],
+      "ending_text": "【平安結尾，1-2句，可以帶一點餘韻】"
+    },
+    "danger_version": {
+      "scenes": [
+        {
+          "id": "s1",
+          "text": "【場景描述，帶緊張感】",
+          "pause_ms": 2000
+        },
+        {
+          "id": "s2",
+          "text": "【情勢升高】",
+          "pause_ms": 2000
+        },
+        {
+          "id": "s3",
+          "text": "【危機出現，引導到翻牌】",
+          "pause_ms": 2000
+        }
+      ],
+      "card_prompt": "【翻牌前的提示文字，例如：前方有三條路，你選擇哪一條？】",
+      "card_labels": ["左", "中", "右"],
+      "result_safe_text": "【翻到安全牌的結果描述，1-2句】",
+      "result_danger_text": "【翻到鬼牌的結果描述，扣1HP，1-2句，要有代價感】",
+      "ending_text": "【事件結尾，不論安全或受傷都會看到，1句】"
+    }
+  },
+  {
+    "id": "event_l1_002",
+    "landmark_id": "l1",
+    "landmark_name": "空衣街區",
+    "required_count": 1,
+    "safe_version": {
+      "scenes": [
+        {
+          "id": "s1",
+          "text": "【獨行版本的場景描述】",
+          "pause_ms": 2000
+        },
+        {
+          "id": "s2",
+          "text": "【繼續】",
+          "pause_ms": 2000
+        }
+      ],
+      "ending_text": "【獨行平安結尾】"
+    },
+    "danger_version": {
+      "scenes": [
+        {
+          "id": "s1",
+          "text": "【獨行危險場景】",
+          "pause_ms": 2000
+        },
+        {
+          "id": "s2",
+          "text": "【情勢升高】",
+          "pause_ms": 2000
+        }
+      ],
+      "card_prompt": "【獨行翻牌提示】",
+      "card_labels": ["左", "右"],
+      "result_safe_text": "【安全結果】",
+      "result_danger_text": "【受傷結果】",
+      "ending_text": "【結尾】"
+    }
+  },
+  {
+    "id": "event_l2_001",
+    "landmark_id": "l2",
+    "landmark_name": "舊觀測站",
+    "required_count": 3,
+    "safe_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "ending_text": "【填入】"
+    },
+    "danger_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "card_prompt": "【填入】",
+      "card_labels": ["左", "中", "右"],
+      "result_safe_text": "【填入】",
+      "result_danger_text": "【填入】",
+      "ending_text": "【填入】"
+    }
+  },
+  {
+    "id": "event_l2_002",
+    "landmark_id": "l2",
+    "landmark_name": "舊觀測站",
+    "required_count": 1,
+    "safe_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "ending_text": "【填入】"
+    },
+    "danger_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "card_prompt": "【填入】",
+      "card_labels": ["左", "右"],
+      "result_safe_text": "【填入】",
+      "result_danger_text": "【填入】",
+      "ending_text": "【填入】"
+    }
+  },
+  {
+    "id": "event_l3_001",
+    "landmark_id": "l3",
+    "landmark_name": "淨化尖塔",
+    "required_count": 3,
+    "safe_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "ending_text": "【填入】"
+    },
+    "danger_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "card_prompt": "【填入】",
+      "card_labels": ["左", "中", "右"],
+      "result_safe_text": "【填入】",
+      "result_danger_text": "【填入】",
+      "ending_text": "【填入】"
+    }
+  },
+  {
+    "id": "event_l3_002",
+    "landmark_id": "l3",
+    "landmark_name": "淨化尖塔",
+    "required_count": 1,
+    "safe_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "ending_text": "【填入】"
+    },
+    "danger_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "card_prompt": "【填入】",
+      "card_labels": ["左", "右"],
+      "result_safe_text": "【填入】",
+      "result_danger_text": "【填入】",
+      "ending_text": "【填入】"
+    }
+  },
+  {
+    "id": "event_l4_001",
+    "landmark_id": "l4",
+    "landmark_name": "中央圖書館",
+    "required_count": 3,
+    "safe_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "ending_text": "【填入】"
+    },
+    "danger_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "card_prompt": "【填入】",
+      "card_labels": ["左", "中", "右"],
+      "result_safe_text": "【填入】",
+      "result_danger_text": "【填入】",
+      "ending_text": "【填入】"
+    }
+  },
+  {
+    "id": "event_l4_002",
+    "landmark_id": "l4",
+    "landmark_name": "中央圖書館",
+    "required_count": 1,
+    "safe_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "ending_text": "【填入】"
+    },
+    "danger_version": {
+      "scenes": [
+        { "id": "s1", "text": "【填入】", "pause_ms": 2000 },
+        { "id": "s2", "text": "【填入】", "pause_ms": 2000 }
+      ],
+      "card_prompt": "【填入】",
+      "card_labels": ["左", "右"],
+      "result_safe_text": "【填入】",
+      "result_danger_text": "【填入】",
+      "ending_text": "【填入】"
+    }
+  }
+]

@@ -5,12 +5,24 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'placeholder-key';
 
+const safeStorage = (() => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return undefined;
+    const key = '__td_storage_probe__';
+    window.localStorage.setItem(key, '1');
+    window.localStorage.removeItem(key);
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+})();
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: safeStorage,
     persistSession: true,
     autoRefreshToken: true,
   }

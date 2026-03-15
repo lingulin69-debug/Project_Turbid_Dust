@@ -2,6 +2,8 @@
  * Project Turbid Dust - 全局常量定义
  */
 
+import { FACTION_COLORS } from '@/lib/constants';
+
 // === 地图配置 ===
 export const MAP_CONFIG = {
   // 地图尺寸（优化后从 4096x2160 减少到 2048x1080）
@@ -68,7 +70,7 @@ export const BALANCE_CONFIG = {
 // === 游戏配置 ===
 export const GAME_CONFIG = {
   MAX_INVENTORY_SIZE: 12,
-  DAILY_COIN_LIMIT: 15,
+  DAILY_COIN_LIMIT: 10,
   INITIAL_COINS: 10,
 
   // 漂流瓶
@@ -110,11 +112,17 @@ export const ANIMATION_CONFIG = {
 
 // === 颜色配置 ===
 export const COLORS = {
-  FACTION_TURBID: '#9333ea', // purple-600
-  FACTION_PURE: '#eab308',   // yellow-500
+  FACTION_TURBID: FACTION_COLORS.Turbid.highlight,
+  FACTION_PURE: FACTION_COLORS.Pure.highlight,
+  TURBID_PRIMARY: FACTION_COLORS.Turbid.primary,
+  TURBID_HIGHLIGHT: FACTION_COLORS.Turbid.highlight,
+  PURE_PRIMARY: FACTION_COLORS.Pure.primary,
+  PURE_HIGHLIGHT: FACTION_COLORS.Pure.highlight,
+  BACKGROUND: FACTION_COLORS.background,
+  LEADER_EVIL: FACTION_COLORS.leaderEvil,
 
-  SUCCESS: '#22c55e', // green-500
-  ERROR: '#ef4444',   // red-500
-  WARNING: '#f59e0b', // amber-500
-  INFO: '#3b82f6'     // blue-500
+  SUCCESS: '#22c55e',
+  ERROR: '#ef4444',
+  WARNING: '#f59e0b',
+  INFO: '#3b82f6'
 } as const;

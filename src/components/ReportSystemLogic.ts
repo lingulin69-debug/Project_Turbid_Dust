@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import whitelistData from './whitelist.json';
 
 const WHITELISTED_OCS = whitelistData.whitelisted_ocs;
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 /**
  * Project Turbid Dust - 簡約版回報系統邏輯
@@ -21,9 +22,30 @@ export interface UserData {
   daily_coin_earned: number; // For daily limit check
   collected_shards?: number; // For Gacha duplicates
   faction: 'Turbid' | 'Pure';
-  identity_role?: 'citizen' | 'apostate' | 'liquidator';
+  identity_role?: 'citizen' | 'apostate' | 'liquidator' | 'leader';
   is_in_lottery_pool?: boolean;
   is_high_affinity_candidate?: boolean;
+  // Wave 2: NPC & 狀態欄位
+  npc_role?: 'item_merchant' | 'black_merchant' | 'trafficker' | 'inn_owner' | 'pet_merchant' | null;
+  is_lost?: boolean;
+  lost_until?: string | null;
+  current_hp?: number;
+  max_hp?: number;
+  // NPC 操作欄位
+  movement_points?: number;
+  prestige?: number;
+  is_shop_open?: boolean;
+  current_landmark_id?: string | null;
+  // 角色卡欄位
+  alias_name?: string | null;
+  cursed_name_prefix?: string | null;
+  karma_tags?: { tag: string; is_faded: boolean }[];
+  status_tags?: { tag: string; expires_chapter: string }[];
+  current_outfit?: string | null;
+  // 領主專用
+  leader_evil_points?: number;
+  leader_treasury?: number;
+  is_taxed_this_chapter?: boolean;
 }
 
 interface ReportData {
@@ -44,14 +66,34 @@ interface ReportLog {
 
 export const MAX_INVENTORY_SIZE = 12;
 
+const mapUserData = (user: any): UserData => ({
+  oc_name: user.oc_name,
+  inventory: user.inventory || [],
+  wardrobe: user.wardrobe || [],
+  coins: user.coins || 0,
+  daily_coin_earned: user.daily_coin_earned || 0,
+  faction: user.faction as 'Turbid' | 'Pure',
+  identity_role: user.identity_role || 'citizen',
+  is_in_lottery_pool: user.is_in_lottery_pool || false,
+  is_high_affinity_candidate: user.is_high_affinity_candidate || false,
+  npc_role: (user as any).npc_role || null,
+  is_lost: (user as any).is_lost || false,
+  current_hp: (user as any).current_hp ?? 10,
+  max_hp: (user as any).max_hp ?? 10,
+});
+
 // 持久化資料庫同步：自動更新
 export const syncUserData = async (ocName: string, updates: Partial<UserData>) => {
   if (!ocName) return;
   
   try {
+    const safeUpdates: Record<string, any> = { ...updates };
+    if (safeUpdates.identity_role === 'leader') {
+      delete safeUpdates.identity_role;
+    }
     const { error } = await supabase
       .from('td_users')
-      .update(updates)
+      .update(safeUpdates as any)
       .eq('oc_name', ocName);
     
     if (error) throw error;
@@ -63,26 +105,23 @@ export const syncUserData = async (ocName: string, updates: Partial<UserData>) =
 // 登入/註冊邏輯核心
 const loginOrRegisterCore = async (ocName: string, password: string) => {
   try {
-    // 0. 管理員後門
-    if (ocName.toLowerCase() === 'vonn' && password === '0112') {
-      const adminData: UserData = {
-        oc_name: 'vonn',
-        inventory: [],
-        wardrobe: [],
-        coins: 999999,
-        daily_coin_earned: 0,
-        collected_shards: 999,
-        faction: 'Pure', // 管理員預設身分
-        identity_role: 'apostate', // Admin has access to everything
-        is_in_lottery_pool: true,
-        is_high_affinity_candidate: true
-      };
-      localStorage.setItem('td_oc_name', 'vonn');
-      return { success: true, user: adminData, isAdmin: true };
+    const isVonn = ocName.toLowerCase() === 'vonn';
+    if (isVonn) {
+      const res = await fetch(`${API_BASE}/auth/admin-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oc_name: ocName, password })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        return { success: false, message: err.error || '憑證不符，記憶與靈魂無法匹配。' };
+      }
+      const data = await res.json();
+      const userData = mapUserData(data.user);
+      localStorage.setItem('td_oc_name', ocName);
+      return { success: true, user: userData };
     }
 
-    // 1. 檢查白名單 (Whitelist Check) - 優先執行
-    const isVonn = ocName.toLowerCase() === 'vonn';
     if (!isVonn && !WHITELISTED_OCS.includes(ocName)) {
       return { 
         success: false, 
@@ -102,56 +141,19 @@ const loginOrRegisterCore = async (ocName: string, password: string) => {
     if (user) {
       // 3a. 用戶存在 - 驗證密碼
       if (user.simple_password === password) {
-        const userData = {
-          oc_name: user.oc_name,
-          inventory: user.inventory || [],
-          wardrobe: user.wardrobe || [],
-          coins: user.coins || 0,
-          daily_coin_earned: user.daily_coin_earned || 0,
-          faction: user.faction as 'Turbid' | 'Pure',
-          identity_role: user.identity_role || 'citizen',
-          is_in_lottery_pool: user.is_in_lottery_pool || false,
-          is_high_affinity_candidate: user.is_high_affinity_candidate || false
-        };
+        // 首次登入偵測：密碼仍為預設值 '0000'，強制進入設定密碼流程
+        if (user.simple_password === '0000') {
+          return { success: false, firstLogin: true, oc_name: ocName };
+        }
+        const userData = mapUserData(user);
         localStorage.setItem('td_oc_name', ocName);
         return { success: true, user: userData };
       } else {
         return { success: false, message: '憑證不符，記憶與靈魂無法匹配。' };
       }
     } else {
-      // 3b. 用戶不存在但已入圍 - 首次登入即註冊 (First Login Registration)
-      
-      const { data: newUser, error: regError } = await supabase
-        .from('td_users')
-        .insert([{ 
-          oc_name: ocName, 
-          simple_password: password, // 首入即定
-          inventory: [],
-          wardrobe: ['suit_01'],
-          coins: 10, // Initial coins adjusted to 10
-          daily_coin_earned: 0,
-          collected_shards: 0,
-          faction: Math.random() > 0.5 ? 'Turbid' : 'Pure' // 隨機分配陣營
-        }])
-        .select()
-        .single();
-
-      if (regError) throw regError;
-
-      const userData = {
-        oc_name: newUser.oc_name,
-        inventory: newUser.inventory || [],
-        wardrobe: newUser.wardrobe || [],
-        coins: newUser.coins || 10,
-        daily_coin_earned: newUser.daily_coin_earned || 0,
-        collected_shards: newUser.collected_shards || 0,
-        faction: newUser.faction,
-        identity_role: 'citizen',
-        is_in_lottery_pool: false,
-        is_high_affinity_candidate: false
-      };
-      localStorage.setItem('td_oc_name', ocName);
-      return { success: true, user: userData, isNew: true };
+      // 3b. 帳號不存在 - 帳號由管理員預先建立，玩家無法自行註冊
+      return { success: false, message: '身份尚未核實，請確認你的OC名稱是否正確。' };
     }
   } catch (err: any) {
     return { success: false, message: '系統錯誤，請稍後再試' };
@@ -190,9 +192,8 @@ export const useReportSystem = () => {
     setIsAuthLoading(true);
     const result = await loginOrRegisterCore(ocName, password);
     if (result.success && result.user) {
-    setCurrentUser(result.user as any);
-    if (result.isAdmin) setIsCreatorMode(true);
-  }
+      setCurrentUser(result.user as any);
+    }
     setIsAuthLoading(false);
     return result;
   };
@@ -252,7 +253,19 @@ export const useReportSystem = () => {
               faction: user.faction as 'Turbid' | 'Pure',
               identity_role: (user.identity_role as any) || 'citizen',
               is_in_lottery_pool: user.is_in_lottery_pool || false,
-              is_high_affinity_candidate: user.is_high_affinity_candidate || false
+              is_high_affinity_candidate: user.is_high_affinity_candidate || false,
+              npc_role: (user as any).npc_role || null,
+              is_lost: (user as any).is_lost || false,
+              lost_until: (user as any).lost_until ?? null,
+              current_hp: (user as any).current_hp ?? 10,
+              max_hp: (user as any).max_hp ?? 10,
+              movement_points: (user as any).movement_points ?? 10,
+              prestige: (user as any).prestige ?? 0,
+              is_shop_open: (user as any).is_shop_open ?? false,
+              current_landmark_id: (user as any).current_landmark_id ?? null,
+              leader_evil_points: (user as any).leader_evil_points ?? 3,
+              leader_treasury: (user as any).leader_treasury ?? 0,
+              is_taxed_this_chapter: (user as any).is_taxed_this_chapter ?? false,
             });
           }
         } catch (err) {

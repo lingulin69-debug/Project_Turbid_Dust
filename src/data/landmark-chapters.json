@@ -1,0 +1,59 @@
+{
+  "chapters": [
+    {
+      "chapter_version": "1.0",
+      "chapter_title": "第一章",
+      "summary": "",
+      "landmarks": [
+        {
+          "id": "l1",
+          "name": "空衣街區",
+          "faction": "Turbid",
+          "status": "open",
+          "chapter_unlock": "1.0",
+          "intro_text": "",
+          "mission_text": "",
+          "teamup_text": "",
+          "npc_text": "",
+          "outro_text": ""
+        },
+        {
+          "id": "l2",
+          "name": "舊觀測站",
+          "faction": "Turbid",
+          "status": "closed",
+          "chapter_unlock": "1.0",
+          "intro_text": "",
+          "mission_text": "",
+          "teamup_text": "",
+          "npc_text": "",
+          "outro_text": ""
+        },
+        {
+          "id": "l3",
+          "name": "淨化尖塔",
+          "faction": "Pure",
+          "status": "open",
+          "chapter_unlock": "1.0",
+          "intro_text": "",
+          "mission_text": "",
+          "teamup_text": "",
+          "npc_text": "",
+          "outro_text": ""
+        },
+        {
+          "id": "l4",
+          "name": "中央圖書館",
+          "faction": "Pure",
+          "status": "open",
+          "chapter_unlock": "1.0",
+          "intro_text": "",
+          "mission_text": "",
+          "teamup_text": "",
+          "npc_text": "",
+          "outro_text": ""
+        }
+      ]
+    }
+  ]
+}

@@ -34,7 +34,7 @@ export const AdminApostateControl: React.FC<AdminApostateControlProps> = ({ curr
   const [listData, setListData] = useState<Dossier[]>([]);
 
   // Only render for admin
-  if (currentUser.oc_name !== 'vonn') return null;
+  if ((currentUser.oc_name || '').toLowerCase() !== 'vonn') return null;
 
   const fetchStats = async () => {
     try {

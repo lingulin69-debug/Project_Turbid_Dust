@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserData, loginOrRegister, syncUserData, MAX_INVENTORY_SIZE } from './ReportSystemLogic';
 import { useGesture } from '@use-gesture/react';
@@ -11,7 +11,6 @@ import {
   CalendarDays, 
   Coins, 
   User,
-  Cloud,
   Settings,
   X,
   Scale,
@@ -24,9 +23,10 @@ import {
   Plus,
   Minus,
   Feather,
-  Gift,
   Heart,
-  Activity
+  Activity,
+  Wrench,
+  Crown,
 } from 'lucide-react';
 import { ApostateSystem, ApostateGeometryIcon } from './ApostateSystem';
 import { AdminApostateControl } from './AdminApostateControl';
@@ -36,9 +36,16 @@ import { DevControlPanel } from './DevControlPanel';
 import { MapLandmark, LandmarkData, LandmarkType } from './MapLandmark';
 import { CentralBalanceScale } from './CentralBalanceScale';
 import { DraggableUIButton } from './DraggableUIButton';
-import { FogLayer } from './FogLayer';
 import { DesignOverlay } from './DesignOverlay';
 import { LoginModal } from './auth/LoginModal';
+import { FACTION_COLORS } from '@/lib/constants';
+import { useGlobalBalance } from '@/hooks/useGlobalBalance';
+import { useGazette } from '@/hooks/useGazette';
+import { useNotifications } from '@/hooks/useNotifications';
+import { apiClient } from '@/api/client';
+import { CharacterCard } from './CharacterCard';
+import { NPCPanel } from './NPCPanel';
+import { LeaderTyrannyPanel } from './LeaderTyrannyPanel';
 
 // Extended Landmark Interface
 interface Landmark extends LandmarkData {
@@ -93,6 +100,26 @@ interface Mission {
   chapterVersion: string;
 }
 
+interface MarketSlot {
+  id: string;
+  seller_oc: string;
+  item_id: string | null;
+  item_type: string;
+  custom_name: string | null;
+  custom_description: string | null;
+  price: number;
+  listed_at: string;
+}
+
+interface ShopPet {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  is_listed: boolean;
+  is_preset: boolean;
+}
+
 const missions: Mission[] = [
   { 
     id: 'm1', 
@@ -128,21 +155,97 @@ const missions: Mission[] = [
   }
 ];
 
-interface EchoLog {
-  id: string;
-  content: string;
-  timestamp: string;
-  faction: 'Turbid' | 'Pure';
-  minutesAgo: number;
+
+// ─── KidnapPopup ────────────────────────────────────────────────────────────
+interface KidnapPopupProps {
+  notification: { id: string; content: string };
+  lostUntil: string | null;
+  onMarkRead: () => void;
+  onOpenCharacterCard: () => void;
 }
 
-const echoLogs: EchoLog[] = [
-  { id: 'e1', content: '[玩家 B] 於 10 分鐘前在純塵祭壇點燃了微光。', timestamp: '10:30', faction: 'Pure', minutesAgo: 10 },
-  { id: 'e2', content: '[玩家 A] 於 30 分鐘前觀測到了異常波動。', timestamp: '10:10', faction: 'Pure', minutesAgo: 30 },
-  { id: 'e3', content: '[Unknown] 於 1 小時前嘗試穿越迷霧失敗。', timestamp: '09:40', faction: 'Pure', minutesAgo: 60 },
-  { id: 'e4', content: '[玩家 C] 於 5 分鐘前在舊觀測站發現了新的裂隙。', timestamp: '10:35', faction: 'Turbid', minutesAgo: 5 },
-  { id: 'e5', content: '[玩家 D] 於 20 分鐘前被濁息吞噬了理智...暫時。', timestamp: '10:20', faction: 'Turbid', minutesAgo: 20 },
-];
+const KidnapPopup: React.FC<KidnapPopupProps> = ({
+  notification, lostUntil, onMarkRead, onOpenCharacterCard,
+}) => {
+  const [remaining, setRemaining] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!lostUntil) return;
+    const calc = () => {
+      const diff = Math.max(0, Math.floor((new Date(lostUntil).getTime() - Date.now()) / 1000));
+      setRemaining(diff);
+      if (diff === 0) {
+        onMarkRead();
+        setDismissed(true);
+      }
+    };
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [lostUntil, onMarkRead]);
+
+  if (dismissed) return null;
+
+  const hours = Math.floor(remaining / 3600);
+  const mins = Math.floor((remaining % 3600) / 60);
+  const secs = remaining % 60;
+  const timeStr = remaining > 0
+    ? `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+    : '黑霧散去了...';
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+      {/* Atmospheric noise overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
+          backgroundSize: '150px',
+        }}
+      />
+      <div className="relative max-w-sm w-full mx-6 text-center space-y-6 font-mono">
+        {/* Title */}
+        <div className="space-y-1">
+          <p className="text-[10px] tracking-[0.5em] uppercase text-gray-600">[ TERMINAL RESTRICTED ]</p>
+          <p className="text-red-500/80 text-[11px] tracking-[0.3em] uppercase animate-pulse">⚠ 觀測者信號中斷</p>
+        </div>
+
+        {/* Content */}
+        <div
+          className="px-5 py-4 rounded border text-sm text-gray-300 leading-relaxed text-left"
+          style={{ backgroundColor: '#0f0a0a', borderColor: `${FACTION_COLORS.leaderEvil}50` }}
+        >
+          {notification.content}
+        </div>
+
+        {/* Countdown */}
+        <div className="space-y-1">
+          <p className="text-[10px] text-gray-700 tracking-widest">預計恢復時間</p>
+          <p
+            className="text-3xl tracking-[0.3em]"
+            style={{ color: remaining > 0 ? '#ef4444' : '#6b7280' }}
+          >
+            {timeStr}
+          </p>
+        </div>
+
+        {/* Limited actions */}
+        <div className="flex items-center justify-center gap-4 pt-2">
+          <button
+            onClick={onOpenCharacterCard}
+            className="text-[11px] text-gray-600 hover:text-gray-400 tracking-widest transition-colors border border-gray-800 px-4 py-2 rounded"
+          >
+            查看角色卡
+          </button>
+        </div>
+
+        <p className="text-[10px] text-gray-800 tracking-[0.3em]">其餘終端功能暫時停用</p>
+      </div>
+    </div>
+  );
+};
+// ─── End KidnapPopup ─────────────────────────────────────────────────────────
 
 export const MapTestView: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
@@ -150,6 +253,7 @@ export const MapTestView: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(true); // Default true for Gatekeeper
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
   
   // Compendium State
   const [collectionTab, setCollectionTab] = useState<'raiment' | 'fragments' | 'relics'>('raiment');
@@ -166,11 +270,10 @@ export const MapTestView: React.FC = () => {
   const [bgmVolume, setBgmVolume] = useState(50);
   const [sfxVolume, setSfxVolume] = useState(80);
 
-  // Drift Bottle (Lost Fragments) State
+  // Drift Bottle (Lost Fragments) State — 持久化由 useDriftFragments 處理
   const [isDriftMode, setIsDriftMode] = useState(false);
   const [driftMessage, setDriftMessage] = useState<string[]>([]);
   const [driftModalOpen, setDriftModalOpen] = useState(false);
-  const [placedFragments, setPlacedFragments] = useState<{id: string, x: number, y: number, content: string, sender: string}[]>([]);
   const [selectedFragment, setSelectedFragment] = useState<{id: string, content: string, sender: string} | null>(null);
 
   // 1999 Style Word Bank
@@ -181,34 +284,53 @@ export const MapTestView: React.FC = () => {
   const [reportSubject, setReportSubject] = useState('');
   const [isLocked, setIsLocked] = useState(false); // 報名鎖定機制 (已參與但未回報)
   const [hasReportedMain, setHasReportedMain] = useState(false); // 是否已完成當前版本主線回報
+  const [missionLockId, setMissionLockId] = useState<string | null>(null);
+  const [marketSlots, setMarketSlots] = useState<MarketSlot[]>([]);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [marketError, setMarketError] = useState('');
+  const [buyingSlotId, setBuyingSlotId] = useState<string | null>(null);
+  const [shopPets, setShopPets] = useState<ShopPet[]>([]);
+  const [petsLoading, setPetsLoading] = useState(false);
+  const [petsError, setPetsError] = useState('');
+  const [buyingPetId, setBuyingPetId] = useState<string | null>(null);
 
   // Breathing Icon State (Performance Optimized)
   const [hasUnclaimedGift, setHasUnclaimedGift] = useState(false);
   const CURRENT_CHAPTER = '1.0';
+  const CHAPTER_TAG = `ch${CURRENT_CHAPTER.split('.')[0]}`;
+  const DEFAULT_MISSION_LOCK_ID = `main_${CHAPTER_TAG}_m1`;
   
   // Exhale (Gift Giving) State
   const [exhaleModalOpen, setExhaleModalOpen] = useState(false);
   const [selectedExhaleItem, setSelectedExhaleItem] = useState<string | null>(null);
   const [exhaleMessage, setExhaleMessage] = useState('');
 
+  // Character Card State
+  const [characterCardTarget, setCharacterCardTarget] = useState<string | null>(null);
+
+  // Notification State
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
   // Apostate System State
   const [apostateMenuOpen, setApostateMenuOpen] = useState(false);
   const [liquidatorMenuOpen, setLiquidatorMenuOpen] = useState(false);
   
-  // 2. 天平核心計演算法 (Tilt Algorithm)
-  // 0-100, 50 = Balanced
-  const [balanceWeight, setBalanceWeight] = useState(50);
+  // 2. 天平核心 — 改由 Supabase global_stats 即時同步
+  const { balance: balanceWeight, updateBalance } = useGlobalBalance();
+
+  // Drift Bottle 即時同步 hook
   
+
+  // 小道消息 — 即時同步
+  const { entries: gazetteEntries, loading: gazetteLoading } = useGazette(50);
+
+  // 通知系統 — 即時同步
+  const { notifications, unreadCount, popupNotification, markRead, markAllRead } = useNotifications(
+    currentUser?.oc_name ?? null
+  );
+
   // Breathing Gift Items (Limited List)
-  const BREATHING_ITEMS = [
-    { id: 'B001', name: '微光燈蕊', cost: 1 },
-    { id: 'B002', name: '苦澀乾果', cost: 1 },
-    { id: 'B003', name: '鏽蝕齒輪', cost: 1 },
-    { id: 'B004', name: '純塵纖維', cost: 1 },
-    { id: 'B005', name: '濁息殘片', cost: 1 },
-    { id: 'B006', name: '泛黃信封', cost: 1 },
-    { id: 'B007', name: '2 枚殘幣', cost: 2 }, // Special: Direct Coin Transfer
-  ];
+  
 
   // Check for unclaimed gifts on mount or login
   useEffect(() => {
@@ -219,55 +341,23 @@ export const MapTestView: React.FC = () => {
     }
   }, [currentUser]);
 
-  const handleInhale = () => {
+  useEffect(() => {
     if (!currentUser) return;
-    
-    // Inhale Logic (Claim Gift)
-    const REWARD_COINS = Math.floor(Math.random() * 2) + 1; // 1-2 coins
-    const REWARD_ITEM = 'B001'; // Example item
+    const storageKey = `mission_lock_${currentUser.oc_name}_${CURRENT_CHAPTER}`;
+    const storedLockId = localStorage.getItem(storageKey) || DEFAULT_MISSION_LOCK_ID;
+    setMissionLockId(storedLockId);
+    apiClient.mission
+      .lock(currentUser.oc_name, storedLockId, CURRENT_CHAPTER, 'check')
+      .then(result => {
+        setIsLocked(result.locked);
+        setHasReportedMain(result.reported);
+      })
+      .catch(() => {});
+  }, [currentUser, DEFAULT_MISSION_LOCK_ID, CURRENT_CHAPTER]);
 
-    setCurrentUser(prev => prev ? ({ 
-      ...prev, 
-      coins: prev.coins + REWARD_COINS,
-      inventory: [...prev.inventory, REWARD_ITEM]
-    }) : null);
-    
-    // Mark as claimed
-    localStorage.setItem(`gift_claimed_${currentUser.oc_name}_${CURRENT_CHAPTER}`, 'true');
-    setHasUnclaimedGift(false);
-    
-    alert(`『捕捉到一段跨越荒原的頻率。』\n(已吸入：微光燈蕊 + ${REWARD_COINS} 殘幣)`);
-  };
+  
 
-  const handleExhale = () => {
-    if (!currentUser) return;
-    if (!selectedExhaleItem) {
-      alert('請選擇一份微薄的贈禮。');
-      return;
-    }
-    
-    const item = BREATHING_ITEMS.find(i => i.id === selectedExhaleItem);
-    if (!item) return;
-
-    if (currentUser.coins < item.cost) {
-      alert('您的行囊太輕，無法承擔這份饋贈的重量。');
-      return;
-    }
-
-    // Deduct cost
-    setCurrentUser(prev => prev ? ({ ...prev, coins: prev.coins - item.cost }) : null);
-    
-    // Update Balance Scale
-    const TILT_AMOUNT = item.cost * 1.0;
-    const direction = playerFaction === 'Pure' ? 1 : -1;
-    setBalanceWeight(prev => Math.min(100, Math.max(0, prev + (TILT_AMOUNT * direction))));
-    
-    setExhaleModalOpen(false);
-    setSelectedExhaleItem(null);
-    setExhaleMessage('');
-    
-    alert('『您的呼息已融入荒原的風中...』\n(贈禮已發送至隨機觀測者)');
-  };
+  
 
   // Close modals on backdrop click
   useEffect(() => {
@@ -295,7 +385,8 @@ export const MapTestView: React.FC = () => {
     console.log(`[DB Sync] Updated likes for snippet ${id}`);
   };
 
-  const handleMissionJoin = (mission: Mission) => {
+  const handleMissionJoin = async (mission: Mission) => {
+    if (!currentUser) return;
     if (mission.type === 'side') {
       alert(`已加入支線任務：${mission.title}。請前往現場進行支援。`);
       return;
@@ -311,45 +402,155 @@ export const MapTestView: React.FC = () => {
       return;
     }
 
-    setIsLocked(true);
-    alert('已加入主線任務。系統已鎖定您的參與權限，請前往「回報任務」頁面提交進度。');
+    try {
+      const lockId = `${mission.type}_${CHAPTER_TAG}_${mission.id}`;
+      setMissionLockId(lockId);
+      localStorage.setItem(`mission_lock_${currentUser.oc_name}_${CURRENT_CHAPTER}`, lockId);
+      const result = await apiClient.mission.lock(currentUser.oc_name, lockId, CURRENT_CHAPTER, 'lock');
+      if (result.reported) {
+        setHasReportedMain(true);
+        alert('本章節的主線回報已記錄。命運的齒輪暫時靜止，請等待下一次版本更新。');
+        return;
+      }
+      setIsLocked(result.locked);
+      if (result.locked) {
+        alert('已加入主線任務。系統已鎖定您的參與權限，請前往「回報任務」頁面提交進度。');
+      }
+    } catch (err: any) {
+      alert(`鎖定失敗：${err.message || '請稍後再試'}`);
+    }
   };
 
-  const handleReportSubmit = () => {
+  const handleReportSubmit = async () => {
+    if (!currentUser) return;
     const subject = reportSubject.trim();
-    const formatRegex = /^.+-.+-.+$/;
-    
+
     if (!subject) {
       alert('請填寫回報主旨。');
       return;
     }
 
-    if (!formatRegex.test(subject)) {
+    if (!/^.+-.+-.+$/.test(subject)) {
       alert('格式錯誤：請依照「章節-據點名稱-OC名稱」格式填寫。\n範例：第一章-荒原裂隙-塞理安');
       return;
     }
 
-    const REWARD_AMOUNT = Math.floor(Math.random() * 3) + 3; // 3-5 coins
-    const DAILY_LIMIT = 15;
-    
-    if (currentUser && currentUser.daily_coin_earned < DAILY_LIMIT) {
-       const actualReward = Math.min(REWARD_AMOUNT, DAILY_LIMIT - currentUser.daily_coin_earned);
-       setCurrentUser(prev => prev ? ({ 
-         ...prev, 
-         coins: prev.coins + actualReward,
-         daily_coin_earned: prev.daily_coin_earned + actualReward
-       }) : null);
-       const authority = playerFaction === 'Turbid' ? '眾議會' : '教會';
-       alert(`『在您不自覺成為棋子的那一刻，命運的齒輪再次轉動...』\n(回報已送出，獲得 +${actualReward} 殘幣，等待${authority}核對)`);
-    } else {
-       const authority = playerFaction === 'Turbid' ? '眾議會' : '教會';
-       alert(`『您的行跡已被紀錄。在您不自覺成為棋子的那一刻，命運的齒輪再次轉動...』\n(今日獲取已達上限，回報已送出，等待${authority}核對)`);
+    try {
+      // 呼叫後端：server-side 每日上限驗證 + 持久化 mission_logs
+      const lockId = missionLockId || DEFAULT_MISSION_LOCK_ID;
+      const result = await apiClient.mission.report(currentUser.oc_name, lockId, subject, CURRENT_CHAPTER, lockId);
+      const authority = playerFaction === 'Turbid' ? '眾議會' : '教會';
+      const earned = result.coins_earned ?? result.reward ?? 0;
+      const newCoins = result.coins_total ?? result.new_coins ?? currentUser.coins;
+
+      setCurrentUser(prev => prev ? ({
+        ...prev,
+        coins: newCoins,
+        daily_coin_earned: result.weekly_coin_earned ?? (prev.daily_coin_earned || 0) + earned
+      }) : null);
+
+      alert(result.message || `『命運的齒輪再次轉動...』\n(獲得 +${earned} 貨幣，等待${authority}核對)`);
+    } catch (err: any) {
+      alert(`回報失敗：${err.message || '請稍後再試'}`);
+      return;
     }
-    
+
     setReportSubject('');
     setIsLocked(false);
     setHasReportedMain(true);
   };
+
+  const fetchMarket = useCallback(async () => {
+    if (!currentUser) return;
+    setMarketLoading(true);
+    setMarketError('');
+    try {
+      const data = await apiClient.npc.merchant.getMarket(CURRENT_CHAPTER);
+      setMarketSlots(data || []);
+    } catch (err: any) {
+      setMarketError(err.message || '市集載入失敗');
+    } finally {
+      setMarketLoading(false);
+    }
+  }, [currentUser, CURRENT_CHAPTER]);
+
+  const fetchPets = useCallback(async () => {
+    if (!currentUser) return;
+    setPetsLoading(true);
+    setPetsError('');
+    try {
+      const res = await fetch(`${API_BASE}/pets/all`);
+      if (!res.ok) throw new Error('寵物列表載入失敗');
+      const data = (await res.json()) as ShopPet[];
+      setShopPets((data || []).filter(p => p.is_listed));
+    } catch (err: any) {
+      setPetsError(err.message || '寵物列表載入失敗');
+    } finally {
+      setPetsLoading(false);
+    }
+  }, [currentUser]);
+
+  const handleBuyItem = async (slot: MarketSlot) => {
+    if (!currentUser) return;
+    if ((slot.item_type !== 'outfit' && slot.item_type !== 'r18' && slot.item_type !== 'pet_preset' && slot.item_type !== 'pet_special') && (currentUser.inventory || []).length >= MAX_INVENTORY_SIZE) {
+      setMarketError('背包已滿，無法購買更多商品');
+      return;
+    }
+    setBuyingSlotId(slot.id);
+    setMarketError('');
+    try {
+      const result = await apiClient.npc.merchant.buy(currentUser.oc_name, slot.id, CURRENT_CHAPTER);
+      setCurrentUser(prev => {
+        if (!prev) return prev;
+        const nextInventory = result.item
+          ? [...(prev.inventory || []), result.item]
+          : prev.inventory || [];
+        const wardrobeEntry = {
+          slot_id: slot.id,
+          item_id: slot.item_id,
+          name: slot.custom_name || slot.item_id || '未知衣裝',
+          acquired_at: new Date().toISOString(),
+        };
+        const nextWardrobe = result.wardrobe_updated
+          ? [...(prev.wardrobe || []), wardrobeEntry]
+          : prev.wardrobe;
+        return {
+          ...prev,
+          coins: result.coins_remaining ?? result.new_coins,
+          inventory: nextInventory,
+          wardrobe: nextWardrobe
+        };
+      });
+      fetchMarket();
+    } catch (err: any) {
+      setMarketError(err.message || '購買失敗');
+    } finally {
+      setBuyingSlotId(null);
+    }
+  };
+
+  const handleBuyPet = async (pet: ShopPet) => {
+    if (!currentUser) return;
+    setBuyingPetId(pet.id);
+    setPetsError('');
+    try {
+      const result = await apiClient.pets.buy(currentUser.oc_name, pet.id, CURRENT_CHAPTER);
+      setCurrentUser(prev => prev ? ({ ...prev, coins: result.coins_remaining ?? result.new_coins }) : prev);
+      fetchPets();
+      alert(result.message || '購買成功');
+    } catch (err: any) {
+      setPetsError(err.message || '購買失敗');
+    } finally {
+      setBuyingPetId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'inventory') return;
+    if (!currentUser) return;
+    fetchMarket();
+    fetchPets();
+  }, [activeTab, currentUser, fetchMarket]);
 
   const handleMapClick = (e: React.MouseEvent) => {
     if (!isDriftMode || !currentUser) return;
@@ -362,34 +563,7 @@ export const MapTestView: React.FC = () => {
     setDriftModalOpen(true);
   };
 
-  const handlePlaceFragment = () => {
-    if (driftMessage.length === 0) {
-      alert('請至少選擇一個詞彙。');
-      return;
-    }
-
-    setCurrentUser(prev => prev ? ({ ...prev, coins: prev.coins - 5 }) : null);
-
-    // Update Balance Scale
-    const TILT_AMOUNT = 5 * 1.0;
-    const direction = playerFaction === 'Pure' ? 1 : -1;
-    setBalanceWeight(prev => Math.min(100, Math.max(0, prev + (TILT_AMOUNT * direction))));
-    console.log(`[Balance] Scale tilted by ${TILT_AMOUNT * direction} units.`);
-
-    const newFragment = {
-      id: `frag-${Date.now()}`,
-      x: 50 + (Math.random() * 40 - 20),
-      y: 50 + (Math.random() * 40 - 20),
-      content: driftMessage.join(' '),
-      sender: currentUser?.oc_name || 'Unknown'
-    };
-
-    setPlacedFragments(prev => [...prev, newFragment]);
-    setDriftMessage([]);
-    setDriftModalOpen(false);
-    setIsDriftMode(false);
-    alert('殘卷已遺落在荒原之中...');
-  };
+  
 
   const handleWordSelect = (word: string) => {
     if (driftMessage.length >= 5) return;
@@ -404,6 +578,11 @@ export const MapTestView: React.FC = () => {
   // Login Inputs
   const [inputUsername, setInputUsername] = useState('');
   const [inputPassword, setInputPassword] = useState('');
+  const [showSetPassword, setShowSetPassword] = useState(false);
+  const [pendingOcName, setPendingOcName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [setPasswordError, setSetPasswordError] = useState('');
   
   // --- Map Interaction State (Pinch & Zoom) ---
   const [scale, setScale] = useState(1);
@@ -453,11 +632,8 @@ export const MapTestView: React.FC = () => {
     });
 
     // Special Icons
-    items.push({ id: 'inhale', name: 'Inhale Button', x: inhalePos.x, y: inhalePos.y, type: 'ui' as const });
-    items.push({ id: 'exhale', name: 'Exhale Button', x: exhalePos.x, y: exhalePos.y, type: 'ui' as const });
-    items.push({ id: 'drift', name: 'Drift Toggle', x: driftTogglePos.x, y: driftTogglePos.y, type: 'ui' as const });
+    
     items.push({ id: 'zoom', name: 'Zoom Controls', x: zoomControlsPos.x, y: zoomControlsPos.y, type: 'ui' as const });
-    items.push({ id: 'fog', name: 'Fog Control', x: fogButtonPos.x, y: fogButtonPos.y, type: 'ui' as const });
     items.push({ id: 'overlay', name: 'Overlay Toggle', x: overlayBtnPos.x, y: overlayBtnPos.y, type: 'ui' as const });
 
     return items;
@@ -478,11 +654,7 @@ export const MapTestView: React.FC = () => {
     }
 
     // 3. Special Icons
-    if (id === 'inhale') setInhalePos({ x: Number(x), y: Number(y) });
-    if (id === 'exhale') setExhalePos({ x: Number(x), y: Number(y) });
-    if (id === 'drift') setDriftTogglePos({ x: Number(x), y: Number(y) });
     if (id === 'zoom') setZoomControlsPos({ x: Number(x), y: Number(y) });
-    if (id === 'fog') setFogButtonPos({ x: Number(x), y: Number(y) });
     if (id === 'overlay') setOverlayBtnPos({ x: Number(x), y: Number(y) });
   };
 
@@ -528,10 +700,47 @@ export const MapTestView: React.FC = () => {
     if (result.success && result.user) {
       setCurrentUser(result.user as any);
       setPlayerFaction(result.user.faction as 'Turbid' | 'Pure');
-      setIsAdmin(result.user.oc_name === 'vonn');
+      setIsAdmin((result.user.oc_name || '').toLowerCase() === 'vonn');
       setShowLogin(false);
+    } else if ((result as any).firstLogin) {
+      // 首次登入：密碼仍為 '0000'，導向設定密碼流程
+      setPendingOcName(username);
+      setShowLogin(false);
+      setShowSetPassword(true);
     } else {
       alert(result.message || 'Login failed');
+    }
+  };
+
+  // Set Password Handler（首次登入）
+  const handleSetPassword = async () => {
+    setSetPasswordError('');
+    if (!/^\d{4}$/.test(newPassword)) {
+      setSetPasswordError('密碼必須為四位數字。');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setSetPasswordError('兩次輸入的密碼不一致。');
+      return;
+    }
+    try {
+      const { apiClient } = await import('../api/client');
+      await apiClient.auth.setPassword(pendingOcName, newPassword);
+      // 密碼設定成功，用新密碼登入
+      const result = await loginOrRegister(pendingOcName, newPassword);
+      if (result.success && result.user) {
+        setCurrentUser(result.user as any);
+        setPlayerFaction(result.user.faction as 'Turbid' | 'Pure');
+        setIsAdmin((result.user.oc_name || '').toLowerCase() === 'vonn');
+        setShowSetPassword(false);
+        setNewPassword('');
+        setConfirmPassword('');
+        setPendingOcName('');
+      } else {
+        setSetPasswordError('密碼設定成功，但登入失敗，請重新登入。');
+      }
+    } catch (err: any) {
+      setSetPasswordError(err.message || '設定失敗，請稍後再試。');
     }
   };
 
@@ -540,7 +749,7 @@ export const MapTestView: React.FC = () => {
   };
 
   const getCurrencyName = () => {
-    return '殘幣';
+    return '貨幣';
   };
 
   // 判斷是否可見 (Fog of War Logic)
@@ -584,9 +793,7 @@ export const MapTestView: React.FC = () => {
           transformOrigin: 'center center',
           width: '2048px', // 优化：减少地图尺寸以提升性能 (从 4096px)
           height: '1080px', // 优化：从 2160px 减半
-          cursor: isDriftMode ? 'copy' : undefined
         }}
-        onClick={handleMapClick}
       >
         {/* 1. Base Map Image (Placeholder for >4000px image) */}
         {/* Using a gradient placeholder for now, user can replace with <img> */}
@@ -611,14 +818,7 @@ export const MapTestView: React.FC = () => {
           <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-gray-800 to-transparent"></div>
         </div>
 
-        <FogLayer
-          active={fogActive}
-          dispersing={fogDispersing}
-          onDisperseEnd={() => {
-            setFogActive(false);
-            setFogDispersing(false);
-          }}
-        />
+        
         <DesignOverlay
           src="/mock/ui_overlay.png"
           enabled={overlayEnabled}
@@ -652,25 +852,7 @@ export const MapTestView: React.FC = () => {
           />
         ))}
 
-        {/* 4. Placed Fragments (Drift Bottles) */}
-        {placedFragments.map(frag => (
-          <MapLandmark
-            key={frag.id}
-            landmark={{
-              id: frag.id,
-              name: '遺落殘卷',
-              x: frag.x,
-              y: frag.y,
-              faction: 'Common',
-              status: 'open',
-              type: 'default'
-            }}
-            isDevMode={isDevMode}
-            isVisible={true}
-            scale={scale}
-            onClick={() => handleFragmentClick(frag, null)}
-          />
-        ))}
+        
 
         {/* 5. Special Roles Icons (Apostate/Liquidator) positioned on Map */}
         {/* Note: In previous code they were UI elements. Now they should probably be on the map or UI? */}
@@ -690,20 +872,21 @@ export const MapTestView: React.FC = () => {
            { icon: CalendarDays, label: '日誌', id: 'daily' },
            { icon: BookOpen, label: '圖鑑', id: 'collection' },
            { icon: Backpack, label: '背包', id: 'inventory' },
-           { icon: Settings, label: '設定', id: 'settings' },
          ].map((item) => {
            const pos = navPositions[item.id] || { x: 0, y: 0 };
+           const isDisabledByKidnap = currentUser?.is_lost === true;
            return (
              <DraggableUIButton
                key={item.id}
                id={item.id}
                pos={pos}
                isDevMode={isDevMode}
-               onClick={() => !isDevMode && setActiveTab(item.id)}
-               whileHover={{ x: (navPositions[item.id]?.x || 0) + 5, scale: 1.1 }}
-               whileTap={{ scale: 0.95 }}
+               onClick={() => !isDevMode && !isDisabledByKidnap && setActiveTab(item.id)}
+               whileHover={isDisabledByKidnap ? {} : { x: (navPositions[item.id]?.x || 0) + 5, scale: 1.1 }}
+               whileTap={isDisabledByKidnap ? {} : { scale: 0.95 }}
                className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-lg backdrop-blur-sm pointer-events-auto
-                          ${activeTab === item.id ? 'bg-gray-700 border-white text-white' : 'bg-black/80 border-gray-700 text-gray-300 hover:border-gray-400 hover:bg-gray-800'}
+                          ${isDisabledByKidnap ? 'bg-black/40 border-gray-800 text-gray-700 cursor-not-allowed opacity-40' :
+                            activeTab === item.id ? 'bg-gray-700 border-white text-white' : 'bg-black/80 border-gray-700 text-gray-300 hover:border-gray-400 hover:bg-gray-800'}
                           ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
              >
                <item.icon className="w-3.5 h-3.5" />
@@ -716,6 +899,50 @@ export const MapTestView: React.FC = () => {
              </DraggableUIButton>
            );
          })}
+
+        {/* NPC Panel Button — only visible when user is an NPC */}
+        {currentUser?.npc_role && (
+          <DraggableUIButton
+            id="npc"
+            pos={navPositions['npc'] || { x: 0, y: 0 }}
+            isDevMode={isDevMode}
+            onClick={() => !isDevMode && setActiveTab('npc')}
+            whileHover={{ x: (navPositions['npc']?.x || 0) + 5, scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-lg backdrop-blur-sm pointer-events-auto
+              ${activeTab === 'npc' ? 'bg-gray-700 border-white text-white' : 'bg-black/80 border-gray-700 text-gray-300 hover:border-gray-400 hover:bg-gray-800'}
+              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            {!isDevMode && (
+              <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-xs text-gray-200 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 pointer-events-none">
+                NPC面板
+              </span>
+            )}
+          </DraggableUIButton>
+        )}
+
+        {/* Leader Tyranny Button — only visible when identity_role = 'leader' */}
+        {currentUser?.identity_role === 'leader' && (
+          <DraggableUIButton
+            id="tyranny"
+            pos={navPositions['tyranny'] || { x: 0, y: 0 }}
+            isDevMode={isDevMode}
+            onClick={() => !isDevMode && setActiveTab('tyranny')}
+            whileHover={{ x: (navPositions['tyranny']?.x || 0) + 5, scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className={`relative group flex items-center justify-center w-9 h-9 rounded-xl transition-colors shadow-lg backdrop-blur-sm pointer-events-auto
+              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+          >
+            <Crown className="w-3.5 h-3.5" />
+            {!isDevMode && (
+              <span className="absolute left-full ml-3 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none text-xs font-mono"
+                style={{ backgroundColor: '#1a0505', color: '#fca5a5', border: `1px solid ${FACTION_COLORS.leaderEvil}` }}>
+                {currentUser?.faction === 'Pure' ? '教廷面板' : '惡政面板'}
+              </span>
+            )}
+          </DraggableUIButton>
+        )}
       </div>
 
       {/* 2. Top Right: Currency & Profile */}
@@ -733,8 +960,8 @@ export const MapTestView: React.FC = () => {
         )}
 
         {/* Login/User Button */}
-        <button 
-          onClick={() => !currentUser && setShowLogin(true)}
+        <button
+          onClick={() => currentUser ? setCharacterCardTarget(currentUser.oc_name) : setShowLogin(true)}
           className="flex items-center gap-2 px-4 py-2 bg-gray-900/80 border border-gray-600 rounded-full hover:bg-gray-800 transition-all group"
         >
           <div className={`w-2 h-2 rounded-full ${currentUser ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
@@ -744,8 +971,69 @@ export const MapTestView: React.FC = () => {
           <User className="w-3 h-3 text-gray-400" />
         </button>
 
+        {/* Notification Bell */}
+        {currentUser && (
+          <div className="relative">
+            <button
+              onClick={() => setNotificationOpen(prev => !prev)}
+              className="relative p-2 bg-gray-900/80 border border-gray-600 rounded-full hover:bg-gray-800 hover:border-white transition-all text-gray-400 hover:text-white"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {notificationOpen && (
+              <div
+                className="absolute right-0 top-10 w-80 max-h-96 overflow-y-auto rounded border z-[80] flex flex-col"
+                style={{ backgroundColor: FACTION_COLORS.background, borderColor: '#374151' }}
+              >
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
+                  <span className="text-[11px] tracking-[0.2em] uppercase text-gray-500 font-mono">通知記錄</span>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => markAllRead()}
+                      className="text-[10px] text-gray-600 hover:text-gray-400 tracking-widest transition-colors"
+                    >
+                      全部已讀
+                    </button>
+                  )}
+                </div>
+                {notifications.filter(n => n.notification_type === 'private').length === 0 ? (
+                  <div className="px-4 py-6 text-center text-xs text-gray-700 italic font-mono">
+                    暫無通知
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-900">
+                    {notifications
+                      .filter(n => n.notification_type === 'private')
+                      .slice(0, 20)
+                      .map(n => (
+                        <div
+                          key={n.id}
+                          onClick={() => !n.is_read && markRead(n.id)}
+                          className={`px-4 py-3 cursor-pointer hover:bg-gray-900/50 transition-colors ${n.is_read ? 'opacity-40' : ''}`}
+                        >
+                          <p className="text-xs text-gray-300 font-mono leading-relaxed">{n.content}</p>
+                          <p className="text-[10px] text-gray-700 mt-1 font-mono">
+                            {new Date(n.created_at).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            {!n.is_read && <span className="ml-2 text-purple-500">●</span>}
+                          </p>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Top Right Settings Icon */}
-        <button 
+        <button
           onClick={() => setActiveTab('settings')}
           className="p-2 bg-gray-900/80 border border-gray-600 rounded-full hover:bg-gray-800 hover:border-white transition-all text-gray-400 hover:text-white"
         >
@@ -753,7 +1041,7 @@ export const MapTestView: React.FC = () => {
         </button>
 
         {/* Developer Mode Toggle */}
-        {currentUser && currentUser.oc_name === 'vonn' && (
+        {currentUser && (currentUser.oc_name || '').toLowerCase() === 'vonn' && (
           <button 
             onClick={() => setIsDevMode(!isDevMode)}
             className={`p-2 border rounded-full transition-all flex items-center gap-2 px-3
@@ -796,97 +1084,27 @@ export const MapTestView: React.FC = () => {
         <div className="flex flex-col gap-3 pointer-events-auto">
           
           {/* Breathing Icon (Gift System) */}
-          <div className="flex flex-col items-center gap-3">
-             {/* Inhale (Receive) */}
-             <DraggableUIButton
-               key="inhale"
-               id="inhale"
-               pos={inhalePos}
-               isDevMode={isDevMode}
-               onClick={() => !isDevMode && handleInhale()}
-               disabled={!hasUnclaimedGift}
-               className={`relative group w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500
-                 ${hasUnclaimedGift 
-                   ? 'bg-yellow-900/20 border-yellow-500/50 text-yellow-500 cursor-pointer hover:bg-yellow-900/40 hover:scale-110 shadow-[0_0_0_0px_rgba(250,204,21,0)] animate-[pulse_2s_infinite]' 
-                   : 'bg-gray-900/50 border-gray-700 text-gray-600 cursor-default grayscale opacity-50'}
-                 ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
-             >
-               <Gift className={`w-4 h-4 ${hasUnclaimedGift ? 'animate-pulse' : ''}`} />
-               
-               {/* Tooltip */}
-               {hasUnclaimedGift && !isDevMode && (
-                 <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 w-48 text-right opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                   <p className="text-xs text-yellow-200 font-serif tracking-widest bg-black/80 p-2 rounded border border-yellow-900/50">
-                     『捕捉到一段跨越荒原的頻率。』
-                   </p>
-                 </div>
-               )}
-             </DraggableUIButton>
+          
 
-             {/* Exhale (Send) */}
-             <DraggableUIButton
-               key="exhale"
-               id="exhale"
-               pos={exhalePos}
-               isDevMode={isDevMode}
-               onClick={() => !isDevMode && setExhaleModalOpen(true)}
-               className={`w-8 h-8 rounded-full border border-gray-600 bg-black/50 text-gray-400 hover:text-white hover:border-white transition-colors flex items-center justify-center backdrop-blur-sm
-                 ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
-               title="呼出贈禮"
-             >
-               <Feather className="w-3 h-3 transform rotate-180" />
-             </DraggableUIButton>
-          </div>
-
-          <DraggableUIButton
-            key="drift"
-            id="drift"
-            pos={driftTogglePos}
-            isDevMode={isDevMode}
-            onClick={() => !isDevMode && setIsDriftMode(!isDriftMode)}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mx-auto
-              ${isDriftMode ? 'bg-white text-black border-white' : 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800'}
-              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
-            title="荒原拾遺"
-          >
-            <Feather className="w-3.5 h-3.5" />
-          </DraggableUIButton>
-
-          <DraggableUIButton
-            key="fog"
-            id="fog"
-            pos={fogButtonPos}
-            isDevMode={isDevMode}
-            onClick={() => {
-              if (!isDevMode) {
-                setFogDispersing(true);
-              }
-            }}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mx-auto
-              ${fogActive ? 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800' : 'bg-gray-800/60 text-gray-600 border-gray-700'}
-              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
-            title="驅散迷霧"
-          >
-            <Cloud className="w-3.5 h-3.5" />
-          </DraggableUIButton>
-
-          <DraggableUIButton
-            key="overlay"
-            id="overlay"
-            pos={overlayBtnPos}
-            isDevMode={isDevMode}
-            onClick={() => {
-              if (!isDevMode) {
-                setOverlayEnabled(!overlayEnabled);
-              }
-            }}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mx-auto
-              ${overlayEnabled ? 'bg-white text-black border-white' : 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800'}
-              ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
-            title="設計疊圖"
-          >
-            <Settings className="w-3.5 h-3.5" />
-          </DraggableUIButton>
+          {isAdmin && (
+            <DraggableUIButton
+              key="overlay"
+              id="overlay"
+              pos={overlayBtnPos}
+              isDevMode={isDevMode}
+              onClick={() => {
+                if (!isDevMode) {
+                  setOverlayEnabled(!overlayEnabled);
+                }
+              }}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-lg backdrop-blur-sm mx-auto
+                ${overlayEnabled ? 'bg-white text-black border-white' : 'bg-gray-900/80 text-gray-300 border-gray-600 hover:text-white hover:bg-gray-800'}
+                ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+              title="設計疊圖"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </DraggableUIButton>
+          )}
 
           {/* Apostate Icon (Only if role is apostate) */}
            {currentUser && currentUser.identity_role === 'apostate' && (
@@ -994,81 +1212,36 @@ export const MapTestView: React.FC = () => {
       </div>
 
       {/* 9. Exhale Modal */}
-      <AnimatePresence>
-        {exhaleModalOpen && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-            onClick={() => setExhaleModalOpen(false)}
-          >
-            <div className="w-[450px] bg-[#1a1a1a] border border-gray-700 p-8 shadow-2xl relative" onClick={e => e.stopPropagation()}>
-              <h3 className="text-xl font-serif text-gray-200 mb-6 text-center tracking-widest italic">BREATHING: EXHALE</h3>
-              
-              <div className="space-y-4 mb-8">
-                <p className="text-xs text-gray-500 text-center font-mono mb-4">選擇一份微薄的贈禮，讓它隨風而去...</p>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {BREATHING_ITEMS.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => setSelectedExhaleItem(item.id)}
-                      className={`p-3 border text-xs text-left transition-all flex justify-between items-center
-                        ${selectedExhaleItem === item.id 
-                          ? 'border-yellow-500 bg-yellow-900/20 text-yellow-100' 
-                          : 'border-gray-800 bg-black/50 text-gray-400 hover:border-gray-600'}`}
-                    >
-                      <span>{item.name}</span>
-                      <span className="text-[10px] text-gray-500 font-mono">-{item.cost} G</span>
-                    </button>
-                  ))}
-                </div>
-
-                <textarea
-                  value={exhaleMessage}
-                  onChange={(e) => setExhaleMessage(e.target.value)}
-                  placeholder="附上一句低語 (選填)..."
-                  className="w-full bg-black border border-gray-700 p-3 text-gray-300 text-xs font-serif mt-4 h-20 resize-none focus:border-gray-500 transition-colors"
-                />
-              </div>
-
-              <div className="flex justify-center">
-                <button 
-                  onClick={handleExhale}
-                  disabled={!selectedExhaleItem}
-                  className={`px-8 py-2 text-xs font-bold tracking-widest uppercase transition-colors border
-                    ${selectedExhaleItem 
-                      ? 'bg-white text-black border-white hover:bg-gray-200' 
-                      : 'bg-gray-900 text-gray-600 border-gray-800 cursor-not-allowed'}`}
-                >
-                  呼出 (Send)
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      
 
       {/* 5. Modals System */}
       <AnimatePresence>
         {activeTab && activeTab !== 'none' && (
           <div className="fixed inset-0 z-50 modal-backdrop flex items-center justify-start pl-20" style={{ pointerEvents: 'auto' }}>
-            <motion.div 
+            <motion.div
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -50, opacity: 0 }}
-              className="w-[450px] bg-black/95 border border-gray-800 backdrop-blur-md flex flex-col p-6 shadow-2xl h-[calc(100vh-160px)]"
+              className="w-[450px] backdrop-blur-md flex flex-col p-6 shadow-2xl h-[calc(100vh-160px)]"
+              style={{
+                backgroundColor: activeTab === 'tyranny' ? 'rgba(5,0,0,0.97)' : 'rgba(0,0,0,0.95)',
+                border: activeTab === 'tyranny' ? `1px dashed ${FACTION_COLORS.leaderEvil}` : '1px solid rgb(31,41,55)',
+                boxShadow: activeTab === 'tyranny' ? `0 0 40px ${FACTION_COLORS.leaderEvil}22, inset 0 0 60px ${FACTION_COLORS.leaderEvil}08` : undefined,
+              }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
-              <h3 className="text-xl tracking-[0.2em] text-gray-300 font-serif italic">
+              <div className="flex justify-between items-center mb-6 pb-4"
+                style={{ borderBottom: activeTab === 'tyranny' ? `1px dashed ${FACTION_COLORS.leaderEvil}66` : '1px solid rgb(31,41,55)' }}>
+              <h3 className="text-xl tracking-[0.2em] font-serif italic"
+                style={{ color: activeTab === 'tyranny' ? '#dc2626' : 'rgb(209,213,219)' }}>
                 {activeTab === 'announcement' && '觀測日誌'}
                 {activeTab === 'quest' && '任務徵集'}
                 {activeTab === 'daily' && '靈魂足跡'}
                 {activeTab === 'collection' && '萬象圖鑑'}
                 {activeTab === 'inventory' && '混沌背包'}
                 {activeTab === 'settings' && '儀式設定'}
+                {activeTab === 'npc' && 'NPC面板'}
+                {activeTab === 'tyranny' && (currentUser?.faction === 'Pure' ? '教廷面板' : '惡政面板')}
               </h3>
               <button onClick={() => setActiveTab(null)} className="text-gray-500 hover:text-white transition-colors">
                 <X className="w-4 h-4" />
@@ -1197,7 +1370,7 @@ export const MapTestView: React.FC = () => {
                       className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors
                         ${dailyTab === 'echoes' ? 'text-white border-b border-white' : 'text-gray-600 hover:text-gray-400'}`}
                     >
-                      靈魂足跡
+                      小道消息
                     </button>
                     <button
                       onClick={() => setDailyTab('snippets')}
@@ -1209,27 +1382,74 @@ export const MapTestView: React.FC = () => {
                   </div>
 
                   {dailyTab === 'echoes' && (
-                    <div className="space-y-6 relative flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                      <div className="absolute left-1 top-0 bottom-0 w-[1px] bg-gradient-to-b from-gray-700 via-gray-900 to-transparent"></div>
-                      {echoLogs
-                        .filter(log => log.faction === playerFaction)
-                        .map((log, index) => (
-                        <div key={log.id} 
-                            className="pl-6 relative"
-                            style={{ opacity: Math.max(0.3, 1 - index * 0.15) }} // Time Fading Effect
-                        >
-                          <div className="absolute left-0 top-1.5 w-2 h-2 bg-gray-800 rounded-full border border-gray-600 -translate-x-[3px]"></div>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-xs font-mono text-gray-500">{log.timestamp}</span>
-                          </div>
-                          <p className="text-sm text-gray-400 font-serif leading-relaxed">
-                            {log.content}
-                          </p>
-                        </div>
-                      ))}
-                      {echoLogs.filter(log => log.faction === playerFaction).length === 0 && (
-                        <p className="text-center text-gray-700 italic mt-10">尚無任何足跡...</p>
+                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-px">
+                      {gazetteLoading && (
+                        <p className="text-center text-gray-700 text-xs tracking-widest animate-pulse mt-10">
+                          載入中...
+                        </p>
                       )}
+                      {!gazetteLoading && gazetteEntries.length === 0 && (
+                        <p className="text-center text-gray-700 italic text-sm mt-10">
+                          尚無任何消息流傳...
+                        </p>
+                      )}
+                      {gazetteEntries.map((entry) => {
+                        const timeStr = new Date(entry.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                        const accentTurbid = FACTION_COLORS.Turbid.highlight;
+                        const accentPure = FACTION_COLORS.Pure.highlight;
+                        const leaderAccent = entry.faction === 'Turbid' ? accentTurbid : accentPure;
+
+                        if (entry.gazette_type === 'leader') {
+                          return (
+                            <div
+                              key={entry.id}
+                              className="px-3 py-2.5 rounded-sm"
+                              style={{
+                                borderLeft: `3px solid ${leaderAccent}`,
+                                backgroundColor: `${leaderAccent}08`,
+                              }}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-mono tracking-widest" style={{ color: leaderAccent }}>
+                                  👑 領主公告
+                                </span>
+                                <span className="text-[10px] font-mono text-gray-700">{timeStr}</span>
+                              </div>
+                              <p className="text-sm leading-relaxed" style={{ color: leaderAccent }}>
+                                {entry.gazette_content}
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        if (entry.gazette_type === 'system') {
+                          return (
+                            <div key={entry.id} className="px-3 py-2 border-b border-gray-900">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs text-gray-600 italic leading-relaxed">
+                                  {entry.gazette_content}
+                                </p>
+                                <span className="text-[10px] font-mono text-gray-800 ml-3 shrink-0">{timeStr}</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // gazette_type === 'mission'
+                        const missionText = entry.gazette_content
+                          || (entry.oc_name && entry.landmark_id
+                            ? `${entry.oc_name} 在 ${entry.landmark_id} 完成了任務`
+                            : `${entry.oc_name || '未知玩家'} 完成了任務`);
+
+                        return (
+                          <div key={entry.id} className="px-3 py-2 border-b border-gray-900 flex items-start justify-between gap-3">
+                            <p className="text-sm text-gray-400 leading-relaxed">
+                              {missionText}
+                            </p>
+                            <span className="text-[10px] font-mono text-gray-700 shrink-0 mt-0.5">{timeStr}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -1312,7 +1532,7 @@ export const MapTestView: React.FC = () => {
                     <div className="flex-1 flex items-center gap-2">
                        <Coins className="w-3 h-3 text-yellow-500" />
                        <div>
-                         <div className="text-[10px] text-gray-500 uppercase">殘幣</div>
+                        <div className="text-[10px] text-gray-500 uppercase">貨幣</div>
                          <div className="text-lg font-mono text-gray-200">{currentUser?.coins || 0}</div>
                        </div>
                     </div>
@@ -1330,12 +1550,10 @@ export const MapTestView: React.FC = () => {
                     <div className="grid grid-cols-3 gap-3">
                        {currentUser.inventory.map((item, i) => (
                          <div key={i} className="aspect-square bg-gray-900 border border-gray-800 flex items-center justify-center relative group">
-                           {/* Item Placeholder */}
                            <div className="w-8 h-8 bg-gray-700 rounded-full opacity-50"></div>
                            <span className="absolute bottom-1 right-1 text-[8px] text-gray-500">x1</span>
                          </div>
                        ))}
-                       {/* Fill remaining slots with empty boxes */}
                        {Array.from({ length: Math.max(0, MAX_INVENTORY_SIZE - (currentUser.inventory.length)) }).map((_, i) => (
                          <div key={`empty-${i}`} className="aspect-square bg-black/30 border border-gray-900"></div>
                        ))}
@@ -1350,7 +1568,112 @@ export const MapTestView: React.FC = () => {
                        </p>
                     </div>
                   )}
+
+                  <div className="mt-8 border-t border-gray-800 pt-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs tracking-[0.2em] uppercase text-gray-400">市集</span>
+                      <button
+                        onClick={fetchMarket}
+                        className="text-[10px] text-gray-500 hover:text-gray-300"
+                      >
+                        重新整理
+                      </button>
+                    </div>
+                    {marketError && <p className="text-[11px] text-red-400 mb-2">{marketError}</p>}
+                    {marketLoading ? (
+                      <p className="text-xs text-gray-600">載入中...</p>
+                    ) : marketSlots.length === 0 ? (
+                      <p className="text-xs text-gray-600 italic">目前沒有可購買的商品</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {marketSlots.map(slot => {
+                          const displayName = slot.custom_name || slot.item_id || slot.item_type;
+                          const isSelf = slot.seller_oc === currentUser?.oc_name;
+                          const disabled = buyingSlotId === slot.id || isSelf || !!currentUser?.npc_role;
+                          return (
+                            <div key={slot.id} className="flex items-center justify-between gap-3 p-3 border border-gray-800 rounded bg-black/40">
+                              <div className="min-w-0">
+                                <p className="text-sm text-gray-300 truncate">{displayName}</p>
+                                <p className="text-[10px] text-gray-600">{slot.item_type}</p>
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <span className="text-xs text-gray-400 font-mono">{slot.price} 貨幣</span>
+                                <button
+                                  onClick={() => handleBuyItem(slot)}
+                                  disabled={disabled}
+                                  className={`text-[10px] px-3 py-1 border rounded transition-colors ${disabled ? 'border-gray-800 text-gray-600 cursor-not-allowed' : 'border-gray-600 text-gray-300 hover:text-white hover:border-gray-400'}`}
+                                >
+                                  {buyingSlotId === slot.id ? '處理中' : isSelf ? '自家商品' : currentUser?.npc_role ? '不可購買' : '購買'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-8 border-t border-gray-800 pt-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs tracking-[0.2em] uppercase text-gray-400">寵物商店</span>
+                      <button
+                        onClick={fetchPets}
+                        className="text-[10px] text-gray-500 hover:text-gray-300"
+                      >
+                        重新整理
+                      </button>
+                    </div>
+                    {petsError && <p className="text-[11px] text-red-400 mb-2">{petsError}</p>}
+                    {petsLoading ? (
+                      <p className="text-xs text-gray-600">載入中...</p>
+                    ) : shopPets.length === 0 ? (
+                      <p className="text-xs text-gray-600 italic">目前沒有可購買的寵物</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {shopPets.map(p => {
+                          const disabled = buyingPetId === p.id || !!currentUser?.npc_role;
+                          return (
+                            <div key={p.id} className="flex items-center justify-between gap-3 p-3 border border-gray-800 rounded bg-black/40">
+                              <div className="min-w-0">
+                                <p className="text-sm text-gray-300 truncate">{p.name}</p>
+                                <p className="text-[10px] text-gray-600 truncate">{p.description}</p>
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <span className="text-xs text-gray-400 font-mono">{p.price} 貨幣</span>
+                                <button
+                                  onClick={() => handleBuyPet(p)}
+                                  disabled={disabled}
+                                  className={`text-[10px] px-3 py-1 border rounded transition-colors ${disabled ? 'border-gray-800 text-gray-600 cursor-not-allowed' : 'border-gray-600 text-gray-300 hover:text-white hover:border-gray-400'}`}
+                                >
+                                  {buyingPetId === p.id ? '處理中' : currentUser?.npc_role ? '不可購買' : '購買'}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
+              )}
+
+              {/* --- NPC Panel --- */}
+              {activeTab === 'npc' && currentUser && currentUser.npc_role && (
+                <div className="py-2">
+                  <NPCPanel
+                    currentUser={currentUser}
+                    onUpdate={(updates) => setCurrentUser(prev => prev ? { ...prev, ...updates } : prev)}
+                  />
+                </div>
+              )}
+
+              {/* --- 領主惡政面板 --- */}
+              {activeTab === 'tyranny' && currentUser?.identity_role === 'leader' && (
+                <LeaderTyrannyPanel
+                  leaderOcName={currentUser.oc_name}
+                  chapter={CURRENT_CHAPTER}
+                  faction={currentUser.faction}
+                />
               )}
 
               {/* --- 設定 (Settings) --- */}
@@ -1448,16 +1771,7 @@ export const MapTestView: React.FC = () => {
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     消耗: <span className={currentUser && currentUser.coins >= 5 ? 'text-yellow-500' : 'text-red-500'}>5</span> <Coins className="w-2 h-2 text-yellow-500" />
                   </span>
-                  <button 
-                    onClick={handlePlaceFragment}
-                    disabled={!currentUser || currentUser.coins < 5}
-                    className={`px-6 py-2 text-xs font-bold tracking-widest transition-colors
-                      ${!currentUser || currentUser.coins < 5 
-                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                        : 'bg-white text-black hover:bg-gray-200'}`}
-                  >
-                    遺落此處
-                  </button>
+                  <div className="px-6 py-2 text-xs font-mono text-gray-500">此功能已停用</div>
                 </div>
               </div>
             </div>
@@ -1465,39 +1779,7 @@ export const MapTestView: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 7. Drift Bottle Viewer Modal */}
-      <AnimatePresence>
-        {selectedFragment && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-            onClick={() => setSelectedFragment(null)}
-          >
-            <div className="w-[400px] bg-[#1a1a1a] border border-gray-600 p-8 shadow-2xl relative text-center" onClick={e => e.stopPropagation()}>
-              <Feather className="w-6 h-6 text-gray-400 mx-auto mb-6" />
-              
-              <div className="space-y-4 mb-8">
-                <p className="text-2xl font-serif text-gray-200 leading-relaxed tracking-widest">
-                  「{selectedFragment.content}」
-                </p>
-                <div className="w-8 h-[1px] bg-gray-600 mx-auto"></div>
-                <p className="text-xs text-gray-500 font-mono uppercase">
-                  FROM: {selectedFragment.sender}
-                </p>
-              </div>
-
-              <button 
-                onClick={() => alert('請前往 QQ 群聊尋找此人。')}
-                className="w-full py-3 border border-gray-700 text-gray-400 text-xs tracking-widest hover:text-white hover:border-gray-500 transition-colors uppercase"
-              >
-                前往 QQ 群聊尋找此人
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      
 
       <LoginModal
         visible={showLogin}
@@ -1507,6 +1789,64 @@ export const MapTestView: React.FC = () => {
         onPasswordChange={setInputPassword}
         onSubmit={handleLogin}
       />
+
+      {/* 首次登入：設定密碼 modal */}
+      <AnimatePresence>
+        {showSetPassword && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          >
+            <div className="w-[400px] p-8 border border-gray-800 bg-black relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+              <h3 className="text-xl font-light text-center text-gray-200 tracking-[0.3em] mb-3 font-serif">
+                SET PASSCODE
+              </h3>
+              <p className="text-xs text-center text-gray-500 mb-8 font-mono leading-relaxed px-4">
+                首次連結偵測。<br />
+                請設定你的專屬四位數字密鑰，<br />
+                此後將以此作為唯一憑證。
+              </p>
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-500 uppercase tracking-widest">New Passcode</label>
+                  <input
+                    type="password"
+                    maxLength={4}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono tracking-[0.5em]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-500 uppercase tracking-widest">Confirm Passcode</label>
+                  <input
+                    type="password"
+                    maxLength={4}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="••••"
+                    className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono tracking-[0.5em]"
+                  />
+                </div>
+                {setPasswordError && (
+                  <p className="text-xs text-red-400 font-mono">{setPasswordError}</p>
+                )}
+                <button
+                  onClick={handleSetPassword}
+                  className="w-full py-3 mt-2 bg-gray-200 text-black text-sm font-bold tracking-widest hover:bg-white transition-colors uppercase"
+                >
+                  Confirm & Connect
+                </button>
+              </div>
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {currentUser && (
         <>
@@ -1529,12 +1869,32 @@ export const MapTestView: React.FC = () => {
       )}
 
       {/* Admin Apostate Control Panel */}
-      {currentUser && currentUser.oc_name === 'vonn' && (
-        <AdminApostateControl 
+      {currentUser && (currentUser.oc_name || '').toLowerCase() === 'vonn' && (
+        <AdminApostateControl
           currentUser={currentUser}
           onUpdate={() => {
             // Optional: Refresh logic if needed
           }}
+        />
+      )}
+
+      {/* Kidnap Popup — 被綁架時全螢幕遮罩 */}
+      {popupNotification && currentUser?.is_lost && (
+        <KidnapPopup
+          notification={popupNotification}
+          lostUntil={currentUser.lost_until ?? null}
+          onMarkRead={() => markRead(popupNotification.id)}
+          onOpenCharacterCard={() => setCharacterCardTarget(currentUser.oc_name)}
+        />
+      )}
+
+      {/* Character Card Modal */}
+      {characterCardTarget && currentUser && (
+        <CharacterCard
+          targetOcName={characterCardTarget}
+          viewerFaction={currentUser.faction}
+          currentUserOcName={currentUser.oc_name}
+          onClose={() => setCharacterCardTarget(null)}
         />
       )}
 
