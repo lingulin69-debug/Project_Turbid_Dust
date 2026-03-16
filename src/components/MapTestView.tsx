@@ -1382,18 +1382,27 @@ export const MapTestView: React.FC = () => {
                   </div>
 
                   {dailyTab === 'echoes' && (
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-px">
+                    <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar" style={{ background: 'linear-gradient(180deg, #0d0900 0%, #0a0700 100%)' }}>
+                      {/* Art Deco header rule */}
+                      <div className="flex items-center gap-2 mb-4 px-2 pt-1">
+                        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, #e8813a55, #e8813a, #e8813a55, transparent)' }} />
+                        <span className="text-[9px] tracking-[0.35em] uppercase font-mono" style={{ color: '#c9a84c' }}>GAZETTE</span>
+                        <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, #e8813a55, #e8813a, #e8813a55, transparent)' }} />
+                      </div>
+
                       {gazetteLoading && (
-                        <p className="text-center text-gray-700 text-xs tracking-widest animate-pulse mt-10">
-                          載入中...
+                        <p className="text-center text-xs tracking-[0.3em] animate-pulse mt-10 font-mono" style={{ color: '#4a3520' }}>
+                          ◈ 傳訊中 ◈
                         </p>
                       )}
                       {!gazetteLoading && gazetteEntries.length === 0 && (
-                        <p className="text-center text-gray-700 italic text-sm mt-10">
-                          尚無任何消息流傳...
-                        </p>
+                        <div className="text-center mt-10 space-y-2">
+                          <div className="text-[10px] tracking-[0.4em] uppercase font-mono" style={{ color: '#2a1e10' }}>— NO RECORDS —</div>
+                          <p className="text-xs italic" style={{ color: '#3a2a18' }}>尚無任何消息流傳...</p>
+                        </div>
                       )}
-                      {gazetteEntries.map((entry) => {
+                      <div className="space-y-1 px-1 pb-4">
+                      {gazetteEntries.map((entry, idx) => {
                         const timeStr = new Date(entry.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
                         const accentTurbid = FACTION_COLORS.Turbid.highlight;
                         const accentPure = FACTION_COLORS.Pure.highlight;
@@ -1403,19 +1412,22 @@ export const MapTestView: React.FC = () => {
                           return (
                             <div
                               key={entry.id}
-                              className="px-3 py-2.5 rounded-sm"
+                              className="relative px-4 py-3"
                               style={{
+                                background: `linear-gradient(135deg, ${leaderAccent}12 0%, #1a0e0500 100%)`,
+                                border: `1px solid ${leaderAccent}40`,
                                 borderLeft: `3px solid ${leaderAccent}`,
-                                backgroundColor: `${leaderAccent}08`,
                               }}
                             >
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-mono tracking-widest" style={{ color: leaderAccent }}>
-                                  👑 領主公告
+                              {/* corner ornament */}
+                              <div className="absolute top-1 right-2 text-[8px] font-mono tracking-[0.4em]" style={{ color: `${leaderAccent}60` }}>◆◆◆</div>
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-[9px] font-mono tracking-[0.3em] uppercase px-1.5 py-0.5" style={{ color: leaderAccent, border: `1px solid ${leaderAccent}50`, backgroundColor: `${leaderAccent}12` }}>
+                                  ✦ 領主敕令
                                 </span>
-                                <span className="text-[10px] font-mono text-gray-700">{timeStr}</span>
+                                <span className="text-[9px] font-mono" style={{ color: `${leaderAccent}60` }}>{timeStr}</span>
                               </div>
-                              <p className="text-sm leading-relaxed" style={{ color: leaderAccent }}>
+                              <p className="text-sm leading-relaxed font-mono" style={{ color: leaderAccent }}>
                                 {entry.gazette_content}
                               </p>
                             </div>
@@ -1424,13 +1436,15 @@ export const MapTestView: React.FC = () => {
 
                         if (entry.gazette_type === 'system') {
                           return (
-                            <div key={entry.id} className="px-3 py-2 border-b border-gray-900">
-                              <div className="flex items-center justify-between">
-                                <p className="text-xs text-gray-600 italic leading-relaxed">
+                            <div key={entry.id} className="px-3 py-2.5 flex items-start justify-between gap-3"
+                              style={{ borderBottom: '1px solid #1a1200' }}>
+                              <div className="flex items-start gap-2">
+                                <span className="text-[10px] mt-0.5 shrink-0" style={{ color: '#3a2a18' }}>◇</span>
+                                <p className="text-[11px] font-mono leading-relaxed italic" style={{ color: '#5a4428' }}>
                                   {entry.gazette_content}
                                 </p>
-                                <span className="text-[10px] font-mono text-gray-800 ml-3 shrink-0">{timeStr}</span>
                               </div>
+                              <span className="text-[9px] font-mono shrink-0 mt-0.5" style={{ color: '#2a1e10' }}>{timeStr}</span>
                             </div>
                           );
                         }
@@ -1442,14 +1456,32 @@ export const MapTestView: React.FC = () => {
                             : `${entry.oc_name || '未知玩家'} 完成了任務`);
 
                         return (
-                          <div key={entry.id} className="px-3 py-2 border-b border-gray-900 flex items-start justify-between gap-3">
-                            <p className="text-sm text-gray-400 leading-relaxed">
-                              {missionText}
-                            </p>
-                            <span className="text-[10px] font-mono text-gray-700 shrink-0 mt-0.5">{timeStr}</span>
+                          <div key={entry.id}
+                            className="px-3 py-3 flex items-start justify-between gap-3"
+                            style={{
+                              borderBottom: '1px solid #1a1200',
+                              background: idx % 2 === 0 ? 'transparent' : '#0f0b0005',
+                            }}>
+                            <div className="flex items-start gap-2">
+                              <span className="text-[10px] mt-0.5 shrink-0 font-mono" style={{ color: '#e8813a60' }}>▸</span>
+                              <p className="text-xs font-mono leading-relaxed" style={{ color: '#c8a878' }}>
+                                {missionText}
+                              </p>
+                            </div>
+                            <span className="text-[9px] font-mono shrink-0 mt-0.5" style={{ color: '#5a3e20' }}>{timeStr}</span>
                           </div>
                         );
                       })}
+                      </div>
+
+                      {/* Art Deco footer rule */}
+                      {gazetteEntries.length > 0 && (
+                        <div className="flex items-center gap-2 px-2 pb-2">
+                          <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, #e8813a30, transparent)' }} />
+                          <span className="text-[8px] tracking-[0.4em] font-mono" style={{ color: '#3a2a18' }}>◆ FIN ◆</span>
+                          <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, #e8813a30, transparent)' }} />
+                        </div>
+                      )}
                     </div>
                   )}
 

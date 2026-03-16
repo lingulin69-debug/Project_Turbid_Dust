@@ -323,8 +323,79 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           </button>
         </div>
 
+        {/* Illustration Panel — Art Deco portrait area */}
+        {(() => {
+          const isImageUrl = userData.current_outfit?.startsWith('http');
+          return (
+            <div className="relative overflow-hidden" style={{ height: '180px' }}>
+              {isImageUrl ? (
+                <img
+                  src={userData.current_outfit!}
+                  alt={displayName}
+                  className="w-full h-full object-cover object-top"
+                />
+              ) : (
+                /* Decorative Art Deco placeholder */
+                <div
+                  className="w-full h-full flex flex-col items-center justify-center relative"
+                  style={{
+                    background: `linear-gradient(160deg, ${style.bg}cc 0%, ${FACTION_COLORS.background} 60%, ${style.bg}44 100%)`,
+                  }}
+                >
+                  {/* Grid lines */}
+                  <div className="absolute inset-0" style={{
+                    backgroundImage: `
+                      linear-gradient(${style.accent}08 1px, transparent 1px),
+                      linear-gradient(90deg, ${style.accent}08 1px, transparent 1px)
+                    `,
+                    backgroundSize: '24px 24px',
+                  }} />
+                  {/* Top ornament */}
+                  <div className="absolute top-3 left-0 right-0 flex items-center gap-2 px-4">
+                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${style.accent}60)` }} />
+                    <span className="text-[8px] tracking-[0.5em] font-mono" style={{ color: `${style.accent}80` }}>◆◆◆</span>
+                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${style.accent}60, transparent)` }} />
+                  </div>
+                  {/* Central monogram */}
+                  <div className="relative z-10 flex flex-col items-center gap-2">
+                    <div className="relative w-20 h-20 flex items-center justify-center">
+                      {/* Diamond frame */}
+                      <div className="absolute inset-0" style={{
+                        border: `1px solid ${style.accent}40`,
+                        transform: 'rotate(45deg)',
+                        background: `${style.bg}50`,
+                      }} />
+                      <div className="absolute inset-2" style={{
+                        border: `1px solid ${style.accent}25`,
+                        transform: 'rotate(45deg)',
+                      }} />
+                      <span className="relative z-10 text-2xl font-bold" style={{ color: style.accent }}>
+                        {(userData.alias_name || userData.oc_name).charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="text-[9px] tracking-[0.5em] uppercase font-mono" style={{ color: `${style.accent}70` }}>
+                      OBSERVER
+                    </div>
+                  </div>
+                  {/* Bottom ornament */}
+                  <div className="absolute bottom-3 left-0 right-0 flex items-center gap-2 px-4">
+                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${style.accent}40)` }} />
+                    <span className="text-[8px] tracking-[0.4em] font-mono" style={{ color: `${style.accent}50` }}>
+                      {userData.faction === 'Turbid' ? 'TURBID' : 'PURE'}
+                    </span>
+                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${style.accent}40, transparent)` }} />
+                  </div>
+                </div>
+              )}
+              {/* Gradient fade to body */}
+              <div className="absolute bottom-0 left-0 right-0 h-12"
+                style={{ background: `linear-gradient(to bottom, transparent, ${FACTION_COLORS.background})` }} />
+            </div>
+          );
+        })()}
+
         {/* Body */}
-        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div className="p-5 space-y-4 max-h-[50vh] overflow-y-auto">
 
           {/* Alias + OC Name */}
           <div className="space-y-1">
