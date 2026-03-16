@@ -20,27 +20,52 @@ export const useNotifications = (ocName: string | null) => {
   const fetchNotifications = useCallback(async () => {
     if (!ocName) return;
     try {
-      const res = await fetch(
-        `${API_BASE}/notifications?oc_name=${encodeURIComponent(ocName)}`
-      );
+      // Fetch private notifications
+      const res = await fetch(`${API_BASE}/notifications/private/${encodeURIComponent(ocName)}`);
       if (!res.ok) return;
-      const data: PlayerNotification[] = await res.json();
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
-      setPopupNotification(
-        data.find(n => n.notification_type === 'popup' && !n.is_read) ?? null
+      const data = await res.json();
+      const privates: PlayerNotification[] = (data.notifications || data || []).map((n: any) => ({
+        id: n.id,
+        target_oc: ocName,
+        content: n.content,
+        notification_type: 'private' as const,
+        is_read: n.is_read ?? false,
+        created_at: n.created_at,
+      }));
+
+      // Fetch popup notifications
+      const popupRes = await fetch(`${API_BASE}/notifications/popup/${encodeURIComponent(ocName)}`);
+      let popups: PlayerNotification[] = [];
+      if (popupRes.ok) {
+        const popupData = await popupRes.json();
+        popups = (popupData.popup_notifications || []).map((n: any) => ({
+          id: n.id,
+          target_oc: ocName,
+          content: n.content,
+          notification_type: 'popup' as const,
+          is_read: false,
+          created_at: n.timestamp || n.created_at,
+        }));
+      }
+
+      const all = [...privates, ...popups].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
+      setNotifications(all);
+      setUnreadCount(all.filter(n => !n.is_read).length);
+      setPopupNotification(popups.find(n => !n.is_read) ?? null);
     } catch (_) {
       // silent fail
     }
   }, [ocName]);
 
   const markRead = useCallback(async (notificationId: string) => {
+    if (!ocName) return;
     try {
-      await fetch(`${API_BASE}/notifications/read`, {
+      await fetch(`${API_BASE}/notifications/mark-read`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notification_id: notificationId }),
+        body: JSON.stringify({ oc_name: ocName, notification_id: notificationId }),
       });
       setNotifications(prev =>
         prev.map(n => (n.id === notificationId ? { ...n, is_read: true } : n))
@@ -50,7 +75,7 @@ export const useNotifications = (ocName: string | null) => {
     } catch (_) {
       // silent fail
     }
-  }, []);
+  }, [ocName]);
 
   const markAllRead = useCallback(async () => {
     if (!ocName) return;

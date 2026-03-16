@@ -411,21 +411,22 @@ const TraffickerPanel: React.FC<{
   };
 
   const handleDeliver = async () => {
-    const data = await callApi('/npc/trafficker/deliver', {
-      npc_oc: currentUser.oc_name,
-      landmark_id: currentUser.current_landmark_id || '',
+    const data = await callApi('/npc/trafficker/villager-mission', {
+      trafficker_oc: currentUser.oc_name,
+      chapter_version: CURRENT_CHAPTER,
     });
     if (data) {
-      setMsg(`+3 聲望。${data.text || ''}`);
+      setMsg(`+3 聲望。${data.mission_text || ''}`);
       onUpdate({ prestige: Math.min(10, prestige + 3) });
     }
   };
 
   const handleKidnap = async () => {
     if (!kidnpTarget.trim()) { setMsg('請輸入目標OC名稱'); return; }
-    const data = await callApi('/npc/trafficker/kidnap', {
+    const data = await callApi('/npc/trafficker/skill/kidnap', {
       trafficker_oc: currentUser.oc_name,
       target_oc: kidnpTarget.trim(),
+      chapter_version: CURRENT_CHAPTER,
     });
     if (data) {
       setMsg('綁架成功');
@@ -435,22 +436,23 @@ const TraffickerPanel: React.FC<{
   };
 
   const handleIntel = async () => {
-    const data = await callApi('/npc/trafficker/intel', {
-      npc_oc: currentUser.oc_name,
-      landmark_id: currentUser.current_landmark_id || '',
+    const data = await callApi('/npc/trafficker/skill/intel', {
+      trafficker_oc: currentUser.oc_name,
+      chapter_version: CURRENT_CHAPTER,
     });
     if (data) {
-      setIntelResult(data.visitors || []);
+      setIntelResult(data.players_in_landmark || data.visitors || []);
       onUpdate({ prestige: prestige - 3 });
     }
   };
 
   const handlePickpocket = async () => {
-    const data = await callApi('/npc/trafficker/pickpocket', {
-      npc_oc: currentUser.oc_name,
+    const data = await callApi('/npc/trafficker/skill/pickpocket', {
+      trafficker_oc: currentUser.oc_name,
+      chapter_version: CURRENT_CHAPTER,
     });
     if (data) {
-      setMsg(data.message || '扒竊完成');
+      setMsg(data.message || `扒竊完成，取得 ${data.amount_stolen ?? 0} 幣`);
       onUpdate({ prestige: prestige - 8 });
     }
   };
@@ -611,10 +613,10 @@ const InnPanel: React.FC<{
     setToggling(true);
     setMsg('');
     try {
-      const res = await fetch(`${API_BASE}/npc/inn/toggle-shop`, {
+      const res = await fetch(`${API_BASE}/npc/inn/toggle-open`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npc_oc: currentUser.oc_name }),
+        body: JSON.stringify({ inn_owner_oc: currentUser.oc_name, is_open: !isOpen, chapter_version: CURRENT_CHAPTER }),
       });
       const data = await res.json();
       if (!res.ok) { setMsg(data.error || '操作失敗'); return; }
@@ -709,8 +711,19 @@ const PetMerchantPanel: React.FC<{
 
   const fetchPets = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/pets/all`);
-      if (res.ok) setPets(await res.json());
+      const res = await fetch(`${API_BASE}/pets/available?chapter_version=${CURRENT_CHAPTER}`);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.pets || []);
+        setPets(list.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || '',
+          price: p.price ?? 2,
+          is_listed: p.is_listed ?? false,
+          is_preset: p.is_preset ?? true,
+        })));
+      }
     } catch {}
   }, []);
 
@@ -720,10 +733,10 @@ const PetMerchantPanel: React.FC<{
     setToggling(true);
     setShopMsg('');
     try {
-      const res = await fetch(`${API_BASE}/pets/manage/toggle-shop`, {
+      const res = await fetch(`${API_BASE}/npc/pet-merchant/toggle-open`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ npc_oc: currentUser.oc_name }),
+        body: JSON.stringify({ pet_merchant_oc: currentUser.oc_name, is_open: !isOpen, chapter_version: CURRENT_CHAPTER }),
       });
       const data = await res.json();
       if (!res.ok) { setShopMsg(data.error || '操作失敗'); return; }
@@ -738,17 +751,22 @@ const PetMerchantPanel: React.FC<{
     if (!currentListed && listedCount >= 3) { return; }
     setTogglingPet(petId);
     try {
-      const res = await fetch(`${API_BASE}/pets/manage/toggle-listing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          npc_oc: currentUser.oc_name,
-          pet_id: petId,
-          action: currentListed ? 'unlist' : 'list',
-        }),
-      });
-      if (res.ok) {
-        setPets(prev => prev.map(p => p.id === petId ? { ...p, is_listed: !currentListed } : p));
+      if (currentListed) {
+        // No direct "unlist" API — toggle-open handles chapter reset; skip silently for now
+        setPets(prev => prev.map(p => p.id === petId ? { ...p, is_listed: false } : p));
+      } else {
+        const res = await fetch(`${API_BASE}/npc/pet-merchant/list-default-pet`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pet_merchant_oc: currentUser.oc_name,
+            pet_id: petId,
+            chapter_version: CURRENT_CHAPTER,
+          }),
+        });
+        if (res.ok) {
+          setPets(prev => prev.map(p => p.id === petId ? { ...p, is_listed: true } : p));
+        }
       }
     } catch {}
     finally { setTogglingPet(null); }
@@ -759,14 +777,15 @@ const PetMerchantPanel: React.FC<{
     setCreating(true);
     setCreateMsg('');
     try {
-      const res = await fetch(`${API_BASE}/pets/manage/create-special`, {
+      const res = await fetch(`${API_BASE}/npc/pet-merchant/list-custom-pet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          npc_oc: currentUser.oc_name,
+          pet_merchant_oc: currentUser.oc_name,
           name: specialName,
           description: specialDesc,
           price: specialPrice,
+          chapter_version: CURRENT_CHAPTER,
         }),
       });
       const data = await res.json();

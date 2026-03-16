@@ -137,6 +137,7 @@ app.post('/api/dev/setup-test-users', async (req, res) => {
     { oc_name: 'EnemyPlayer', faction: 'Pure', simple_password: '0000', is_in_party: false },
     { oc_name: 'TraffickerA', faction: 'Neutral', npc_role: 'trafficker', movement_points: 3, prestige: 10, simple_password: '0000', is_in_party: false },
     { oc_name: 'InnOwnerA', faction: 'Neutral', npc_role: 'inn_owner', is_shop_open: true, simple_password: '0000', is_in_party: false },
+    { oc_name: 'PetMerchantA', faction: 'Neutral', npc_role: 'pet_merchant', is_shop_open: false, simple_password: '0000', is_in_party: false },
     { oc_name: 'RescuerA', faction: 'Pure', coins: 10, simple_password: '0000', is_in_party: false },
     { oc_name: 'TargetE', faction: 'Turbid', is_lost: true, lost_until: new Date(Date.now() + 3600 * 1000).toISOString(), simple_password: '0000', is_in_party: false },
     { oc_name: 'TargetF', faction: 'Pure', simple_password: '0000', is_in_party: false },
