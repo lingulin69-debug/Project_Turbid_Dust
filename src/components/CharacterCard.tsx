@@ -78,6 +78,134 @@ const FACTION_STYLE = {
   },
 };
 
+// ── Portrait Panel ────────────────────────────────────────────────────────────
+// Displays character illustration. Falls back to placeholder when image 404s.
+// To activate: drop  public/assets/portraits/{oc_name}_normal.png  and refresh.
+
+const PortraitPanel: React.FC<{
+  src: string;
+  displayName: string;
+  factionLabel: string;
+  accentColor: string;
+  bgColor: string;
+}> = ({ src, displayName, factionLabel, accentColor, bgColor }) => {
+  const [imgError, setImgError] = useState(false);
+
+  // Reverse:1999 portrait ratio ≈ 3:4 (portrait mode card art)
+  return (
+    <div
+      className="relative w-full overflow-hidden"
+      style={{
+        aspectRatio: '3 / 4',
+        maxHeight: '320px',
+        background: '#111',
+        border: `1px solid ${accentColor}35`,
+        borderBottom: 'none',
+      }}
+    >
+      {!imgError ? (
+        <img
+          src={src}
+          alt={displayName}
+          onError={() => setImgError(true)}
+          className="w-full h-full object-cover object-top"
+          style={{ display: 'block' }}
+        />
+      ) : (
+        /* ── Placeholder: Reverse:1999 style loading frame ── */
+        <div
+          className="w-full h-full flex flex-col items-center justify-center relative"
+          style={{ background: `linear-gradient(170deg, #1a1410 0%, #0d0a08 50%, ${bgColor}55 100%)` }}
+        >
+          {/* Subtle dot-grid texture */}
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle, ${accentColor}12 1px, transparent 1px)`,
+            backgroundSize: '20px 20px',
+          }} />
+
+          {/* Corner brackets — top-left */}
+          <div className="absolute top-3 left-3 w-6 h-6"
+            style={{ borderTop: `2px solid ${accentColor}70`, borderLeft: `2px solid ${accentColor}70` }} />
+          {/* Corner brackets — top-right */}
+          <div className="absolute top-3 right-3 w-6 h-6"
+            style={{ borderTop: `2px solid ${accentColor}70`, borderRight: `2px solid ${accentColor}70` }} />
+          {/* Corner brackets — bottom-left */}
+          <div className="absolute bottom-3 left-3 w-6 h-6"
+            style={{ borderBottom: `2px solid ${accentColor}70`, borderLeft: `2px solid ${accentColor}70` }} />
+          {/* Corner brackets — bottom-right */}
+          <div className="absolute bottom-3 right-3 w-6 h-6"
+            style={{ borderBottom: `2px solid ${accentColor}70`, borderRight: `2px solid ${accentColor}70` }} />
+
+          {/* Center content */}
+          <div className="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
+            {/* Faction badge */}
+            <div
+              className="px-3 py-1 text-[9px] tracking-[0.45em] uppercase font-mono"
+              style={{
+                border: `1px solid ${accentColor}50`,
+                color: accentColor,
+                backgroundColor: `${accentColor}10`,
+              }}
+            >
+              {factionLabel}
+            </div>
+
+            {/* Main label */}
+            <div className="space-y-1">
+              <p
+                className="text-sm tracking-[0.2em] font-mono"
+                style={{ color: `${accentColor}90` }}
+              >
+                {displayName}
+              </p>
+              <p
+                className="text-[10px] tracking-[0.35em] uppercase font-mono"
+                style={{ color: '#5a4428' }}
+              >
+                插畫載入中
+              </p>
+            </div>
+
+            {/* Animated loading bar */}
+            <div className="w-24 h-px relative overflow-hidden" style={{ backgroundColor: `${accentColor}20` }}>
+              <div
+                className="absolute top-0 left-0 h-full"
+                style={{
+                  width: '40%',
+                  backgroundColor: accentColor,
+                  animation: 'slide-loading 1.8s ease-in-out infinite',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Bottom label strip */}
+          <div
+            className="absolute bottom-0 left-0 right-0 py-1.5 flex items-center justify-center"
+            style={{
+              borderTop: `1px solid ${accentColor}25`,
+              backgroundColor: `${accentColor}08`,
+            }}
+          >
+            <span
+              className="text-[8px] tracking-[0.5em] uppercase font-mono"
+              style={{ color: `${accentColor}50` }}
+            >
+              OBSERVER TERMINAL · PORTRAIT PENDING
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Gradient overlay: fade into card body below */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
+        style={{ background: `linear-gradient(to bottom, transparent, ${FACTION_COLORS.background})` }}
+      />
+    </div>
+  );
+};
+
 export const CharacterCard: React.FC<CharacterCardProps> = ({
   targetOcName,
   viewerFaction,
@@ -323,74 +451,23 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           </button>
         </div>
 
-        {/* Illustration Panel — Art Deco portrait area */}
+        {/* ── Illustration Panel ──────────────────────────────────────────
+            切換邏輯：
+              優先讀取 /assets/portraits/{oc_name}_normal.png
+              未來只需將圖檔放入 public/assets/portraits/ 即可自動顯示
+            ──────────────────────────────────────────────────────────── */}
         {(() => {
-          const isImageUrl = userData.current_outfit?.startsWith('http');
+          // Portrait path convention: /assets/portraits/{oc_name}_normal.png
+          // If the file doesn't exist the browser fires onError → fall back to placeholder
+          const portraitSrc = `/assets/portraits/${userData.oc_name}_normal.png`;
           return (
-            <div className="relative overflow-hidden" style={{ height: '180px' }}>
-              {isImageUrl ? (
-                <img
-                  src={userData.current_outfit!}
-                  alt={displayName}
-                  className="w-full h-full object-cover object-top"
-                />
-              ) : (
-                /* Decorative Art Deco placeholder */
-                <div
-                  className="w-full h-full flex flex-col items-center justify-center relative"
-                  style={{
-                    background: `linear-gradient(160deg, ${style.bg}cc 0%, ${FACTION_COLORS.background} 60%, ${style.bg}44 100%)`,
-                  }}
-                >
-                  {/* Grid lines */}
-                  <div className="absolute inset-0" style={{
-                    backgroundImage: `
-                      linear-gradient(${style.accent}08 1px, transparent 1px),
-                      linear-gradient(90deg, ${style.accent}08 1px, transparent 1px)
-                    `,
-                    backgroundSize: '24px 24px',
-                  }} />
-                  {/* Top ornament */}
-                  <div className="absolute top-3 left-0 right-0 flex items-center gap-2 px-4">
-                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${style.accent}60)` }} />
-                    <span className="text-[8px] tracking-[0.5em] font-mono" style={{ color: `${style.accent}80` }}>◆◆◆</span>
-                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${style.accent}60, transparent)` }} />
-                  </div>
-                  {/* Central monogram */}
-                  <div className="relative z-10 flex flex-col items-center gap-2">
-                    <div className="relative w-20 h-20 flex items-center justify-center">
-                      {/* Diamond frame */}
-                      <div className="absolute inset-0" style={{
-                        border: `1px solid ${style.accent}40`,
-                        transform: 'rotate(45deg)',
-                        background: `${style.bg}50`,
-                      }} />
-                      <div className="absolute inset-2" style={{
-                        border: `1px solid ${style.accent}25`,
-                        transform: 'rotate(45deg)',
-                      }} />
-                      <span className="relative z-10 text-2xl font-bold" style={{ color: style.accent }}>
-                        {(userData.alias_name || userData.oc_name).charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-[9px] tracking-[0.5em] uppercase font-mono" style={{ color: `${style.accent}70` }}>
-                      OBSERVER
-                    </div>
-                  </div>
-                  {/* Bottom ornament */}
-                  <div className="absolute bottom-3 left-0 right-0 flex items-center gap-2 px-4">
-                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${style.accent}40)` }} />
-                    <span className="text-[8px] tracking-[0.4em] font-mono" style={{ color: `${style.accent}50` }}>
-                      {userData.faction === 'Turbid' ? 'TURBID' : 'PURE'}
-                    </span>
-                    <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${style.accent}40, transparent)` }} />
-                  </div>
-                </div>
-              )}
-              {/* Gradient fade to body */}
-              <div className="absolute bottom-0 left-0 right-0 h-12"
-                style={{ background: `linear-gradient(to bottom, transparent, ${FACTION_COLORS.background})` }} />
-            </div>
+            <PortraitPanel
+              src={portraitSrc}
+              displayName={displayName}
+              factionLabel={userData.faction === 'Turbid' ? 'TURBID' : 'PURE'}
+              accentColor={style.accent}
+              bgColor={style.bg}
+            />
           );
         })()}
 

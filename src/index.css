@@ -107,3 +107,10 @@ body {
   animation: blink-opacity 0.3s ease-in-out 2; /* Blinks twice quickly on entry */
   will-change: opacity; /* GPU Hint */
 }
+
+/* Portrait loading bar animation */
+@keyframes slide-loading {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(150%); }
+  100% { transform: translateX(150%); }
+}
