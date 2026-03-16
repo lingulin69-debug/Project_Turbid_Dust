@@ -83,8 +83,8 @@ const MoveSection: React.FC<{
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">移動</span>
-        <span className="text-xs font-mono" style={{ color: movementPoints > 0 ? FACTION_COLORS.Turbid.highlight : '#6b7280' }}>
+        <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>移動</span>
+        <span className="text-xs font-mono" style={{ color: movementPoints > 0 ? '#403E34' : '#737065' }}>
           剩餘 {movementPoints} 步
         </span>
       </div>
@@ -92,7 +92,8 @@ const MoveSection: React.FC<{
         <select
           value={targetId}
           onChange={e => setTargetId(e.target.value)}
-          className="flex-1 bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-gray-500"
+          className="flex-1 text-xs px-2 py-1.5 focus:outline-none"
+          style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
         >
           <option value="">選擇目標據點</option>
           {landmarks.map(l => (
@@ -102,12 +103,13 @@ const MoveSection: React.FC<{
         <button
           onClick={handleMove}
           disabled={moving || !targetId || movementPoints < 1}
-          className="px-3 py-1.5 text-xs border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors rounded disabled:opacity-30 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{ border: '1px solid #737065', color: '#403E34', backgroundColor: 'transparent' }}
         >
           {moving ? '...' : '移動'}
         </button>
       </div>
-      {msg && <p className={`text-[11px] font-mono ${msg.includes('成功') ? 'text-green-500' : 'text-red-400'}`}>{msg}</p>}
+      {msg && <p className={`text-[11px] font-mono ${msg.includes('成功') ? 'text-green-700' : 'text-red-600'}`}>{msg}</p>}
     </div>
   );
 };
@@ -222,19 +224,20 @@ const MerchantPanel: React.FC<{
         onMoved={(pts, id) => onUpdate({ movement_points: pts, current_landmark_id: id })}
       />
 
-      <div className="border-t border-gray-800" />
+      <div style={{ borderTop: '1px solid #BFBAA8' }} />
 
       {/* Listing Form */}
       <div className="space-y-3">
-        <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600">上架商品</p>
+        <p className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>上架商品</p>
 
         {/* Item Type */}
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-700">商品類型</label>
+          <label className="text-[10px]" style={{ color: '#737065' }}>商品類型</label>
           <select
             value={itemType}
             onChange={e => setItemType(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-gray-500"
+            className="w-full text-xs px-2 py-1.5 focus:outline-none"
+            style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
           >
             {Object.entries(itemTypeLabel)
               .filter(([k]) => isBlack || !['dice_item', 'r18'].includes(k))
@@ -244,53 +247,59 @@ const MerchantPanel: React.FC<{
 
         {/* Name */}
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-700">商品名稱</label>
+          <label className="text-[10px]" style={{ color: '#737065' }}>商品名稱</label>
           <input
             value={customName}
             onChange={e => setCustomName(e.target.value)}
             placeholder="商品名稱"
-            className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-gray-500"
+            className="w-full text-xs px-2 py-1.5 focus:outline-none"
+            style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
           />
         </div>
 
         {/* Description */}
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-700">描述（最多30字）</label>
+          <label className="text-[10px]" style={{ color: '#737065' }}>描述（最多30字）</label>
           <textarea
             value={customDesc}
             onChange={e => setCustomDesc(e.target.value.slice(0, 30))}
             rows={2}
             placeholder="商品描述"
-            className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-gray-500 resize-none"
+            className="w-full text-xs px-2 py-1.5 focus:outline-none resize-none"
+            style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
           />
-          <p className="text-[10px] text-gray-700 text-right">{customDesc.length}/30</p>
+          <p className="text-[10px] text-right" style={{ color: '#737065' }}>{customDesc.length}/30</p>
         </div>
 
         {/* Price */}
         <div className="space-y-1">
-          <label className="text-[10px] text-gray-700">定價（幣）</label>
+          <label className="text-[10px]" style={{ color: '#737065' }}>定價（幣）</label>
           <input
             type="number"
             min={1}
-            max={isBlack ? 8 : 8}
+            max={8}
             value={price}
             onChange={e => setPrice(Number(e.target.value))}
-            className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-gray-500"
+            className="w-full text-xs px-2 py-1.5 focus:outline-none"
+            style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
           />
         </div>
 
         {/* Dice Settings */}
         {itemType === 'dice_item' && (
-          <div className="space-y-3 p-3 rounded border border-gray-800">
+          <div className="space-y-3 p-3 rounded" style={{ border: '1px solid #BFBAA8' }}>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] text-gray-600">骰子類型</span>
+              <span className="text-[10px]" style={{ color: '#737065' }}>骰子類型</span>
               {(['D6', 'D20'] as const).map(d => (
                 <button
                   key={d}
                   onClick={() => setDiceType(d)}
-                  className={`text-xs px-2 py-0.5 rounded border transition-colors ${
-                    diceType === d ? 'border-red-600 text-red-400 bg-red-900/20' : 'border-gray-700 text-gray-600'
-                  }`}
+                  className="text-xs px-2 py-0.5 transition-colors"
+                  style={{
+                    border: `1px solid ${diceType === d ? '#c0392b' : '#737065'}`,
+                    color: diceType === d ? '#c0392b' : '#737065',
+                    backgroundColor: diceType === d ? 'rgba(192,57,43,0.1)' : 'transparent',
+                  }}
                 >
                   {d}
                 </button>
@@ -298,31 +307,34 @@ const MerchantPanel: React.FC<{
             </div>
             <div className="space-y-2">
               {diceResults.map((r, i) => (
-                <div key={i} className="space-y-1.5 p-2 bg-gray-900/50 rounded">
-                  <p className="text-[10px] text-gray-700">{r.min}–{r.max}</p>
+                <div key={i} className="space-y-1.5 p-2 rounded" style={{ backgroundColor: 'rgba(191,186,168,0.3)' }}>
+                  <p className="text-[10px]" style={{ color: '#737065' }}>{r.min}–{r.max}</p>
                   <input
                     placeholder="結果描述"
                     value={r.message}
                     onChange={e => updateDiceResult(i, 'message', e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-800 text-gray-300 text-xs px-2 py-1 rounded focus:outline-none"
+                    className="w-full text-xs px-2 py-1 focus:outline-none"
+                    style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                   />
                   <div className="flex gap-2">
                     <div className="flex-1 space-y-0.5">
-                      <p className="text-[9px] text-gray-700">貨幣增減</p>
+                      <p className="text-[9px]" style={{ color: '#737065' }}>貨幣增減</p>
                       <input
                         type="number"
                         value={r.coins_delta}
                         onChange={e => updateDiceResult(i, 'coins_delta', Number(e.target.value))}
-                        className="w-full bg-gray-900 border border-gray-800 text-gray-300 text-xs px-2 py-1 rounded focus:outline-none"
+                        className="w-full text-xs px-2 py-1 focus:outline-none"
+                        style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                       />
                     </div>
                     <div className="flex-1 space-y-0.5">
-                      <p className="text-[9px] text-gray-700">狀態標籤（可空）</p>
+                      <p className="text-[9px]" style={{ color: '#737065' }}>狀態標籤（可空）</p>
                       <input
                         placeholder="例：鼻挺中 ✦"
                         value={r.status_tag}
                         onChange={e => updateDiceResult(i, 'status_tag', e.target.value)}
-                        className="w-full bg-gray-900 border border-gray-800 text-gray-300 text-xs px-2 py-1 rounded focus:outline-none"
+                        className="w-full text-xs px-2 py-1 focus:outline-none"
+                        style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                       />
                     </div>
                   </div>
@@ -332,42 +344,43 @@ const MerchantPanel: React.FC<{
           </div>
         )}
 
-        {msg && <p className={`text-[11px] font-mono ${msg.includes('成功') || msg.includes('上架') ? 'text-green-500' : 'text-red-400'}`}>{msg}</p>}
+        {msg && <p className={`text-[11px] font-mono ${msg.includes('成功') || msg.includes('上架') ? 'text-green-700' : 'text-red-600'}`}>{msg}</p>}
 
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="w-full py-2 text-xs border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors rounded disabled:opacity-30"
+          className="w-full py-2 text-xs transition-colors disabled:opacity-30"
+          style={{ border: '1px solid #737065', color: '#403E34', backgroundColor: 'transparent' }}
         >
           {submitting ? '上架中...' : '確認上架'}
         </button>
       </div>
 
-      <div className="border-t border-gray-800" />
+      <div style={{ borderTop: '1px solid #BFBAA8' }} />
 
       {/* Current Listings */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600">本章已上架</p>
-          <button onClick={fetchListings} className="text-[10px] text-gray-700 hover:text-gray-500">刷新</button>
+          <p className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>本章已上架</p>
+          <button onClick={fetchListings} className="text-[10px] transition-colors" style={{ color: '#737065' }}>刷新</button>
         </div>
         {listings.length === 0 ? (
-          <p className="text-xs text-gray-700 italic">尚無上架商品</p>
+          <p className="text-xs italic" style={{ color: '#737065' }}>尚無上架商品</p>
         ) : (
           <div className="space-y-1.5">
             {listings.map(s => (
               <div
                 key={s.id}
-                className={`text-[11px] font-mono px-3 py-2 rounded border ${s.is_sold ? 'opacity-30' : ''}`}
-                style={{ borderColor: '#1f2937', backgroundColor: '#111827' }}
+                className={`text-[11px] font-mono px-3 py-2 ${s.is_sold ? 'opacity-40' : ''}`}
+                style={{ border: '1px solid #BFBAA8', backgroundColor: 'rgba(191,186,168,0.2)' }}
               >
                 <div className="flex justify-between">
-                  <span className="text-gray-300">{s.custom_name || s.item_id || s.item_type}</span>
-                  <span className="text-gray-500">{s.price} 幣</span>
+                  <span style={{ color: '#403E34' }}>{s.custom_name || s.item_id || s.item_type}</span>
+                  <span style={{ color: '#737065' }}>{s.price} 幣</span>
                 </div>
                 <div className="flex gap-2 mt-0.5">
-                  <span className="text-gray-700">{s.item_type}</span>
-                  {s.dice_type && <span className="text-gray-700">{s.dice_type}</span>}
+                  <span style={{ color: '#737065' }}>{s.item_type}</span>
+                  {s.dice_type && <span style={{ color: '#737065' }}>{s.dice_type}</span>}
                   {s.is_sold && <span className="text-green-700">已售出</span>}
                 </div>
               </div>
@@ -459,29 +472,29 @@ const TraffickerPanel: React.FC<{
 
   const skills = [
     { id: 'kidnap', label: '綁架', cost: 5, desc: '目標失蹤6小時', color: '#ef4444' },
-    { id: 'intel', label: '黑市情報', cost: 3, desc: '查看本據點本章到訪名單', color: '#f59e0b' },
-    { id: 'pickpocket', label: '扒竊', cost: 8, desc: '隨機偷取某玩家10%貨幣', color: '#8b5cf6' },
+    { id: 'intel', label: '黑市情報', cost: 3, desc: '查看本據點本章到訪名單', color: '#d97706' },
+    { id: 'pickpocket', label: '扒竊', cost: 8, desc: '隨機偷取某玩家10%貨幣', color: '#7c3aed' },
   ];
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <div className="w-1 h-5 rounded-full bg-amber-600" />
-        <span className="text-xs tracking-[0.2em] uppercase text-amber-600">人販子</span>
+        <div className="w-1 h-5 rounded-full" style={{ backgroundColor: '#d97706' }} />
+        <span className="text-xs tracking-[0.2em] uppercase" style={{ color: '#d97706' }}>人販子</span>
       </div>
 
       {/* Prestige */}
       <div className="space-y-1.5">
         <div className="flex justify-between">
-          <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">聲望</span>
-          <span className="text-xs font-mono text-amber-500">{prestige} / 10</span>
+          <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>聲望</span>
+          <span className="text-xs font-mono" style={{ color: '#d97706' }}>{prestige} / 10</span>
         </div>
         <div className="flex gap-1">
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={i}
               className="h-1.5 flex-1 rounded-sm"
-              style={{ backgroundColor: i < prestige ? '#d97706' : '#1f2937' }}
+              style={{ backgroundColor: i < prestige ? '#d97706' : '#BFBAA8' }}
             />
           ))}
         </div>
@@ -494,67 +507,71 @@ const TraffickerPanel: React.FC<{
         onMoved={(pts, id) => onUpdate({ movement_points: pts, current_landmark_id: id })}
       />
 
-      <div className="border-t border-gray-800" />
+      <div style={{ borderTop: '1px solid #BFBAA8' }} />
 
       {/* Village Mission */}
       <div className="space-y-2">
-        <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600">村民任務</p>
-        <p className="text-[11px] text-gray-500">
+        <p className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>村民任務</p>
+        <p className="text-[11px]" style={{ color: '#737065' }}>
           在當前據點執行村民任務，獲得 +3 聲望（上限10）
         </p>
         <button
           onClick={handleDeliver}
           disabled={loading}
-          className="w-full py-2 text-xs border border-amber-900/50 text-amber-700 hover:text-amber-500 hover:border-amber-700 transition-colors rounded disabled:opacity-30"
+          className="w-full py-2 text-xs transition-colors disabled:opacity-30"
+          style={{ border: '1px solid #d97706', color: '#d97706', backgroundColor: 'transparent' }}
         >
           執行村民任務
         </button>
       </div>
 
-      <div className="border-t border-gray-800" />
+      <div style={{ borderTop: '1px solid #BFBAA8' }} />
 
       {/* Skills */}
       <div className="space-y-3">
-        <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600">技能</p>
+        <p className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>技能</p>
         {skills.map(skill => {
           const canUse = prestige >= skill.cost;
           return (
             <div key={skill.id} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-mono" style={{ color: canUse ? skill.color : '#4b5563' }}>
+                  <span className="text-xs font-mono" style={{ color: canUse ? skill.color : '#BFBAA8' }}>
                     {skill.label}
                   </span>
-                  <span className="text-[10px] text-gray-700 ml-2">（{skill.cost}點）</span>
+                  <span className="text-[10px] ml-2" style={{ color: '#737065' }}>（{skill.cost}點）</span>
                 </div>
                 <button
                   onClick={() => setActiveSkill(activeSkill === skill.id ? null : skill.id)}
                   disabled={!canUse}
-                  className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-                    canUse
-                      ? 'border-gray-700 text-gray-500 hover:text-white hover:border-gray-500'
-                      : 'border-gray-800 text-gray-800 cursor-not-allowed'
-                  }`}
+                  className="text-[10px] px-2 py-0.5 transition-colors disabled:cursor-not-allowed"
+                  style={{
+                    border: `1px solid ${canUse ? '#737065' : '#BFBAA8'}`,
+                    color: canUse ? '#403E34' : '#BFBAA8',
+                    backgroundColor: 'transparent',
+                  }}
                 >
                   {canUse ? (activeSkill === skill.id ? '收起' : '展開') : '聲望不足'}
                 </button>
               </div>
-              <p className="text-[10px] text-gray-700">{skill.desc}</p>
+              <p className="text-[10px]" style={{ color: '#737065' }}>{skill.desc}</p>
 
               {activeSkill === skill.id && (
-                <div className="pl-2 space-y-2 border-l border-gray-800">
+                <div className="pl-2 space-y-2" style={{ borderLeft: '1px solid #BFBAA8' }}>
                   {skill.id === 'kidnap' && (
                     <div className="flex gap-2">
                       <input
                         value={kidnpTarget}
                         onChange={e => setKidnapTarget(e.target.value)}
                         placeholder="目標OC名稱"
-                        className="flex-1 bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none"
+                        className="flex-1 text-xs px-2 py-1.5 focus:outline-none"
+                        style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                       />
                       <button
                         onClick={handleKidnap}
                         disabled={loading}
-                        className="px-3 py-1.5 text-xs border border-red-900/50 text-red-700 hover:text-red-400 hover:border-red-700 transition-colors rounded disabled:opacity-30"
+                        className="px-3 py-1.5 text-xs transition-colors disabled:opacity-30"
+                        style={{ border: '1px solid #ef4444', color: '#ef4444', backgroundColor: 'transparent' }}
                       >
                         執行
                       </button>
@@ -565,12 +582,13 @@ const TraffickerPanel: React.FC<{
                       <button
                         onClick={handleIntel}
                         disabled={loading}
-                        className="w-full py-1.5 text-xs border border-yellow-900/50 text-yellow-700 hover:text-yellow-500 hover:border-yellow-700 transition-colors rounded disabled:opacity-30"
+                        className="w-full py-1.5 text-xs transition-colors disabled:opacity-30"
+                        style={{ border: '1px solid #d97706', color: '#d97706', backgroundColor: 'transparent' }}
                       >
                         查詢本據點名單
                       </button>
                       {intelResult.length > 0 && (
-                        <div className="text-[11px] text-gray-400 font-mono">
+                        <div className="text-[11px] font-mono" style={{ color: '#403E34' }}>
                           {intelResult.map((name, i) => (
                             <div key={i} className="py-0.5">· {name}</div>
                           ))}
@@ -582,7 +600,8 @@ const TraffickerPanel: React.FC<{
                     <button
                       onClick={handlePickpocket}
                       disabled={loading}
-                      className="w-full py-1.5 text-xs border border-purple-900/50 text-purple-700 hover:text-purple-500 hover:border-purple-700 transition-colors rounded disabled:opacity-30"
+                      className="w-full py-1.5 text-xs transition-colors disabled:opacity-30"
+                      style={{ border: '1px solid #7c3aed', color: '#7c3aed', backgroundColor: 'transparent' }}
                     >
                       {loading ? '執行中...' : '執行扒竊'}
                     </button>
@@ -594,7 +613,7 @@ const TraffickerPanel: React.FC<{
         })}
       </div>
 
-      {msg && <p className={`text-[11px] font-mono ${msg.includes('成功') || msg.includes('聲望') || msg.includes('完成') ? 'text-green-500' : 'text-red-400'}`}>{msg}</p>}
+      {msg && <p className={`text-[11px] font-mono ${msg.includes('成功') || msg.includes('聲望') || msg.includes('完成') ? 'text-green-700' : 'text-red-600'}`}>{msg}</p>}
     </div>
   );
 };
@@ -629,19 +648,19 @@ const InnPanel: React.FC<{
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <div className="w-1 h-5 rounded-full bg-teal-600" />
-        <span className="text-xs tracking-[0.2em] uppercase text-teal-600">旅店老闆</span>
+        <div className="w-1 h-5 rounded-full" style={{ backgroundColor: '#0d9488' }} />
+        <span className="text-xs tracking-[0.2em] uppercase" style={{ color: '#0d9488' }}>旅店老闆</span>
       </div>
 
-      <div className="space-y-3 p-4 rounded border border-gray-800">
+      <div className="space-y-3 p-4" style={{ border: '1px solid #BFBAA8' }}>
         <div className="flex items-center justify-between">
-          <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">當前狀態</span>
-          <span
-            className={`text-xs font-mono px-2 py-0.5 rounded border ${
-              isOpen
-                ? 'border-teal-700 text-teal-400 bg-teal-900/20'
-                : 'border-gray-700 text-gray-600'
-            }`}
+          <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>當前狀態</span>
+          <span className="text-xs font-mono px-2 py-0.5"
+            style={{
+              border: `1px solid ${isOpen ? '#0d9488' : '#737065'}`,
+              color: isOpen ? '#0d9488' : '#737065',
+              backgroundColor: isOpen ? 'rgba(13,148,136,0.1)' : 'transparent',
+            }}
           >
             {isOpen ? '● 營業中' : '○ 休息中'}
           </span>
@@ -650,19 +669,20 @@ const InnPanel: React.FC<{
         <button
           onClick={handleToggle}
           disabled={toggling}
-          className={`w-full py-2.5 text-xs border rounded transition-colors disabled:opacity-30 ${
-            isOpen
-              ? 'border-gray-700 text-gray-500 hover:text-white hover:border-gray-500'
-              : 'border-teal-800 text-teal-700 hover:text-teal-400 hover:border-teal-600'
-          }`}
+          className="w-full py-2.5 text-xs transition-colors disabled:opacity-30"
+          style={{
+            border: `1px solid ${isOpen ? '#737065' : '#0d9488'}`,
+            color: isOpen ? '#737065' : '#0d9488',
+            backgroundColor: 'transparent',
+          }}
         >
           {toggling ? '...' : isOpen ? '關閉旅店' : '開放旅店'}
         </button>
 
-        {msg && <p className={`text-[11px] font-mono ${msg.includes('開放') ? 'text-green-500' : msg.includes('關閉') ? 'text-gray-400' : 'text-red-400'}`}>{msg}</p>}
+        {msg && <p className={`text-[11px] font-mono ${msg.includes('開放') ? 'text-green-700' : msg.includes('關閉') ? 'text-gray-500' : 'text-red-600'}`}>{msg}</p>}
       </div>
 
-      <div className="text-[11px] text-gray-700 leading-relaxed space-y-1">
+      <div className="text-[11px] leading-relaxed space-y-1" style={{ color: '#737065' }}>
         <p>· 開放時玩家可來此治療HP（2幣，D20判定）</p>
         <p>· 也可委託你救援失蹤玩家（5幣）</p>
         <p>· 關閉時地圖顯示「今日休息」</p>
@@ -752,7 +772,6 @@ const PetMerchantPanel: React.FC<{
     setTogglingPet(petId);
     try {
       if (currentListed) {
-        // No direct "unlist" API — toggle-open handles chapter reset; skip silently for now
         setPets(prev => prev.map(p => p.id === petId ? { ...p, is_listed: false } : p));
       } else {
         const res = await fetch(`${API_BASE}/npc/pet-merchant/list-default-pet`, {
@@ -807,33 +826,34 @@ const PetMerchantPanel: React.FC<{
       </div>
 
       {/* Shop Toggle */}
-      <div className="flex items-center justify-between p-3 rounded border border-gray-800">
+      <div className="flex items-center justify-between p-3" style={{ border: '1px solid #BFBAA8' }}>
         <div>
-          <span className={`text-xs font-mono ${isOpen ? 'text-teal-400' : 'text-gray-600'}`}>
+          <span className="text-xs font-mono" style={{ color: isOpen ? '#0d9488' : '#737065' }}>
             {isOpen ? '● 店鋪開放中' : '○ 今日休息'}
           </span>
-          {isOpen && <span className="text-[10px] text-gray-700 ml-2">已上架 {listedCount}/3</span>}
+          {isOpen && <span className="text-[10px] ml-2" style={{ color: '#737065' }}>已上架 {listedCount}/3</span>}
         </div>
         <button
           onClick={handleToggleShop}
           disabled={toggling}
-          className="text-xs px-3 py-1 border border-gray-700 text-gray-500 hover:text-white hover:border-gray-500 transition-colors rounded disabled:opacity-30"
+          className="text-xs px-3 py-1 transition-colors disabled:opacity-30"
+          style={{ border: '1px solid #737065', color: '#403E34', backgroundColor: 'transparent' }}
         >
           {toggling ? '...' : isOpen ? '關店' : '開店'}
         </button>
       </div>
-      {shopMsg && <p className={`text-[11px] font-mono ${shopMsg.includes('開放') ? 'text-green-500' : shopMsg.includes('關閉') ? 'text-gray-400' : 'text-red-400'}`}>{shopMsg}</p>}
+      {shopMsg && <p className={`text-[11px] font-mono ${shopMsg.includes('開放') ? 'text-green-700' : shopMsg.includes('關閉') ? 'text-gray-500' : 'text-red-600'}`}>{shopMsg}</p>}
 
-      <div className="border-t border-gray-800" />
+      <div style={{ borderTop: '1px solid #BFBAA8' }} />
 
       {/* Preset Pets */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600">預設寵物（勾選最多3隻上架）</p>
-          <button onClick={fetchPets} className="text-[10px] text-gray-700 hover:text-gray-500">刷新</button>
+          <p className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>預設寵物（勾選最多3隻上架）</p>
+          <button onClick={fetchPets} className="text-[10px] transition-colors" style={{ color: '#737065' }}>刷新</button>
         </div>
         {!isOpen && (
-          <p className="text-[11px] text-gray-700 italic">請先開店才能管理上架</p>
+          <p className="text-[11px] italic" style={{ color: '#737065' }}>請先開店才能管理上架</p>
         )}
         <div className="space-y-1">
           {PRESET_PETS.map(preset => {
@@ -844,25 +864,26 @@ const PetMerchantPanel: React.FC<{
             return (
               <div
                 key={preset.id}
-                className={`flex items-center justify-between px-3 py-1.5 rounded border transition-colors ${
-                  isListed ? 'border-yellow-800/40 bg-yellow-900/10' : 'border-gray-800'
-                }`}
+                className="flex items-center justify-between px-3 py-1.5 transition-colors"
+                style={{
+                  border: `1px solid ${isListed ? '#BFBAA8' : '#D9D7C5'}`,
+                  backgroundColor: isListed ? 'rgba(191,186,168,0.3)' : 'transparent',
+                }}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-gray-700 w-10">{preset.id.replace('pet_', '#')}</span>
-                  <span className="text-xs text-gray-300">{preset.name}</span>
-                  <span className="text-[10px] text-gray-600">{preset.price}幣</span>
+                  <span className="text-[10px] w-10" style={{ color: '#737065' }}>{preset.id.replace('pet_', '#')}</span>
+                  <span className="text-xs" style={{ color: '#403E34' }}>{preset.name}</span>
+                  <span className="text-[10px]" style={{ color: '#737065' }}>{preset.price}幣</span>
                 </div>
                 <button
                   onClick={() => handleToggleListing(preset.id, isListed)}
                   disabled={!canToggle || isLoadingThis}
-                  className={`text-[10px] px-2 py-0.5 rounded border transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-                    isListed
-                      ? 'border-yellow-800 text-yellow-600 hover:text-yellow-400'
-                      : canToggle
-                      ? 'border-gray-700 text-gray-600 hover:text-white hover:border-gray-500'
-                      : 'border-gray-800 text-gray-800'
-                  }`}
+                  className="text-[10px] px-2 py-0.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    border: `1px solid ${isListed ? '#d97706' : canToggle ? '#737065' : '#BFBAA8'}`,
+                    color: isListed ? '#d97706' : canToggle ? '#403E34' : '#BFBAA8',
+                    backgroundColor: 'transparent',
+                  }}
                 >
                   {isLoadingThis ? '...' : isListed ? '下架' : '上架'}
                 </button>
@@ -872,45 +893,48 @@ const PetMerchantPanel: React.FC<{
         </div>
       </div>
 
-      <div className="border-t border-gray-800" />
+      <div style={{ borderTop: '1px solid #BFBAA8' }} />
 
       {/* Create Special Pet */}
       <div className="space-y-3">
-        <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600">新增特別款（每章限3隻）</p>
+        <p className="text-[10px] tracking-[0.2em] uppercase" style={{ color: '#737065' }}>新增特別款（每章限3隻）</p>
         <div className="space-y-2">
           <input
             value={specialName}
             onChange={e => setSpecialName(e.target.value)}
             placeholder="寵物名稱"
-            className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-gray-500"
+            className="w-full text-xs px-2 py-1.5 focus:outline-none"
+            style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
           />
           <textarea
             value={specialDesc}
             onChange={e => setSpecialDesc(e.target.value.slice(0, 50))}
             rows={2}
             placeholder="描述（最多50字）"
-            className="w-full bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1.5 rounded focus:outline-none focus:border-gray-500 resize-none"
+            className="w-full text-xs px-2 py-1.5 focus:outline-none resize-none"
+            style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
           />
-          <p className="text-[10px] text-gray-700 text-right">{specialDesc.length}/50</p>
+          <p className="text-[10px] text-right" style={{ color: '#737065' }}>{specialDesc.length}/50</p>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-700">定價</span>
+            <span className="text-[10px]" style={{ color: '#737065' }}>定價</span>
             <input
               type="number"
               min={1}
               max={10}
               value={specialPrice}
               onChange={e => setSpecialPrice(Number(e.target.value))}
-              className="w-20 bg-gray-900 border border-gray-700 text-gray-300 text-xs px-2 py-1 rounded focus:outline-none"
+              className="w-20 text-xs px-2 py-1 focus:outline-none"
+              style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
             />
-            <span className="text-[10px] text-gray-700">幣</span>
+            <span className="text-[10px]" style={{ color: '#737065' }}>幣</span>
           </div>
         </div>
-        {createMsg && <p className={`text-[11px] font-mono ${createMsg.includes('新增') ? 'text-green-500' : 'text-red-400'}`}>{createMsg}</p>}
+        {createMsg && <p className={`text-[11px] font-mono ${createMsg.includes('新增') ? 'text-green-700' : 'text-red-600'}`}>{createMsg}</p>}
         <button
           onClick={handleCreateSpecial}
           disabled={creating || !isOpen}
-          className="w-full py-2 text-xs border rounded transition-colors disabled:opacity-30"
-          style={{ borderColor: '#78350f', color: '#d97706' }}
+          className="w-full py-2 text-xs transition-colors disabled:opacity-30"
+          style={{ border: '1px solid #d97706', color: '#d97706', backgroundColor: 'transparent' }}
         >
           {creating ? '新增中...' : '新增並上架'}
         </button>

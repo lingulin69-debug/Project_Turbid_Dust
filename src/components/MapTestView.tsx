@@ -762,8 +762,9 @@ export const MapTestView: React.FC = () => {
   }, [isAdmin, playerFaction]);
 
   return (
-    <div 
-      className="w-full h-screen bg-black overflow-hidden relative font-sans text-gray-200"
+    <div
+      className="w-full h-screen overflow-hidden relative font-sans"
+      style={{ backgroundColor: '#D9D7C5', color: '#403E34' }}
       ref={containerRef}
     >
       
@@ -797,25 +798,23 @@ export const MapTestView: React.FC = () => {
       >
         {/* 1. Base Map Image (Placeholder for >4000px image) */}
         {/* Using a gradient placeholder for now, user can replace with <img> */}
-        <div className="absolute inset-0 bg-[#0a0a0a] overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden" style={{ backgroundColor: '#D9D7C5' }}>
           {/* Grid lines for reference */}
-          <div className="absolute inset-0 opacity-10" 
-               style={{ 
-                 backgroundImage: 'linear-gradient(to right, #333 1px, transparent 1px), linear-gradient(to bottom, #333 1px, transparent 1px)',
+          <div className="absolute inset-0 opacity-10"
+               style={{
+                 backgroundImage: 'linear-gradient(to right, #737065 1px, transparent 1px), linear-gradient(to bottom, #737065 1px, transparent 1px)',
                  backgroundSize: '100px 100px'
-               }} 
+               }}
           />
-          
-          {/* --- Turbid/Pure Zone Visuals (Baked into map usually, but simulated here) --- */}
-          
-          {/* Left Side (Turbid) */}
-          <div className="absolute left-0 top-0 w-1/2 h-full bg-gradient-to-r from-[#111] to-[#0a0a0a] opacity-50"></div>
-          
-          {/* Right Side (Pure) */}
-          <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-[#0f1a0f] to-[#0a0a0a] opacity-50"></div>
 
-          {/* Central Divide (The Scale's fulcrum area visually) */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-gray-800 to-transparent"></div>
+          {/* Left Side (Turbid) */}
+          <div className="absolute left-0 top-0 w-1/2 h-full bg-gradient-to-r from-[#bdb5c8] to-[#D9D7C5] opacity-40"></div>
+
+          {/* Right Side (Pure) */}
+          <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-[#d4cfb8] to-[#D9D7C5] opacity-40"></div>
+
+          {/* Central Divide */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-[#73706550] to-transparent"></div>
         </div>
 
         
@@ -884,15 +883,21 @@ export const MapTestView: React.FC = () => {
                onClick={() => !isDevMode && !isDisabledByKidnap && setActiveTab(item.id)}
                whileHover={isDisabledByKidnap ? {} : { x: (navPositions[item.id]?.x || 0) + 5, scale: 1.1 }}
                whileTap={isDisabledByKidnap ? {} : { scale: 0.95 }}
-               className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-lg backdrop-blur-sm pointer-events-auto
-                          ${isDisabledByKidnap ? 'bg-black/40 border-gray-800 text-gray-700 cursor-not-allowed opacity-40' :
-                            activeTab === item.id ? 'bg-gray-700 border-white text-white' : 'bg-black/80 border-gray-700 text-gray-300 hover:border-gray-400 hover:bg-gray-800'}
+               className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-sm backdrop-blur-sm pointer-events-auto
+                          ${isDisabledByKidnap ? 'opacity-40 cursor-not-allowed' :
+                            activeTab === item.id
+                              ? 'border-[#403E34] text-[#403E34]'
+                              : 'border-[#737065] text-[#737065] hover:border-[#403E34] hover:text-[#403E34]'}
                           ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+               style={{
+                 backgroundColor: activeTab === item.id ? '#BFBAA8' : 'rgba(217,215,197,0.85)',
+               }}
              >
                <item.icon className="w-3.5 h-3.5" />
                {/* Tooltip */}
                {!isDevMode && (
-                 <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-xs text-gray-200 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 pointer-events-none">
+                 <span className="absolute left-full ml-3 px-2 py-1 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border pointer-events-none font-mono"
+                   style={{ backgroundColor: '#D9D7C5', color: '#403E34', borderColor: '#737065' }}>
                    {item.label}
                  </span>
                )}
@@ -909,13 +914,15 @@ export const MapTestView: React.FC = () => {
             onClick={() => !isDevMode && setActiveTab('npc')}
             whileHover={{ x: (navPositions['npc']?.x || 0) + 5, scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-lg backdrop-blur-sm pointer-events-auto
-              ${activeTab === 'npc' ? 'bg-gray-700 border-white text-white' : 'bg-black/80 border-gray-700 text-gray-300 hover:border-gray-400 hover:bg-gray-800'}
+            className={`relative group flex items-center justify-center w-9 h-9 border rounded-xl transition-colors shadow-sm backdrop-blur-sm pointer-events-auto
+              ${activeTab === 'npc' ? 'border-[#403E34] text-[#403E34]' : 'border-[#737065] text-[#737065] hover:border-[#403E34] hover:text-[#403E34]'}
               ${isDevMode ? 'ring-1 ring-cyan-500/50 z-[100]' : ''}`}
+            style={{ backgroundColor: activeTab === 'npc' ? '#BFBAA8' : 'rgba(217,215,197,0.85)' }}
           >
             <Wrench className="w-3.5 h-3.5" />
             {!isDevMode && (
-              <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-xs text-gray-200 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-700 pointer-events-none">
+              <span className="absolute left-full ml-3 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none text-xs font-mono border"
+                style={{ backgroundColor: '#D9D7C5', color: '#403E34', borderColor: '#737065' }}>
                 NPC面板
               </span>
             )}
@@ -949,10 +956,11 @@ export const MapTestView: React.FC = () => {
       <div className="fixed top-6 right-8 z-[100] flex items-center gap-6">
         {/* Currency Display */}
         {currentUser && (
-          <div className="flex items-center gap-4 bg-black/60 px-4 py-2 rounded-full border border-gray-800 backdrop-blur-md">
+          <div className="flex items-center gap-4 px-4 py-2 rounded-full border backdrop-blur-md"
+            style={{ backgroundColor: 'rgba(217,215,197,0.9)', borderColor: '#737065' }}>
             <div className="flex items-center gap-2" title={getCurrencyName()}>
-              {React.createElement(getCurrencyIcon(), { className: 'w-2 h-2 text-yellow-500' })}
-              <span className="text-sm font-mono text-yellow-100">
+              {React.createElement(getCurrencyIcon(), { className: 'w-2 h-2', style: { color: '#8a7040' } })}
+              <span className="text-sm font-mono" style={{ color: '#403E34' }}>
                 {currentUser.coins || 0}
               </span>
             </div>
@@ -962,13 +970,16 @@ export const MapTestView: React.FC = () => {
         {/* Login/User Button */}
         <button
           onClick={() => currentUser ? setCharacterCardTarget(currentUser.oc_name) : setShowLogin(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-900/80 border border-gray-600 rounded-full hover:bg-gray-800 transition-all group"
+          className="flex items-center gap-2 px-4 py-2 rounded-full border transition-all group"
+          style={{ backgroundColor: 'rgba(217,215,197,0.9)', borderColor: '#737065' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#403E34'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#737065'; }}
         >
-          <div className={`w-2 h-2 rounded-full ${currentUser ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-          <span className="text-sm tracking-wider uppercase text-gray-300 group-hover:text-white">
+          <div className={`w-2 h-2 rounded-full ${currentUser ? 'bg-green-600 animate-pulse' : 'bg-red-500'}`}></div>
+          <span className="text-sm tracking-wider uppercase" style={{ color: '#403E34' }}>
             {currentUser ? currentUser.oc_name : 'TERMINAL DISCONNECTED'}
           </span>
-          <User className="w-3 h-3 text-gray-400" />
+          <User className="w-3 h-3" style={{ color: '#737065' }} />
         </button>
 
         {/* Notification Bell */}
@@ -976,7 +987,10 @@ export const MapTestView: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setNotificationOpen(prev => !prev)}
-              className="relative p-2 bg-gray-900/80 border border-gray-600 rounded-full hover:bg-gray-800 hover:border-white transition-all text-gray-400 hover:text-white"
+              className="relative p-2 rounded-full border transition-all"
+              style={{ backgroundColor: 'rgba(217,215,197,0.9)', borderColor: '#737065', color: '#737065' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#403E34'; e.currentTarget.style.color = '#403E34'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#737065'; e.currentTarget.style.color = '#737065'; }}
             >
               <Bell className="w-3.5 h-3.5" />
               {unreadCount > 0 && (
@@ -989,26 +1003,29 @@ export const MapTestView: React.FC = () => {
             {/* Notification Dropdown */}
             {notificationOpen && (
               <div
-                className="absolute right-0 top-10 w-80 max-h-96 overflow-y-auto rounded border z-[80] flex flex-col"
-                style={{ backgroundColor: FACTION_COLORS.background, borderColor: '#374151' }}
+                className="absolute right-0 top-10 w-80 max-h-96 overflow-y-auto rounded border z-[80] flex flex-col custom-scrollbar"
+                style={{ backgroundColor: '#D9D7C5', borderColor: '#737065' }}
               >
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
-                  <span className="text-[11px] tracking-[0.2em] uppercase text-gray-500 font-mono">通知記錄</span>
+                <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: '#BFBAA8' }}>
+                  <span className="text-[11px] tracking-[0.2em] uppercase font-mono" style={{ color: '#737065' }}>通知記錄</span>
                   {unreadCount > 0 && (
                     <button
                       onClick={() => markAllRead()}
-                      className="text-[10px] text-gray-600 hover:text-gray-400 tracking-widest transition-colors"
+                      className="text-[10px] tracking-widest transition-colors"
+                      style={{ color: '#737065' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#403E34')}
+                      onMouseLeave={e => (e.currentTarget.style.color = '#737065')}
                     >
                       全部已讀
                     </button>
                   )}
                 </div>
                 {notifications.filter(n => n.notification_type === 'private').length === 0 ? (
-                  <div className="px-4 py-6 text-center text-xs text-gray-700 italic font-mono">
+                  <div className="px-4 py-6 text-center text-xs italic font-mono" style={{ color: '#BFBAA8' }}>
                     暫無通知
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-900">
+                  <div style={{ borderColor: '#BFBAA8' }}>
                     {notifications
                       .filter(n => n.notification_type === 'private')
                       .slice(0, 20)
@@ -1016,12 +1033,15 @@ export const MapTestView: React.FC = () => {
                         <div
                           key={n.id}
                           onClick={() => !n.is_read && markRead(n.id)}
-                          className={`px-4 py-3 cursor-pointer hover:bg-gray-900/50 transition-colors ${n.is_read ? 'opacity-40' : ''}`}
+                          className={`px-4 py-3 cursor-pointer transition-colors border-b ${n.is_read ? 'opacity-40' : ''}`}
+                          style={{ borderColor: '#BFBAA8' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#BFBAA8')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
-                          <p className="text-xs text-gray-300 font-mono leading-relaxed">{n.content}</p>
-                          <p className="text-[10px] text-gray-700 mt-1 font-mono">
+                          <p className="text-xs font-mono leading-relaxed" style={{ color: '#403E34' }}>{n.content}</p>
+                          <p className="text-[10px] mt-1 font-mono" style={{ color: '#737065' }}>
                             {new Date(n.created_at).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                            {!n.is_read && <span className="ml-2 text-purple-500">●</span>}
+                            {!n.is_read && <span className="ml-2" style={{ color: '#8a7040' }}>●</span>}
                           </p>
                         </div>
                       ))}
@@ -1035,17 +1055,21 @@ export const MapTestView: React.FC = () => {
         {/* Top Right Settings Icon */}
         <button
           onClick={() => setActiveTab('settings')}
-          className="p-2 bg-gray-900/80 border border-gray-600 rounded-full hover:bg-gray-800 hover:border-white transition-all text-gray-400 hover:text-white"
+          className="p-2 rounded-full border transition-all"
+          style={{ backgroundColor: 'rgba(217,215,197,0.9)', borderColor: '#737065', color: '#737065' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#403E34'; e.currentTarget.style.color = '#403E34'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#737065'; e.currentTarget.style.color = '#737065'; }}
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
 
         {/* Developer Mode Toggle */}
         {currentUser && (currentUser.oc_name || '').toLowerCase() === 'vonn' && (
-          <button 
+          <button
             onClick={() => setIsDevMode(!isDevMode)}
             className={`p-2 border rounded-full transition-all flex items-center gap-2 px-3
-              ${isDevMode ? 'bg-cyan-900/40 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(34,211,238,0.3)]' : 'bg-gray-900/80 border-gray-600 text-gray-500 hover:text-gray-300'}`}
+              ${isDevMode ? 'bg-cyan-900/40 border-cyan-400 text-cyan-200 shadow-[0_0_10px_rgba(34,211,238,0.3)]' : 'border-[#737065] text-[#737065] hover:text-[#403E34]'}`}
+            style={isDevMode ? {} : { backgroundColor: 'rgba(217,215,197,0.9)' }}
           >
             <Activity className={`w-3.5 h-3.5 ${isDevMode ? 'animate-pulse' : ''}`} />
             <span className="text-[10px] font-mono tracking-widest uppercase">{isDevMode ? 'DEV ON' : 'DEV OFF'}</span>
@@ -1224,16 +1248,16 @@ export const MapTestView: React.FC = () => {
               exit={{ x: -50, opacity: 0 }}
               className="w-[450px] backdrop-blur-md flex flex-col p-6 shadow-2xl h-[calc(100vh-160px)]"
               style={{
-                backgroundColor: activeTab === 'tyranny' ? 'rgba(5,0,0,0.97)' : 'rgba(0,0,0,0.95)',
-                border: activeTab === 'tyranny' ? `1px dashed ${FACTION_COLORS.leaderEvil}` : '1px solid rgb(31,41,55)',
-                boxShadow: activeTab === 'tyranny' ? `0 0 40px ${FACTION_COLORS.leaderEvil}22, inset 0 0 60px ${FACTION_COLORS.leaderEvil}08` : undefined,
+                backgroundColor: activeTab === 'tyranny' ? 'rgba(5,0,0,0.97)' : '#D9D7C5',
+                border: activeTab === 'tyranny' ? `1px dashed ${FACTION_COLORS.leaderEvil}` : `1px solid #737065`,
+                boxShadow: activeTab === 'tyranny' ? `0 0 40px ${FACTION_COLORS.leaderEvil}22, inset 0 0 60px ${FACTION_COLORS.leaderEvil}08` : '0 8px 40px rgba(64,62,52,0.15)',
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-6 pb-4"
-                style={{ borderBottom: activeTab === 'tyranny' ? `1px dashed ${FACTION_COLORS.leaderEvil}66` : '1px solid rgb(31,41,55)' }}>
+                style={{ borderBottom: activeTab === 'tyranny' ? `1px dashed ${FACTION_COLORS.leaderEvil}66` : '1px solid #BFBAA8' }}>
               <h3 className="text-xl tracking-[0.2em] font-serif italic"
-                style={{ color: activeTab === 'tyranny' ? '#dc2626' : 'rgb(209,213,219)' }}>
+                style={{ color: activeTab === 'tyranny' ? '#dc2626' : '#403E34' }}>
                 {activeTab === 'announcement' && '觀測日誌'}
                 {activeTab === 'quest' && '任務徵集'}
                 {activeTab === 'daily' && '靈魂足跡'}
@@ -1243,7 +1267,9 @@ export const MapTestView: React.FC = () => {
                 {activeTab === 'npc' && 'NPC面板'}
                 {activeTab === 'tyranny' && (currentUser?.faction === 'Pure' ? '教廷面板' : '惡政面板')}
               </h3>
-              <button onClick={() => setActiveTab(null)} className="text-gray-500 hover:text-white transition-colors">
+              <button onClick={() => setActiveTab(null)} className="transition-colors" style={{ color: '#737065' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#403E34')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#737065')}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1256,10 +1282,13 @@ export const MapTestView: React.FC = () => {
                   {announcements.map(a => (
                     <div key={a.id} className="space-y-3 group">
                       <div className="flex justify-between items-end">
-                        <h4 className="text-sm font-bold text-gray-300 tracking-wider group-hover:text-white transition-colors">{a.title}</h4>
-                        <span className="text-[10px] text-gray-600 font-mono">{a.date}</span>
+                        <h4 className="text-sm font-bold tracking-wider transition-colors" style={{ color: '#403E34' }}>{a.title}</h4>
+                        <span className="text-[10px] font-mono" style={{ color: '#737065' }}>{a.date}</span>
                       </div>
-                      <p className="text-sm text-gray-500 leading-loose font-serif border-l-2 border-gray-800 pl-4 group-hover:border-gray-500 transition-colors">
+                      <p className="text-sm leading-loose font-serif border-l-2 pl-4 transition-colors"
+                        style={{ color: '#737065', borderColor: '#BFBAA8' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#737065'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#BFBAA8'; }}>
                         {a.content}
                       </p>
                     </div>
@@ -1271,18 +1300,24 @@ export const MapTestView: React.FC = () => {
               {activeTab === 'quest' && (
                 <div className="h-full flex flex-col">
                   {/* Sub-tabs */}
-                  <div className="flex border-b border-gray-800 mb-6">
+                  <div className="flex mb-6" style={{ borderBottom: '1px solid #BFBAA8' }}>
                     <button
                       onClick={() => setQuestTab('recruitment')}
-                      className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors
-                        ${questTab === 'recruitment' ? 'text-white border-b border-white' : 'text-gray-600 hover:text-gray-400'}`}
+                      className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors`}
+                      style={{
+                        color: questTab === 'recruitment' ? '#403E34' : '#737065',
+                        borderBottom: questTab === 'recruitment' ? '2px solid #403E34' : 'none',
+                      }}
                     >
                       現有任務
                     </button>
                     <button
                       onClick={() => setQuestTab('reporting')}
-                      className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors
-                        ${questTab === 'reporting' ? 'text-white border-b border-white' : 'text-gray-600 hover:text-gray-400'}`}
+                      className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors`}
+                      style={{
+                        color: questTab === 'reporting' ? '#403E34' : '#737065',
+                        borderBottom: questTab === 'reporting' ? '2px solid #403E34' : 'none',
+                      }}
                     >
                       回報任務
                     </button>
@@ -1293,34 +1328,42 @@ export const MapTestView: React.FC = () => {
                       {missions
                         .filter(m => m.faction === 'Common' || m.faction === playerFaction)
                         .map(m => (
-                        <div key={m.id} className={`p-4 border ${m.status === 'full' ? 'border-gray-800 bg-gray-900/50' : 'border-gray-700 bg-black'} transition-all`}>
+                        <div key={m.id} className={`p-4 border transition-all`}
+                          style={{
+                            borderColor: m.status === 'full' ? '#BFBAA8' : '#737065',
+                            backgroundColor: m.status === 'full' ? 'rgba(191,186,168,0.3)' : 'rgba(217,215,197,0.6)',
+                          }}>
                           <div className="flex justify-between items-start mb-2">
-                            <h4 className={`text-md font-serif ${m.status === 'full' ? 'text-gray-600' : 'text-gray-200'}`}>{m.title}</h4>
-                            <span className={`text-xs px-2 py-1 border ${m.faction === 'Turbid' ? 'border-purple-900 text-purple-400' : m.faction === 'Pure' ? 'border-green-900 text-green-400' : 'border-gray-800 text-gray-500'}`}>
+                            <h4 className="text-md font-serif" style={{ color: m.status === 'full' ? '#737065' : '#403E34' }}>{m.title}</h4>
+                            <span className={`text-xs px-2 py-1 border ${m.faction === 'Turbid' ? 'border-purple-400 text-purple-600' : m.faction === 'Pure' ? 'border-amber-500 text-amber-600' : 'border-[#737065] text-[#737065]'}`}>
                               {m.faction}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mb-4 font-light leading-relaxed">{m.description}</p>
-                          
+                          <p className="text-sm mb-4 font-light leading-relaxed" style={{ color: '#737065' }}>{m.description}</p>
+
                           <div className="flex justify-between items-center">
-                            <span className="text-xs font-mono text-gray-600">
+                            <span className="text-xs font-mono" style={{ color: '#737065' }}>
                               {m.type === 'main' ? (
-                                <>人員: <span className={m.status === 'full' ? 'text-red-900' : 'text-white'}>({m.current}/{m.max})</span></>
+                                <>人員: <span style={{ color: m.status === 'full' ? '#c0392b' : '#403E34' }}>({m.current}/{m.max})</span></>
                               ) : (
-                                <>匯聚人數: <span className="text-white">{m.current} / ∞</span></>
+                                <>匯聚人數: <span style={{ color: '#403E34' }}>{m.current} / ∞</span></>
                               )}
                             </span>
-                            <button 
+                            <button
                               onClick={() => handleMissionJoin(m)}
                               disabled={m.type === 'main' && (m.status === 'full' || hasReportedMain)}
-                              className={`px-4 py-1 text-xs tracking-widest uppercase transition-colors
-                                ${m.type === 'main' && m.status === 'full' 
-                                  ? 'bg-gray-900 text-gray-600 cursor-not-allowed border border-gray-800' 
-                                  : m.type === 'main' && hasReportedMain
-                                    ? 'bg-gray-800 text-green-500 cursor-not-allowed border border-green-900'
-                                    : m.type === 'main' && isLocked
-                                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-                                      : 'bg-white text-black hover:bg-gray-200'}`}
+                              className={`px-4 py-1 text-xs tracking-widest uppercase transition-colors border`}
+                              style={{
+                                backgroundColor: m.type === 'main' && m.status === 'full'
+                                  ? '#BFBAA8' : m.type === 'main' && hasReportedMain
+                                  ? '#BFBAA8' : m.type === 'main' && isLocked
+                                  ? '#BFBAA8' : '#403E34',
+                                color: m.type === 'main' && (m.status === 'full' || hasReportedMain || isLocked)
+                                  ? '#737065' : '#D9D7C5',
+                                borderColor: m.type === 'main' && (m.status === 'full' || hasReportedMain || isLocked)
+                                  ? '#737065' : '#403E34',
+                                cursor: m.type === 'main' && (m.status === 'full' || hasReportedMain) ? 'not-allowed' : 'pointer',
+                              }}
                             >
                               {m.type === 'main' && m.status === 'full' ? '已滿額' 
                                : m.type === 'main' && hasReportedMain ? '已記錄'
@@ -1335,22 +1378,24 @@ export const MapTestView: React.FC = () => {
 
                   {questTab === 'reporting' && (
                     <div className="space-y-6">
-                      <div className="p-4 bg-gray-900/30 border border-gray-800">
-                        <label className="text-xs text-gray-500 uppercase tracking-widest mb-2 block">Mission Subject</label>
-                        <input 
-                          type="text" 
+                      <div className="p-4 border" style={{ backgroundColor: 'rgba(191,186,168,0.3)', borderColor: '#737065' }}>
+                        <label className="text-xs uppercase tracking-widest mb-2 block" style={{ color: '#737065' }}>Mission Subject</label>
+                        <input
+                          type="text"
                           value={reportSubject}
                           onChange={(e) => setReportSubject(e.target.value)}
-                          placeholder="[章節]-[據點名稱]-[OC名稱]" 
-                          className="w-full bg-black border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono mb-4" 
+                          placeholder="[章節]-[據點名稱]-[OC名稱]"
+                          className="w-full p-3 focus:outline-none transition-colors text-sm font-mono mb-4"
+                          style={{ backgroundColor: '#D9D7C5', border: '1px solid #737065', color: '#403E34' }}
                         />
-                        <p className="text-[10px] text-gray-600 mb-6 font-mono">
+                        <p className="text-[10px] mb-6 font-mono" style={{ color: '#737065' }}>
                           * 格式範例：第一章-荒原裂隙-塞理安<br/>
                           * 請確認據點名稱與當前位置一致。
                         </p>
-                        <button 
+                        <button
                           onClick={handleReportSubmit}
-                          className="w-full py-2 bg-white text-black text-xs font-bold tracking-widest hover:bg-gray-200 transition-colors uppercase"
+                          className="w-full py-2 text-xs font-bold tracking-widest uppercase transition-colors"
+                          style={{ backgroundColor: '#403E34', color: '#D9D7C5', border: '1px solid #403E34' }}
                         >
                           Submit Report
                         </button>
@@ -1364,18 +1409,24 @@ export const MapTestView: React.FC = () => {
               {activeTab === 'daily' && (
                 <div className="h-full flex flex-col">
                   {/* Sub-tabs */}
-                  <div className="flex border-b border-gray-800 mb-6">
+                  <div className="flex mb-6" style={{ borderBottom: '1px solid #BFBAA8' }}>
                     <button
                       onClick={() => setDailyTab('echoes')}
-                      className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors
-                        ${dailyTab === 'echoes' ? 'text-white border-b border-white' : 'text-gray-600 hover:text-gray-400'}`}
+                      className="flex-1 py-2 text-xs uppercase tracking-widest transition-colors"
+                      style={{
+                        color: dailyTab === 'echoes' ? '#403E34' : '#737065',
+                        borderBottom: dailyTab === 'echoes' ? '2px solid #403E34' : 'none',
+                      }}
                     >
                       小道消息
                     </button>
                     <button
                       onClick={() => setDailyTab('snippets')}
-                      className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors
-                        ${dailyTab === 'snippets' ? 'text-white border-b border-white' : 'text-gray-600 hover:text-gray-400'}`}
+                      className="flex-1 py-2 text-xs uppercase tracking-widest transition-colors"
+                      style={{
+                        color: dailyTab === 'snippets' ? '#403E34' : '#737065',
+                        borderBottom: dailyTab === 'snippets' ? '2px solid #403E34' : 'none',
+                      }}
                     >
                       觀察日報
                     </button>
@@ -1506,14 +1557,16 @@ export const MapTestView: React.FC = () => {
                   {dailyTab === 'snippets' && (
                     <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                       {dailySnippets.map((snippet) => (
-                        <div key={snippet.id} className="p-4 bg-gray-900/50 border border-gray-800 rounded relative group hover:border-gray-700 transition-colors">
-                          <p className="text-sm text-gray-300 font-serif mb-3 leading-relaxed">
+                        <div key={snippet.id} className="p-4 border relative group transition-colors"
+                          style={{ backgroundColor: 'rgba(191,186,168,0.3)', borderColor: '#BFBAA8' }}>
+                          <p className="text-sm font-serif mb-3 leading-relaxed" style={{ color: '#403E34' }}>
                             {snippet.content}
                           </p>
                           <div className="flex justify-end items-center">
-                            <button 
+                            <button
                               onClick={() => handleLikeSnippet(snippet.id)}
-                              className={`flex items-center gap-1.5 text-xs transition-colors ${snippet.isLiked ? 'text-red-400' : 'text-gray-600 hover:text-red-300'}`}
+                              className="flex items-center gap-1.5 text-xs transition-colors"
+                              style={{ color: snippet.isLiked ? '#c0392b' : '#737065' }}
                             >
                               <Heart className={`w-3 h-3 ${snippet.isLiked ? 'fill-current' : ''}`} />
                               <span className="font-mono">{snippet.likes}</span>
@@ -1530,26 +1583,30 @@ export const MapTestView: React.FC = () => {
               {activeTab === 'collection' && (
                 <div className="h-full flex flex-col">
                   {/* Sub-tabs */}
-                  <div className="flex border-b border-gray-800 mb-6">
+                  <div className="flex mb-6" style={{ borderBottom: '1px solid #BFBAA8' }}>
                     {(['raiment', 'fragments', 'relics'] as const).map(tab => (
                       <button
                         key={tab}
                         onClick={() => setCollectionTab(tab)}
-                        className={`flex-1 py-2 text-xs uppercase tracking-widest transition-colors
-                          ${collectionTab === tab ? 'text-white border-b border-white' : 'text-gray-600 hover:text-gray-400'}`}
+                        className="flex-1 py-2 text-xs uppercase tracking-widest transition-colors"
+                        style={{
+                          color: collectionTab === tab ? '#403E34' : '#737065',
+                          borderBottom: collectionTab === tab ? '2px solid #403E34' : 'none',
+                        }}
                       >
                         {tab === 'raiment' ? '衣服' : tab === 'fragments' ? '碎片' : '遺物'}
                       </button>
                     ))}
                   </div>
-                  
+
                   {collectionTab === 'raiment' && (
-                    <div className="mb-6 p-6 bg-gray-900/30 border border-gray-800 rounded text-center">
-                       <p className="text-xs text-gray-500 font-serif mb-4 italic leading-relaxed">
+                    <div className="mb-6 p-6 border text-center"
+                      style={{ backgroundColor: 'rgba(191,186,168,0.3)', borderColor: '#BFBAA8' }}>
+                       <p className="text-xs font-serif mb-4 italic leading-relaxed" style={{ color: '#737065' }}>
                          『命運的輪盤已不再此處轉動...<br/>
                          舊日的衣裝已悉數移往據點商店。』
                        </p>
-                       <div className="flex items-center justify-center gap-2 text-[10px] text-cyan-700 font-mono uppercase tracking-[0.2em]">
+                       <div className="flex items-center justify-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em]" style={{ color: '#737065' }}>
                          <Settings className="w-3 h-3 animate-spin-slow" />
                          Transferred to Landmark Shop
                        </div>
@@ -1557,18 +1614,18 @@ export const MapTestView: React.FC = () => {
                   )}
 
                   <div className="flex-1 grid grid-cols-2 gap-4 content-start overflow-y-auto pr-2 custom-scrollbar">
-                     {/* Placeholder Content */}
                      {[1, 2, 3, 4].map(i => (
-                       <div key={i} className="aspect-square bg-gray-900/50 border border-gray-800 flex flex-col items-center justify-center gap-2 group hover:border-gray-600 transition-colors cursor-pointer">
-                          {collectionTab === 'raiment' && <Shirt className="w-6 h-6 text-gray-700 group-hover:text-gray-500" />}
-                          {collectionTab === 'fragments' && <Puzzle className="w-6 h-6 text-gray-700 group-hover:text-gray-500" />}
-                          {collectionTab === 'relics' && <Hourglass className="w-6 h-6 text-gray-700 group-hover:text-gray-500" />}
-                          <span className="text-[10px] text-gray-600 uppercase">Unknown #{i}</span>
+                       <div key={i} className="aspect-square border flex flex-col items-center justify-center gap-2 group transition-colors cursor-pointer"
+                         style={{ backgroundColor: 'rgba(191,186,168,0.2)', borderColor: '#BFBAA8' }}>
+                          {collectionTab === 'raiment' && <Shirt className="w-6 h-6" style={{ color: '#BFBAA8' }} />}
+                          {collectionTab === 'fragments' && <Puzzle className="w-6 h-6" style={{ color: '#BFBAA8' }} />}
+                          {collectionTab === 'relics' && <Hourglass className="w-6 h-6" style={{ color: '#BFBAA8' }} />}
+                          <span className="text-[10px] uppercase" style={{ color: '#737065' }}>Unknown #{i}</span>
                        </div>
                      ))}
                   </div>
-                  
-                  <p className="mt-6 text-[10px] text-gray-700 text-center border-t border-gray-900 pt-4">
+
+                  <p className="mt-6 text-[10px] text-center pt-4" style={{ color: '#737065', borderTop: '1px solid #BFBAA8' }}>
                     * 圖片僅留存於 QQ 群聊相本，此處僅供感官回溯。
                   </p>
                 </div>
@@ -1578,17 +1635,17 @@ export const MapTestView: React.FC = () => {
               {activeTab === 'inventory' && (
                 <div className="h-full flex flex-col">
                   {/* Currency Header */}
-                  <div className="flex gap-4 mb-6 p-4 bg-gray-900/30 rounded border border-gray-800">
+                  <div className="flex gap-4 mb-6 p-4 border" style={{ backgroundColor: 'rgba(191,186,168,0.3)', borderColor: '#BFBAA8' }}>
                     <div className="flex-1 flex items-center gap-2">
-                       <Coins className="w-3 h-3 text-yellow-500" />
+                       <Coins className="w-3 h-3" style={{ color: '#403E34' }} />
                        <div>
-                        <div className="text-[10px] text-gray-500 uppercase">貨幣</div>
-                         <div className="text-lg font-mono text-gray-200">{currentUser?.coins || 0}</div>
+                        <div className="text-[10px] uppercase" style={{ color: '#737065' }}>貨幣</div>
+                         <div className="text-lg font-mono" style={{ color: '#403E34' }}>{currentUser?.coins || 0}</div>
                        </div>
                     </div>
                     <div className="flex-1 flex items-center justify-end gap-2">
-                      <div className="text-xs text-gray-500 uppercase">
-                        Capacity: <span className={currentUser?.inventory && currentUser.inventory.length >= MAX_INVENTORY_SIZE ? 'text-red-500' : 'text-gray-300'}>
+                      <div className="text-xs uppercase" style={{ color: '#737065' }}>
+                        Capacity: <span style={{ color: currentUser?.inventory && currentUser.inventory.length >= MAX_INVENTORY_SIZE ? '#c0392b' : '#403E34' }}>
                           {currentUser?.inventory?.length || 0}/{MAX_INVENTORY_SIZE}
                         </span>
                       </div>
@@ -1599,41 +1656,43 @@ export const MapTestView: React.FC = () => {
                   {currentUser?.inventory && currentUser.inventory.length > 0 ? (
                     <div className="grid grid-cols-3 gap-3">
                        {currentUser.inventory.map((item, i) => (
-                         <div key={i} className="aspect-square bg-gray-900 border border-gray-800 flex items-center justify-center relative group">
-                           <div className="w-8 h-8 bg-gray-700 rounded-full opacity-50"></div>
-                           <span className="absolute bottom-1 right-1 text-[8px] text-gray-500">x1</span>
+                         <div key={i} className="aspect-square border flex items-center justify-center relative group"
+                           style={{ backgroundColor: 'rgba(191,186,168,0.2)', borderColor: '#BFBAA8' }}>
+                           <div className="w-8 h-8 rounded-full opacity-50" style={{ backgroundColor: '#BFBAA8' }}></div>
+                           <span className="absolute bottom-1 right-1 text-[8px]" style={{ color: '#737065' }}>x1</span>
                          </div>
                        ))}
                        {Array.from({ length: Math.max(0, MAX_INVENTORY_SIZE - (currentUser.inventory.length)) }).map((_, i) => (
-                         <div key={`empty-${i}`} className="aspect-square bg-black/30 border border-gray-900"></div>
+                         <div key={`empty-${i}`} className="aspect-square border" style={{ backgroundColor: 'rgba(217,215,197,0.3)', borderColor: '#BFBAA8' }}></div>
                        ))}
                     </div>
                   ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50">
-                       <div className="w-16 h-16 border border-gray-800 rounded-full flex items-center justify-center mb-4">
+                    <div className="flex-1 flex flex-col items-center justify-center text-center opacity-60">
+                       <div className="w-16 h-16 border rounded-full flex items-center justify-center mb-4" style={{ borderColor: '#BFBAA8' }}>
                          <span className="text-2xl">💨</span>
                        </div>
-                       <p className="text-sm text-gray-500 font-serif italic">
+                       <p className="text-sm font-serif italic" style={{ color: '#737065' }}>
                          「行囊空空如也，<br/>唯有風聲在其中迴盪。」
                        </p>
                     </div>
                   )}
 
-                  <div className="mt-8 border-t border-gray-800 pt-5">
+                  <div className="mt-8 pt-5" style={{ borderTop: '1px solid #BFBAA8' }}>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs tracking-[0.2em] uppercase text-gray-400">市集</span>
+                      <span className="text-xs tracking-[0.2em] uppercase" style={{ color: '#403E34' }}>市集</span>
                       <button
                         onClick={fetchMarket}
-                        className="text-[10px] text-gray-500 hover:text-gray-300"
+                        className="text-[10px] transition-colors"
+                        style={{ color: '#737065' }}
                       >
                         重新整理
                       </button>
                     </div>
-                    {marketError && <p className="text-[11px] text-red-400 mb-2">{marketError}</p>}
+                    {marketError && <p className="text-[11px] text-red-500 mb-2">{marketError}</p>}
                     {marketLoading ? (
-                      <p className="text-xs text-gray-600">載入中...</p>
+                      <p className="text-xs" style={{ color: '#737065' }}>載入中...</p>
                     ) : marketSlots.length === 0 ? (
-                      <p className="text-xs text-gray-600 italic">目前沒有可購買的商品</p>
+                      <p className="text-xs italic" style={{ color: '#737065' }}>目前沒有可購買的商品</p>
                     ) : (
                       <div className="space-y-2">
                         {marketSlots.map(slot => {
@@ -1641,17 +1700,23 @@ export const MapTestView: React.FC = () => {
                           const isSelf = slot.seller_oc === currentUser?.oc_name;
                           const disabled = buyingSlotId === slot.id || isSelf || !!currentUser?.npc_role;
                           return (
-                            <div key={slot.id} className="flex items-center justify-between gap-3 p-3 border border-gray-800 rounded bg-black/40">
+                            <div key={slot.id} className="flex items-center justify-between gap-3 p-3 border"
+                              style={{ borderColor: '#BFBAA8', backgroundColor: 'rgba(191,186,168,0.2)' }}>
                               <div className="min-w-0">
-                                <p className="text-sm text-gray-300 truncate">{displayName}</p>
-                                <p className="text-[10px] text-gray-600">{slot.item_type}</p>
+                                <p className="text-sm truncate" style={{ color: '#403E34' }}>{displayName}</p>
+                                <p className="text-[10px]" style={{ color: '#737065' }}>{slot.item_type}</p>
                               </div>
                               <div className="flex items-center gap-3 shrink-0">
-                                <span className="text-xs text-gray-400 font-mono">{slot.price} 貨幣</span>
+                                <span className="text-xs font-mono" style={{ color: '#403E34' }}>{slot.price} 貨幣</span>
                                 <button
                                   onClick={() => handleBuyItem(slot)}
                                   disabled={disabled}
-                                  className={`text-[10px] px-3 py-1 border rounded transition-colors ${disabled ? 'border-gray-800 text-gray-600 cursor-not-allowed' : 'border-gray-600 text-gray-300 hover:text-white hover:border-gray-400'}`}
+                                  className="text-[10px] px-3 py-1 border transition-colors"
+                                  style={{
+                                    borderColor: disabled ? '#BFBAA8' : '#403E34',
+                                    color: disabled ? '#737065' : '#403E34',
+                                    cursor: disabled ? 'not-allowed' : 'pointer',
+                                  }}
                                 >
                                   {buyingSlotId === slot.id ? '處理中' : isSelf ? '自家商品' : currentUser?.npc_role ? '不可購買' : '購買'}
                                 </button>
@@ -1663,37 +1728,44 @@ export const MapTestView: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="mt-8 border-t border-gray-800 pt-5">
+                  <div className="mt-8 pt-5" style={{ borderTop: '1px solid #BFBAA8' }}>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs tracking-[0.2em] uppercase text-gray-400">寵物商店</span>
+                      <span className="text-xs tracking-[0.2em] uppercase" style={{ color: '#403E34' }}>寵物商店</span>
                       <button
                         onClick={fetchPets}
-                        className="text-[10px] text-gray-500 hover:text-gray-300"
+                        className="text-[10px] transition-colors"
+                        style={{ color: '#737065' }}
                       >
                         重新整理
                       </button>
                     </div>
-                    {petsError && <p className="text-[11px] text-red-400 mb-2">{petsError}</p>}
+                    {petsError && <p className="text-[11px] text-red-500 mb-2">{petsError}</p>}
                     {petsLoading ? (
-                      <p className="text-xs text-gray-600">載入中...</p>
+                      <p className="text-xs" style={{ color: '#737065' }}>載入中...</p>
                     ) : shopPets.length === 0 ? (
-                      <p className="text-xs text-gray-600 italic">目前沒有可購買的寵物</p>
+                      <p className="text-xs italic" style={{ color: '#737065' }}>目前沒有可購買的寵物</p>
                     ) : (
                       <div className="space-y-2">
                         {shopPets.map(p => {
                           const disabled = buyingPetId === p.id || !!currentUser?.npc_role;
                           return (
-                            <div key={p.id} className="flex items-center justify-between gap-3 p-3 border border-gray-800 rounded bg-black/40">
+                            <div key={p.id} className="flex items-center justify-between gap-3 p-3 border"
+                              style={{ borderColor: '#BFBAA8', backgroundColor: 'rgba(191,186,168,0.2)' }}>
                               <div className="min-w-0">
-                                <p className="text-sm text-gray-300 truncate">{p.name}</p>
-                                <p className="text-[10px] text-gray-600 truncate">{p.description}</p>
+                                <p className="text-sm truncate" style={{ color: '#403E34' }}>{p.name}</p>
+                                <p className="text-[10px] truncate" style={{ color: '#737065' }}>{p.description}</p>
                               </div>
                               <div className="flex items-center gap-3 shrink-0">
-                                <span className="text-xs text-gray-400 font-mono">{p.price} 貨幣</span>
+                                <span className="text-xs font-mono" style={{ color: '#403E34' }}>{p.price} 貨幣</span>
                                 <button
                                   onClick={() => handleBuyPet(p)}
                                   disabled={disabled}
-                                  className={`text-[10px] px-3 py-1 border rounded transition-colors ${disabled ? 'border-gray-800 text-gray-600 cursor-not-allowed' : 'border-gray-600 text-gray-300 hover:text-white hover:border-gray-400'}`}
+                                  className="text-[10px] px-3 py-1 border transition-colors"
+                                  style={{
+                                    borderColor: disabled ? '#BFBAA8' : '#403E34',
+                                    color: disabled ? '#737065' : '#403E34',
+                                    cursor: disabled ? 'not-allowed' : 'pointer',
+                                  }}
                                 >
                                   {buyingPetId === p.id ? '處理中' : currentUser?.npc_role ? '不可購買' : '購買'}
                                 </button>
@@ -1731,36 +1803,38 @@ export const MapTestView: React.FC = () => {
                 <div className="space-y-8 py-4">
                    {/* BGM Volume */}
                    <div className="space-y-3">
-                      <div className="flex justify-between text-xs text-gray-400 uppercase tracking-widest">
+                      <div className="flex justify-between text-xs uppercase tracking-widest" style={{ color: '#403E34' }}>
                         <span className="flex items-center gap-2"><Music className="w-3 h-3" /> BGM Volume</span>
                         <span className="font-mono">{bgmVolume}%</span>
                       </div>
-                      <input 
-                        type="range" 
-                        min="0" max="100" 
+                      <input
+                        type="range"
+                        min="0" max="100"
                         value={bgmVolume}
                         onChange={(e) => setBgmVolume(Number(e.target.value))}
-                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                        className="w-full h-1 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full"
+                        style={{ backgroundColor: '#BFBAA8', ['--thumb-color' as string]: '#403E34' }}
                       />
                    </div>
 
                    {/* SFX Volume */}
                    <div className="space-y-3">
-                      <div className="flex justify-between text-xs text-gray-400 uppercase tracking-widest">
+                      <div className="flex justify-between text-xs uppercase tracking-widest" style={{ color: '#403E34' }}>
                         <span className="flex items-center gap-2"><Volume2 className="w-3 h-3" /> SFX Volume</span>
                         <span className="font-mono">{sfxVolume}%</span>
                       </div>
-                      <input 
-                        type="range" 
-                        min="0" max="100" 
+                      <input
+                        type="range"
+                        min="0" max="100"
                         value={sfxVolume}
                         onChange={(e) => setSfxVolume(Number(e.target.value))}
-                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                        className="w-full h-1 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full"
+                        style={{ backgroundColor: '#BFBAA8' }}
                       />
                    </div>
 
-                   <div className="pt-4 border-t border-gray-800 space-y-4">
-                     <p className="text-[10px] text-gray-600 text-center font-mono">
+                   <div className="pt-4 space-y-4" style={{ borderTop: '1px solid #BFBAA8' }}>
+                     <p className="text-[10px] text-center font-mono" style={{ color: '#737065' }}>
                        SACRED CANVAS HELPER v1.0<br/>
                        SYSTEM INTEGRITY: STABLE
                      </p>
@@ -1777,23 +1851,23 @@ export const MapTestView: React.FC = () => {
       {/* 6. Drift Bottle Creator Modal */}
       <AnimatePresence>
         {driftModalOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
             onClick={() => setDriftModalOpen(false)}
           >
-            <div className="w-[500px] bg-black border border-gray-700 p-8 shadow-2xl relative" onClick={e => e.stopPropagation()}>
-              <h3 className="text-xl font-serif text-gray-200 mb-6 text-center tracking-widest">刻寫殘卷</h3>
-              
-              <div className="min-h-[100px] border border-gray-800 bg-gray-900/50 p-4 mb-6 flex flex-wrap gap-2 items-start content-start">
+            <div className="w-[500px] p-8 shadow-2xl relative" style={{ backgroundColor: '#D9D7C5', border: '1px solid #737065' }} onClick={e => e.stopPropagation()}>
+              <h3 className="text-xl font-serif text-center tracking-widest mb-6" style={{ color: '#403E34' }}>刻寫殘卷</h3>
+
+              <div className="min-h-[100px] p-4 mb-6 flex flex-wrap gap-2 items-start content-start" style={{ border: '1px solid #BFBAA8', backgroundColor: 'rgba(191,186,168,0.3)' }}>
                 {driftMessage.length > 0 ? (
                   driftMessage.map((word, idx) => (
-                    <span key={idx} className="bg-white text-black px-2 py-1 text-sm font-mono">{word}</span>
+                    <span key={idx} className="px-2 py-1 text-sm font-mono" style={{ backgroundColor: '#403E34', color: '#D9D7C5' }}>{word}</span>
                   ))
                 ) : (
-                  <span className="text-gray-600 text-sm italic">請從下方選擇詞彙拼湊訊息...</span>
+                  <span className="text-sm italic" style={{ color: '#737065' }}>請從下方選擇詞彙拼湊訊息...</span>
                 )}
               </div>
 
@@ -1803,25 +1877,27 @@ export const MapTestView: React.FC = () => {
                     key={word}
                     onClick={() => handleWordSelect(word)}
                     disabled={driftMessage.length >= 5}
-                    className="py-2 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-500 hover:bg-gray-900 transition-colors text-xs disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="py-2 text-xs transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{ border: '1px solid #BFBAA8', color: '#403E34', backgroundColor: 'transparent' }}
                   >
                     {word}
                   </button>
                 ))}
               </div>
 
-              <div className="flex justify-between items-center border-t border-gray-800 pt-6">
-                <button 
+              <div className="flex justify-between items-center pt-6" style={{ borderTop: '1px solid #BFBAA8' }}>
+                <button
                   onClick={() => setDriftMessage([])}
-                  className="text-gray-500 text-xs hover:text-white transition-colors"
+                  className="text-xs transition-colors"
+                  style={{ color: '#737065' }}
                 >
                   清除重寫
                 </button>
                 <div className="flex gap-4">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    消耗: <span className={currentUser && currentUser.coins >= 5 ? 'text-yellow-500' : 'text-red-500'}>5</span> <Coins className="w-2 h-2 text-yellow-500" />
+                  <span className="text-xs flex items-center gap-1" style={{ color: '#737065' }}>
+                    消耗: <span style={{ color: currentUser && currentUser.coins >= 5 ? '#403E34' : '#c0392b' }}>5</span> <Coins className="w-2 h-2" style={{ color: '#403E34' }} />
                   </span>
-                  <div className="px-6 py-2 text-xs font-mono text-gray-500">此功能已停用</div>
+                  <div className="px-6 py-2 text-xs font-mono" style={{ color: '#737065' }}>此功能已停用</div>
                 </div>
               </div>
             </div>
@@ -1847,52 +1923,55 @@ export const MapTestView: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm"
           >
-            <div className="w-[400px] p-8 border border-gray-800 bg-black relative overflow-hidden shadow-2xl">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
-              <h3 className="text-xl font-light text-center text-gray-200 tracking-[0.3em] mb-3 font-serif">
+            <div className="w-[400px] p-8 relative overflow-hidden shadow-2xl" style={{ backgroundColor: '#D9D7C5', border: '1px solid #737065' }}>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFBAA8] to-transparent" />
+              <h3 className="text-xl font-light text-center tracking-[0.3em] mb-3 font-serif" style={{ color: '#403E34' }}>
                 SET PASSCODE
               </h3>
-              <p className="text-xs text-center text-gray-500 mb-8 font-mono leading-relaxed px-4">
+              <p className="text-xs text-center mb-8 font-mono leading-relaxed px-4" style={{ color: '#737065' }}>
                 首次連結偵測。<br />
                 請設定你的專屬四位數字密鑰，<br />
                 此後將以此作為唯一憑證。
               </p>
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-xs text-gray-500 uppercase tracking-widest">New Passcode</label>
+                  <label className="text-xs uppercase tracking-widest" style={{ color: '#737065' }}>New Passcode</label>
                   <input
                     type="password"
                     maxLength={4}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
                     placeholder="••••"
-                    className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono tracking-[0.5em]"
+                    className="w-full p-3 focus:outline-none transition-colors text-sm font-mono tracking-[0.5em]"
+                    style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs text-gray-500 uppercase tracking-widest">Confirm Passcode</label>
+                  <label className="text-xs uppercase tracking-widest" style={{ color: '#737065' }}>Confirm Passcode</label>
                   <input
                     type="password"
                     maxLength={4}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
                     placeholder="••••"
-                    className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono tracking-[0.5em]"
+                    className="w-full p-3 focus:outline-none transition-colors text-sm font-mono tracking-[0.5em]"
+                    style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                   />
                 </div>
                 {setPasswordError && (
-                  <p className="text-xs text-red-400 font-mono">{setPasswordError}</p>
+                  <p className="text-xs font-mono text-red-600">{setPasswordError}</p>
                 )}
                 <button
                   onClick={handleSetPassword}
-                  className="w-full py-3 mt-2 bg-gray-200 text-black text-sm font-bold tracking-widest hover:bg-white transition-colors uppercase"
+                  className="w-full py-3 mt-2 text-sm font-bold tracking-widest uppercase transition-colors"
+                  style={{ backgroundColor: '#403E34', color: '#D9D7C5' }}
                 >
                   Confirm & Connect
                 </button>
               </div>
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent" />
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFBAA8] to-transparent" />
             </div>
           </motion.div>
         )}

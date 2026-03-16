@@ -25,43 +25,49 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm"
         >
-          <div className="w-[400px] p-8 border border-gray-800 bg-black relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-500 to-transparent"></div>
-            
-            <h3 className="text-2xl font-light text-center text-gray-200 tracking-[0.4em] mb-4 font-serif">IDENTITY VERIFICATION</h3>
-            <p className="text-xs text-center text-gray-500 mb-8 font-mono leading-relaxed px-4">
+          <div className="w-[400px] p-8 relative overflow-hidden shadow-2xl"
+            style={{ backgroundColor: '#D9D7C5', border: '1px solid #737065' }}>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFBAA8] to-transparent" />
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFBAA8] to-transparent" />
+
+            <h3 className="text-2xl font-light text-center tracking-[0.4em] mb-4 font-serif" style={{ color: '#403E34' }}>
+              IDENTITY VERIFICATION
+            </h3>
+            <p className="text-xs text-center mb-8 font-mono leading-relaxed px-4" style={{ color: '#737065' }}>
               初次連結者，請署名你的代號。<br/>
               那串銘刻於靈魂的密鑰，將是你回歸的唯一憑證。
             </p>
-            
+
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-xs text-gray-500 uppercase tracking-widest">OC Name</label>
-                <input 
-                  type="text" 
+                <label className="text-xs uppercase tracking-widest" style={{ color: '#737065' }}>OC Name</label>
+                <input
+                  type="text"
                   value={username}
                   onChange={(e) => onUsernameChange(e.target.value)}
-                  placeholder="Enter OC Name..." 
-                  className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono" 
+                  placeholder="Enter OC Name..."
+                  className="w-full p-3 focus:outline-none transition-colors text-sm font-mono"
+                  style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs text-gray-500 uppercase tracking-widest">Passcode</label>
-                <input 
-                  type="password" 
+                <label className="text-xs uppercase tracking-widest" style={{ color: '#737065' }}>Passcode</label>
+                <input
+                  type="password"
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
-                  placeholder="••••••••" 
-                  className="w-full bg-gray-900 border border-gray-700 p-3 text-gray-300 focus:outline-none focus:border-white transition-colors text-sm font-mono" 
+                  placeholder="••••••••"
+                  className="w-full p-3 focus:outline-none transition-colors text-sm font-mono"
+                  style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                 />
               </div>
-              
-              <button 
-                onClick={() => onSubmit(username, password)} 
-                className="w-full py-3 mt-4 bg-gray-200 text-black text-sm font-bold tracking-widest hover:bg-white transition-colors uppercase"
+
+              <button
+                onClick={() => onSubmit(username, password)}
+                className="w-full py-3 mt-4 text-sm font-bold tracking-widest uppercase transition-colors"
+                style={{ backgroundColor: '#403E34', color: '#D9D7C5' }}
               >
                 Connect to Terminal
               </button>
