@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { apiClient } from '@/api/client';
 import { X } from 'lucide-react';
 import farewellMessages from '@/data/pet-farewell-messages.json';
 import karmaTagsData from '@/data/karma-tags.json';
@@ -49,6 +48,7 @@ interface TargetUserData {
   karma_tags: KarmaTag[];
   status_tags: StatusTag[];
   current_outfit: string | null;
+  wardrobe: string[];
   current_hp: number;
   max_hp: number;
   coins: number;
@@ -92,6 +92,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
   const [releasingPet, setReleasingPet] = useState<string | null>(null);
   const [farewellModal, setFarewellModal] = useState<{ petId: string; petName: string; message: string } | null>(null);
   const [activeKarmaTooltip, setActiveKarmaTooltip] = useState<string | null>(null);
+  const [selectingOutfit, setSelectingOutfit] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,7 +100,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
       try {
         const { data: user } = await (supabase as any)
           .from('td_users')
-          .select('oc_name, faction, alias_name, cursed_name_prefix, karma_tags, status_tags, current_outfit, current_hp, max_hp, coins')
+          .select('oc_name, faction, alias_name, cursed_name_prefix, karma_tags, status_tags, current_outfit, wardrobe, current_hp, max_hp, coins')
           .eq('oc_name', targetOcName)
           .maybeSingle();
 
@@ -113,6 +114,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           karma_tags: (user.karma_tags as any[]) || [],
           status_tags: (user.status_tags as any[]) || [],
           current_outfit: user.current_outfit ?? null,
+          wardrobe: (user.wardrobe as string[]) || [],
           current_hp: user.current_hp ?? 10,
           max_hp: user.max_hp ?? 10,
           coins: user.coins || 0,
@@ -172,12 +174,41 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
     setFarewellModal(null);
     setReleasingPet(petId);
     try {
-      await apiClient.pets.release(currentUserOcName, petId);
-      setPets(prev => prev.filter(p => p.pet_id !== petId));
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/character-card/banish-pet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oc_name: currentUserOcName, pet_id: petId, chapter_version: 'ch01_v3' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPets(prev => prev.filter(p => p.pet_id !== petId));
+      } else {
+        alert(data.error || '操作失敗，請稍後再試。');
+      }
     } catch (_) {
       alert('操作失敗，請稍後再試。');
     } finally {
       setReleasingPet(null);
+    }
+  };
+
+  const handleSelectOutfit = async (outfitId: string) => {
+    if (!userData) return;
+    setSelectingOutfit(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/character-card/select-outfit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oc_name: currentUserOcName, outfit_id: outfitId, chapter_version: 'ch01_v3' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUserData(prev => prev ? { ...prev, current_outfit: outfitId } : prev);
+      }
+    } catch (_) {
+      // silent
+    } finally {
+      setSelectingOutfit(false);
     }
   };
 
@@ -363,21 +394,44 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
               </div>
 
               {/* Current Outfit */}
-              {userData.current_outfit && (
-                <div className="space-y-1.5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
                   <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">當前衣裝</span>
+                </div>
+                {targetOcName === currentUserOcName && userData.wardrobe.length > 0 ? (
+                  <select
+                    value={userData.current_outfit || ''}
+                    onChange={(e) => handleSelectOutfit(e.target.value)}
+                    disabled={selectingOutfit}
+                    className="w-full text-xs px-3 py-1.5 rounded border bg-transparent outline-none cursor-pointer disabled:opacity-50"
+                    style={{
+                      borderColor: `${style.accent}35`,
+                      color: userData.current_outfit ? style.accent : style.sub,
+                      backgroundColor: `${style.bg}15`,
+                    }}
+                  >
+                    <option value="" disabled style={{ backgroundColor: FACTION_COLORS.background }}>
+                      — 選擇衣裝 —
+                    </option>
+                    {userData.wardrobe.map((id) => (
+                      <option key={id} value={id} style={{ backgroundColor: FACTION_COLORS.background, color: style.accent }}>
+                        {id}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
                   <div
                     className="text-sm px-3 py-1.5 rounded border"
                     style={{
                       borderColor: `${style.accent}35`,
-                      color: style.text,
+                      color: userData.current_outfit ? style.text : style.sub,
                       backgroundColor: `${style.bg}15`,
                     }}
                   >
-                    {userData.current_outfit}
+                    {userData.current_outfit || '（未選擇）'}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Karma Tags */}
               {userData.karma_tags.length > 0 && (() => {

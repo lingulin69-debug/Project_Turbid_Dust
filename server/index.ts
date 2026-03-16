@@ -2972,20 +2972,23 @@ app.get('/api/gossip', async (req, res) => {
     const gossipFeed = [
       ...(logs || []).map((l: any) => ({
         id: l.id,
-        type: l.gazette_type || 'system',
-        timestamp: l.created_at,
-        content: l.gazette_content,
-        author_oc: l.oc_name
+        gazette_type: l.gazette_type || 'system',
+        gazette_content: l.gazette_content,
+        oc_name: l.oc_name,
+        landmark_id: l.landmark_id || null,
+        faction: null,
+        created_at: l.created_at
       })),
       ...(decrees || []).map((d: any) => ({
         id: d.id,
-        type: 'leader',
-        timestamp: d.created_at,
-        content: d.content,
-        author_oc: d.leader_oc,
-        leader_decree_type: d.decree_type
+        gazette_type: 'leader' as const,
+        gazette_content: d.content,
+        oc_name: d.leader_oc,
+        landmark_id: null,
+        faction: d.faction || null,
+        created_at: d.created_at
       }))
-    ].sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     res.json({ gossip_feed: gossipFeed });
   } catch (error: any) {

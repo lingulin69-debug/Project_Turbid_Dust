@@ -322,7 +322,7 @@ export const MapTestView: React.FC = () => {
   
 
   // 小道消息 — 即時同步
-  const { entries: gazetteEntries, loading: gazetteLoading } = useGazette(50);
+  const { entries: gazetteEntries, loading: gazetteLoading } = useGazette('ch01_v3', 50);
 
   // 通知系統 — 即時同步
   const { notifications, unreadCount, popupNotification, markRead, markAllRead } = useNotifications(
