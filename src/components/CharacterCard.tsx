@@ -61,21 +61,19 @@ interface CharacterCardProps {
   onClose: () => void;
 }
 
-const FACTION_STYLE = {
-  Turbid: {
-    bg: FACTION_COLORS.Turbid.primary,
-    accent: FACTION_COLORS.Turbid.highlight,
-    label: '濁息者',
-    text: '#e5e0f0',
-    sub: '#a09ab8',
-  },
-  Pure: {
-    bg: FACTION_COLORS.Pure.primary,
-    accent: FACTION_COLORS.Pure.highlight,
-    label: '淨塵者',
-    text: '#1a1a0a',
-    sub: '#5a5030',
-  },
+// ── Palette ───────────────────────────────────────────────────────────────────
+// 統一用暖金棕色系，不依陣營切換
+const CARD = {
+  bg: '#C09D67',          // 卡片底色
+  bgDeep: '#95785A',      // 佔位框/次要背景
+  deco: '#D1A26E',        // 裝飾線 / 邊框高光
+  decoMuted: '#A8804A',   // 次要裝飾
+  textPrimary: '#2C1A06',  // 主要文字（深棕，對比度高）
+  textSecondary: '#5A3A18', // 次要文字
+  textMuted: '#7A5530',   // 說明文字
+  divider: '#B08850',     // 分隔線
+  tagBg: '#A07840',       // 標籤底色
+  tagBorder: '#C8966A',   // 標籤邊框
 };
 
 // ── Portrait Panel ────────────────────────────────────────────────────────────
@@ -86,21 +84,17 @@ const PortraitPanel: React.FC<{
   src: string;
   displayName: string;
   factionLabel: string;
-  accentColor: string;
-  bgColor: string;
-}> = ({ src, displayName, factionLabel, accentColor, bgColor }) => {
+}> = ({ src, displayName, factionLabel }) => {
   const [imgError, setImgError] = useState(false);
 
-  // Reverse:1999 portrait ratio ≈ 3:4 (portrait mode card art)
   return (
     <div
       className="relative w-full overflow-hidden"
       style={{
         aspectRatio: '3 / 4',
-        maxHeight: '320px',
-        background: '#111',
-        border: `1px solid ${accentColor}35`,
-        borderBottom: 'none',
+        maxHeight: '280px',
+        background: CARD.bgDeep,
+        borderBottom: `1px solid ${CARD.decoMuted}`,
       }}
     >
       {!imgError ? (
@@ -112,96 +106,53 @@ const PortraitPanel: React.FC<{
           style={{ display: 'block' }}
         />
       ) : (
-        /* ── Placeholder: Reverse:1999 style loading frame ── */
-        <div
-          className="w-full h-full flex flex-col items-center justify-center relative"
-          style={{ background: `linear-gradient(170deg, #1a1410 0%, #0d0a08 50%, ${bgColor}55 100%)` }}
+        /* ── Placeholder ── */
+        <div className="w-full h-full flex flex-col items-center justify-center relative"
+          style={{ background: `linear-gradient(170deg, ${CARD.bgDeep} 0%, #7A5A3A 100%)` }}
         >
-          {/* Subtle dot-grid texture */}
+          {/* Dot-grid texture */}
           <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle, ${accentColor}12 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(circle, ${CARD.deco}22 1px, transparent 1px)`,
             backgroundSize: '20px 20px',
           }} />
-
-          {/* Corner brackets — top-left */}
-          <div className="absolute top-3 left-3 w-6 h-6"
-            style={{ borderTop: `2px solid ${accentColor}70`, borderLeft: `2px solid ${accentColor}70` }} />
-          {/* Corner brackets — top-right */}
-          <div className="absolute top-3 right-3 w-6 h-6"
-            style={{ borderTop: `2px solid ${accentColor}70`, borderRight: `2px solid ${accentColor}70` }} />
-          {/* Corner brackets — bottom-left */}
-          <div className="absolute bottom-3 left-3 w-6 h-6"
-            style={{ borderBottom: `2px solid ${accentColor}70`, borderLeft: `2px solid ${accentColor}70` }} />
-          {/* Corner brackets — bottom-right */}
-          <div className="absolute bottom-3 right-3 w-6 h-6"
-            style={{ borderBottom: `2px solid ${accentColor}70`, borderRight: `2px solid ${accentColor}70` }} />
-
-          {/* Center content */}
-          <div className="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
-            {/* Faction badge */}
-            <div
-              className="px-3 py-1 text-[9px] tracking-[0.45em] uppercase font-mono"
-              style={{
-                border: `1px solid ${accentColor}50`,
-                color: accentColor,
-                backgroundColor: `${accentColor}10`,
-              }}
-            >
+          {/* Corner brackets */}
+          {(['top-3 left-3', 'top-3 right-3', 'bottom-12 left-3', 'bottom-12 right-3'] as const).map((pos, i) => (
+            <div key={i} className={`absolute ${pos} w-5 h-5`} style={{
+              borderTop:    i < 2 ? `2px solid ${CARD.deco}` : undefined,
+              borderBottom: i >= 2 ? `2px solid ${CARD.deco}` : undefined,
+              borderLeft:   i % 2 === 0 ? `2px solid ${CARD.deco}` : undefined,
+              borderRight:  i % 2 === 1 ? `2px solid ${CARD.deco}` : undefined,
+            }} />
+          ))}
+          {/* Center */}
+          <div className="relative z-10 flex flex-col items-center gap-3 px-6 text-center">
+            <div className="px-3 py-0.5 text-[9px] tracking-[0.4em] uppercase font-mono"
+              style={{ border: `1px solid ${CARD.deco}80`, color: CARD.deco, backgroundColor: `${CARD.deco}18` }}>
               {factionLabel}
             </div>
-
-            {/* Main label */}
-            <div className="space-y-1">
-              <p
-                className="text-sm tracking-[0.2em] font-mono"
-                style={{ color: `${accentColor}90` }}
-              >
-                {displayName}
-              </p>
-              <p
-                className="text-[10px] tracking-[0.35em] uppercase font-mono"
-                style={{ color: '#5a4428' }}
-              >
-                插畫載入中
-              </p>
-            </div>
-
-            {/* Animated loading bar */}
-            <div className="w-24 h-px relative overflow-hidden" style={{ backgroundColor: `${accentColor}20` }}>
-              <div
-                className="absolute top-0 left-0 h-full"
-                style={{
-                  width: '40%',
-                  backgroundColor: accentColor,
-                  animation: 'slide-loading 1.8s ease-in-out infinite',
-                }}
-              />
+            <p className="text-sm tracking-[0.15em] font-mono" style={{ color: CARD.deco }}>{displayName}</p>
+            <p className="text-[10px] tracking-[0.35em] uppercase font-mono" style={{ color: CARD.textMuted }}>
+              插畫載入中
+            </p>
+            <div className="w-20 h-px relative overflow-hidden" style={{ backgroundColor: `${CARD.deco}30` }}>
+              <div className="absolute top-0 left-0 h-full" style={{
+                width: '40%', backgroundColor: CARD.deco,
+                animation: 'slide-loading 1.8s ease-in-out infinite',
+              }} />
             </div>
           </div>
-
-          {/* Bottom label strip */}
-          <div
-            className="absolute bottom-0 left-0 right-0 py-1.5 flex items-center justify-center"
-            style={{
-              borderTop: `1px solid ${accentColor}25`,
-              backgroundColor: `${accentColor}08`,
-            }}
-          >
-            <span
-              className="text-[8px] tracking-[0.5em] uppercase font-mono"
-              style={{ color: `${accentColor}50` }}
-            >
-              OBSERVER TERMINAL · PORTRAIT PENDING
+          {/* Bottom strip */}
+          <div className="absolute bottom-0 left-0 right-0 py-1.5 flex items-center justify-center"
+            style={{ borderTop: `1px solid ${CARD.decoMuted}60`, backgroundColor: `${CARD.bgDeep}cc` }}>
+            <span className="text-[8px] tracking-[0.45em] uppercase font-mono" style={{ color: CARD.textMuted }}>
+              PORTRAIT PENDING
             </span>
           </div>
         </div>
       )}
-
-      {/* Gradient overlay: fade into card body below */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-        style={{ background: `linear-gradient(to bottom, transparent, ${FACTION_COLORS.background})` }}
-      />
+      {/* Fade to card body */}
+      <div className="absolute bottom-0 left-0 right-0 h-10 pointer-events-none"
+        style={{ background: `linear-gradient(to bottom, transparent, ${CARD.bg})` }} />
     </div>
   );
 };
@@ -342,8 +293,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 backdrop-blur-sm">
-        <p className="text-gray-400 font-mono text-sm tracking-[0.3em] animate-pulse">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <p className="font-mono text-sm tracking-[0.3em] animate-pulse" style={{ color: CARD.textMuted }}>
           正在讀取終端資料...
         </p>
       </div>
@@ -352,20 +303,17 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
   if (!userData) {
     return (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 backdrop-blur-sm">
-        <div
-          className="border border-gray-700 p-8 rounded font-mono text-gray-400 flex items-center gap-4"
-          style={{ backgroundColor: FACTION_COLORS.background }}
-        >
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="border p-8 rounded font-mono flex items-center gap-4"
+          style={{ backgroundColor: CARD.bg, borderColor: CARD.decoMuted, color: CARD.textSecondary }}>
           找不到該觀測者的紀錄。
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">✕</button>
+          <button onClick={onClose} style={{ color: CARD.textMuted }} className="hover:opacity-60 transition-opacity">✕</button>
         </div>
       </div>
     );
   }
 
   const isSame = userData.faction === viewerFaction;
-  const style = FACTION_STYLE[userData.faction];
   const displayAlias = userData.alias_name || '???';
   const displayName = userData.cursed_name_prefix
     ? `${userData.cursed_name_prefix}·${displayAlias}`
@@ -373,48 +321,38 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Farewell modal */}
       {farewellModal && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div
             className="w-full max-w-sm mx-6 rounded border p-6 space-y-5 text-center"
             style={{
-              backgroundColor: FACTION_COLORS.background,
-              borderColor: `${style.accent}55`,
-              boxShadow: `0 0 40px ${style.accent}18`,
+              backgroundColor: CARD.bg,
+              borderColor: CARD.decoMuted,
+              boxShadow: `0 8px 40px ${CARD.bgDeep}80`,
               fontFamily: 'monospace',
             }}
           >
-            <div className="text-base font-bold tracking-widest" style={{ color: style.accent }}>
+            <div className="text-base font-bold tracking-widest" style={{ color: CARD.textPrimary }}>
               {farewellModal.petName}
             </div>
-            <p
-              className="text-[15px] leading-relaxed px-2"
-              style={{ color: '#ffffff', fontStyle: 'italic' }}
-            >
+            <p className="text-[15px] leading-relaxed px-2" style={{ color: CARD.textSecondary, fontStyle: 'italic' }}>
               「{farewellModal.message}」
             </p>
             <div className="flex gap-3 pt-1">
               <button
                 className="flex-1 py-2.5 rounded text-sm font-bold tracking-widest transition-all"
-                style={{
-                  backgroundColor: style.accent,
-                  color: style.bg || '#fff',
-                }}
+                style={{ backgroundColor: CARD.decoMuted, color: '#fff' }}
                 onClick={() => setFarewellModal(null)}
               >
                 放棄流放
               </button>
               <button
                 className="px-4 py-2.5 rounded text-[11px] tracking-widest transition-colors"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: '#555',
-                  border: '1px solid #2a2a2a',
-                }}
+                style={{ backgroundColor: 'transparent', color: CARD.textMuted, border: `1px solid ${CARD.divider}` }}
                 onClick={confirmReleasePet}
               >
                 還是流放
@@ -423,30 +361,32 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Card */}
       <div
-        className="relative w-full max-w-md mx-4 rounded border"
+        className="relative w-full max-w-md mx-4 rounded border overflow-hidden"
         style={{
-          backgroundColor: FACTION_COLORS.background,
-          borderColor: style.accent,
-          boxShadow: `0 0 40px ${style.accent}25, 0 0 80px ${style.accent}08`,
+          backgroundColor: CARD.bg,
+          borderColor: CARD.deco,
+          boxShadow: `0 8px 60px ${CARD.bgDeep}90`,
           fontFamily: 'monospace',
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-3 border-b"
-          style={{ borderColor: `${style.accent}35`, backgroundColor: `${style.bg}18` }}
+          style={{ borderColor: CARD.divider, backgroundColor: CARD.bgDeep }}
         >
           <div className="flex items-center gap-2">
-            <span className="text-[10px] tracking-[0.3em] uppercase" style={{ color: style.sub }}>
+            <span className="text-[10px] tracking-[0.3em] uppercase" style={{ color: CARD.textMuted }}>
               觀測者終端
             </span>
-            <span style={{ color: style.accent }}>▸</span>
-            <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: style.accent }}>
+            <span style={{ color: CARD.deco }}>▸</span>
+            <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.deco }}>
               {userData.faction === 'Turbid' ? 'TURBID' : 'PURE'}
             </span>
           </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors">
+          <button onClick={onClose} style={{ color: CARD.textMuted }} className="hover:opacity-60 transition-opacity">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -465,25 +405,24 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
               src={portraitSrc}
               displayName={displayName}
               factionLabel={userData.faction === 'Turbid' ? 'TURBID' : 'PURE'}
-              accentColor={style.accent}
-              bgColor={style.bg}
             />
           );
         })()}
 
         {/* Body */}
-        <div className="p-5 space-y-4 max-h-[50vh] overflow-y-auto">
+        <div className="p-5 space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar"
+          style={{ backgroundColor: CARD.bg }}>
 
           {/* Alias + OC Name */}
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-10 rounded-full" style={{ backgroundColor: style.accent }} />
+              <div className="w-1 h-10 rounded-full" style={{ backgroundColor: CARD.deco }} />
               <div>
-                <div className="text-xl font-bold tracking-wider" style={{ color: style.accent }}>
+                <div className="text-xl font-bold tracking-wider" style={{ color: CARD.textPrimary }}>
                   {displayName}
                 </div>
                 {isSame && (
-                  <div className="text-[11px] text-gray-600 tracking-widest mt-0.5">
+                  <div className="text-[11px] tracking-widest mt-0.5" style={{ color: CARD.textMuted }}>
                     {userData.oc_name}
                   </div>
                 )}
@@ -492,7 +431,7 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
             {userData.cursed_name_prefix && (
               <div
                 className="text-[10px] px-2 py-0.5 rounded ml-4 inline-block mt-1"
-                style={{ backgroundColor: `${FACTION_COLORS.leaderEvil}20`, color: '#f87171', borderLeft: `2px solid ${FACTION_COLORS.leaderEvil}` }}
+                style={{ backgroundColor: `${FACTION_COLORS.leaderEvil}25`, color: '#c0392b', borderLeft: `2px solid ${FACTION_COLORS.leaderEvil}` }}
               >
                 ⚠ 領主詛咒施加中
               </div>
@@ -502,10 +441,10 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
           {/* Enemy faction: minimal display */}
           {!isSame ? (
             <div className="py-10 text-center space-y-2">
-              <div className="text-xs tracking-[0.3em] uppercase" style={{ color: style.sub }}>
+              <div className="text-xs tracking-[0.3em] uppercase" style={{ color: CARD.textMuted }}>
                 [ 敵方陣營 · 資訊受限 ]
               </div>
-              <div className="text-[10px] text-gray-700">
+              <div className="text-[10px]" style={{ color: CARD.textMuted }}>
                 僅顯示匿名代號與陣營標記
               </div>
             </div>
@@ -514,8 +453,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
               {/* HP Bar */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">生命值</span>
-                  <span className="text-xs" style={{ color: style.accent }}>
+                  <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>生命值</span>
+                  <span className="text-xs font-mono" style={{ color: CARD.textPrimary }}>
                     {userData.current_hp} / {userData.max_hp}
                   </span>
                 </div>
@@ -525,8 +464,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
                       key={i}
                       className="h-2 flex-1 rounded-sm"
                       style={{
-                        backgroundColor: i < userData.current_hp ? style.accent : '#1e1e2e',
-                        opacity: i < userData.current_hp ? 1 : 0.35,
+                        backgroundColor: i < userData.current_hp ? CARD.decoMuted : CARD.divider,
+                        opacity: i < userData.current_hp ? 1 : 0.3,
                       }}
                     />
                   ))}
@@ -535,51 +474,42 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
               {/* Coins */}
               <div className="flex items-center gap-3">
-                <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">貨幣</span>
-                <span className="text-sm" style={{ color: style.accent }}>
+                <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>貨幣</span>
+                <span className="text-sm font-mono font-bold" style={{ color: CARD.textPrimary }}>
                   {userData.coins}
                 </span>
               </div>
 
               {/* Current Outfit */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">當前衣裝</span>
-                </div>
+                <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>當前衣裝</span>
                 {targetOcName === currentUserOcName && userData.wardrobe.length > 0 ? (
                   <select
                     value={userData.current_outfit || ''}
                     onChange={(e) => handleSelectOutfit(e.target.value)}
                     disabled={selectingOutfit}
-                    className="w-full text-xs px-3 py-1.5 rounded border bg-transparent outline-none cursor-pointer disabled:opacity-50"
+                    className="w-full text-xs px-3 py-1.5 rounded border outline-none cursor-pointer disabled:opacity-50"
                     style={{
-                      borderColor: `${style.accent}35`,
-                      color: userData.current_outfit ? style.accent : style.sub,
-                      backgroundColor: `${style.bg}15`,
+                      borderColor: CARD.divider,
+                      color: CARD.textPrimary,
+                      backgroundColor: CARD.bgDeep,
                     }}
                   >
-                    <option value="" disabled style={{ backgroundColor: FACTION_COLORS.background }}>
-                      — 選擇衣裝 —
-                    </option>
+                    <option value="" disabled style={{ backgroundColor: CARD.bgDeep }}>— 選擇衣裝 —</option>
                     {userData.wardrobe.map((id) => (
-                      <option key={id} value={id} style={{ backgroundColor: FACTION_COLORS.background, color: style.accent }}>
-                        {id}
-                      </option>
+                      <option key={id} value={id} style={{ backgroundColor: CARD.bgDeep, color: CARD.textPrimary }}>{id}</option>
                     ))}
                   </select>
                 ) : (
-                  <div
-                    className="text-sm px-3 py-1.5 rounded border"
-                    style={{
-                      borderColor: `${style.accent}35`,
-                      color: userData.current_outfit ? style.text : style.sub,
-                      backgroundColor: `${style.bg}15`,
-                    }}
-                  >
+                  <div className="text-sm px-3 py-1.5 rounded border"
+                    style={{ borderColor: CARD.divider, color: userData.current_outfit ? CARD.textPrimary : CARD.textMuted, backgroundColor: CARD.bgDeep }}>
                     {userData.current_outfit || '（未選擇）'}
                   </div>
                 )}
               </div>
+
+              {/* Divider */}
+              <div style={{ borderTop: `1px solid ${CARD.divider}` }} />
 
               {/* Karma Tags */}
               {userData.karma_tags.length > 0 && (() => {
@@ -587,10 +517,9 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
                 const fadedTags = userData.karma_tags.filter(kt => kt.is_faded);
                 return (
                   <div className="space-y-2">
-                    {/* 現役標籤 */}
                     {activeTags.length > 0 && (
                       <div className="space-y-1.5">
-                        <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">因果標籤</span>
+                        <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>因果標籤</span>
                         <div className="flex flex-wrap gap-2">
                           {activeTags.map((kt, i) => (
                             <button
@@ -598,38 +527,36 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
                               onClick={() => setActiveKarmaTooltip(activeKarmaTooltip === kt.tag ? null : kt.tag)}
                               className="text-xs px-2 py-0.5 rounded border transition-opacity"
                               style={{
-                                borderColor: `${style.accent}50`,
-                                color: style.accent,
-                                backgroundColor: activeKarmaTooltip === kt.tag ? `${style.accent}20` : `${style.accent}10`,
+                                borderColor: CARD.tagBorder,
+                                color: CARD.textPrimary,
+                                backgroundColor: activeKarmaTooltip === kt.tag ? CARD.tagBg : `${CARD.tagBg}60`,
                               }}
                             >
                               {kt.tag}
                             </button>
                           ))}
                         </div>
-                        {/* 描述提示框 */}
                         {activeKarmaTooltip && KARMA_DESC[activeKarmaTooltip] && activeTags.some(t => t.tag === activeKarmaTooltip) && (
                           <p className="text-[11px] leading-relaxed px-2 py-1.5 rounded italic"
-                            style={{ color: `${style.accent}cc`, backgroundColor: `${style.accent}0a`, border: `1px solid ${style.accent}22` }}>
+                            style={{ color: CARD.textSecondary, backgroundColor: CARD.bgDeep, border: `1px solid ${CARD.divider}` }}>
                             {KARMA_DESC[activeKarmaTooltip]}
                           </p>
                         )}
                       </div>
                     )}
-                    {/* 褪色印記 */}
                     {fadedTags.length > 0 && (
                       <div className="space-y-1.5">
-                        <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">褪色印記</span>
+                        <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>褪色印記</span>
                         <div className="flex flex-wrap gap-2">
                           {fadedTags.map((kt, i) => (
                             <button
                               key={i}
                               onClick={() => setActiveKarmaTooltip(activeKarmaTooltip === kt.tag ? null : kt.tag)}
-                              className="text-xs px-2 py-0.5 rounded border transition-opacity"
+                              className="text-xs px-2 py-0.5 rounded border"
                               style={{
-                                borderColor: '#333',
-                                color: '#555',
-                                opacity: 0.4,
+                                borderColor: CARD.divider,
+                                color: CARD.textMuted,
+                                opacity: 0.5,
                                 textDecoration: 'line-through',
                                 backgroundColor: 'transparent',
                               }}
@@ -638,10 +565,9 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
                             </button>
                           ))}
                         </div>
-                        {/* 褪色印記描述提示框 */}
                         {activeKarmaTooltip && KARMA_DESC[activeKarmaTooltip] && fadedTags.some(t => t.tag === activeKarmaTooltip) && (
                           <p className="text-[11px] leading-relaxed px-2 py-1.5 rounded italic"
-                            style={{ color: '#555', backgroundColor: '#ffffff08', border: '1px solid #333' }}>
+                            style={{ color: CARD.textMuted, backgroundColor: CARD.bgDeep, border: `1px solid ${CARD.divider}` }}>
                             {KARMA_DESC[activeKarmaTooltip]}
                           </p>
                         )}
@@ -654,18 +580,11 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
               {/* Status Tags */}
               {userData.status_tags.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">特殊狀態</span>
+                  <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>特殊狀態</span>
                   <div className="flex flex-wrap gap-2">
                     {userData.status_tags.map((st, i) => (
-                      <span
-                        key={i}
-                        className="text-[11px] px-2 py-0.5 rounded"
-                        style={{
-                          backgroundColor: '#1a1200',
-                          color: '#fbbf24',
-                          border: '1px solid #78350f',
-                        }}
-                      >
+                      <span key={i} className="text-[11px] px-2 py-0.5 rounded"
+                        style={{ backgroundColor: `${FACTION_COLORS.leaderEvil}20`, color: '#c0392b', border: `1px solid ${FACTION_COLORS.leaderEvil}50` }}>
                         {st.tag}
                       </span>
                     ))}
@@ -675,23 +594,20 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
               {/* Pets */}
               <div className="space-y-2">
-                <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">
+                <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>
                   同行生物（{pets.length}/3）
                 </span>
                 {pets.length === 0 ? (
-                  <div className="text-xs text-gray-700 italic">目前無同行生物。</div>
+                  <div className="text-xs italic" style={{ color: CARD.textMuted }}>目前無同行生物。</div>
                 ) : (
                   <div className="space-y-1.5">
                     {pets.map(pet => (
-                      <div
-                        key={pet.pet_id}
-                        className="rounded border px-3 py-2"
-                        style={{ borderColor: `${style.accent}22`, backgroundColor: `${style.accent}06` }}
-                      >
+                      <div key={pet.pet_id} className="rounded border px-3 py-2"
+                        style={{ borderColor: CARD.divider, backgroundColor: CARD.bgDeep }}>
                         <div className="flex items-center justify-between">
                           <button
                             className="text-xs text-left hover:underline"
-                            style={{ color: style.accent }}
+                            style={{ color: CARD.textPrimary }}
                             onClick={() => setExpandedPet(expandedPet === pet.pet_id ? null : pet.pet_id)}
                           >
                             ▸ {pet.pet_name}
@@ -700,46 +616,34 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
                             <button
                               onClick={() => handleReleasePet(pet.pet_id, pet.pet_name)}
                               disabled={releasingPet === pet.pet_id}
-                              className="text-[10px] text-gray-700 hover:text-red-500 transition-colors tracking-widest disabled:opacity-50"
+                              className="text-[10px] tracking-widest transition-colors disabled:opacity-50"
+                              style={{ color: CARD.textMuted }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#c0392b')}
+                              onMouseLeave={e => (e.currentTarget.style.color = CARD.textMuted)}
                             >
                               {releasingPet === pet.pet_id ? '流放中...' : '[ 流放 ]'}
                             </button>
                           )}
                         </div>
-                        {/* 個性與習慣標籤 */}
                         {(pet.personality || pet.habit) && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {pet.personality && (
-                              <span
-                                className="text-[10px] px-1.5 py-0.5 rounded border"
-                                style={{
-                                  borderColor: `${style.accent}30`,
-                                  color: style.accent,
-                                  opacity: 0.7,
-                                }}
-                              >
+                              <span className="text-[10px] px-1.5 py-0.5 rounded border"
+                                style={{ borderColor: CARD.tagBorder, color: CARD.textSecondary }}>
                                 {pet.personality}
                               </span>
                             )}
                             {pet.habit && (
-                              <span
-                                className="text-[10px] px-1.5 py-0.5 rounded border"
-                                style={{
-                                  borderColor: `${style.accent}30`,
-                                  color: style.accent,
-                                  opacity: 0.7,
-                                }}
-                              >
+                              <span className="text-[10px] px-1.5 py-0.5 rounded border"
+                                style={{ borderColor: CARD.tagBorder, color: CARD.textSecondary }}>
                                 {pet.habit}
                               </span>
                             )}
                           </div>
                         )}
                         {expandedPet === pet.pet_id && (
-                          <p
-                            className="mt-1.5 text-[11px] text-gray-400 border-t pt-1.5"
-                            style={{ borderColor: `${style.accent}18` }}
-                          >
+                          <p className="mt-1.5 text-[11px] border-t pt-1.5 leading-relaxed"
+                            style={{ borderColor: CARD.divider, color: CARD.textSecondary }}>
                             {pet.pet_description}
                           </p>
                         )}
@@ -751,22 +655,17 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
 
               {/* Witness Records */}
               <div className="space-y-2">
-                <span className="text-[10px] tracking-[0.2em] uppercase text-gray-600">見證紀錄</span>
+                <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: CARD.textMuted }}>見證紀錄</span>
                 {witnessRecords.length === 0 ? (
-                  <div className="text-xs text-gray-700 italic">尚無組隊見證紀錄。</div>
+                  <div className="text-xs italic" style={{ color: CARD.textMuted }}>尚無組隊見證紀錄。</div>
                 ) : (
                   <div className="space-y-1">
                     {witnessRecords.map((rec, i) => (
-                      <div
-                        key={i}
-                        className="text-[11px] text-gray-400 px-2 py-1 border-l-2"
-                        style={{ borderColor: `${style.accent}45` }}
-                      >
-                        <span style={{ color: style.accent }}>{rec.landmark_name}</span>
-                        <span className="text-gray-700"> · Ch{rec.chapter_version} · </span>
-                        <span className="text-gray-500">
-                          {rec.members.filter(m => m !== targetOcName).join('、') || '（獨自見證）'}
-                        </span>
+                      <div key={i} className="text-[11px] px-2 py-1 border-l-2"
+                        style={{ borderColor: CARD.deco, color: CARD.textSecondary }}>
+                        <span style={{ color: CARD.textPrimary }}>{rec.landmark_name}</span>
+                        <span style={{ color: CARD.textMuted }}> · Ch{rec.chapter_version} · </span>
+                        <span>{rec.members.filter(m => m !== targetOcName).join('、') || '（獨自見證）'}</span>
                       </div>
                     ))}
                   </div>
@@ -777,10 +676,8 @@ export const CharacterCard: React.FC<CharacterCardProps> = ({
         </div>
 
         {/* Footer */}
-        <div
-          className="px-5 py-2 border-t flex justify-between text-[10px] text-gray-800 tracking-widest"
-          style={{ borderColor: `${style.accent}25` }}
-        >
+        <div className="px-5 py-2 border-t flex justify-between text-[10px] tracking-widest"
+          style={{ borderColor: CARD.divider, backgroundColor: CARD.bgDeep, color: CARD.textMuted }}>
           <span>PROJECT TURBID DUST</span>
           <span>OBSERVER TERMINAL v1.0</span>
         </div>
