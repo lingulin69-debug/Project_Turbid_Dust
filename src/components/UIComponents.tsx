@@ -39,7 +39,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
     <div
       className={`${
         fullScreen ? 'fixed' : 'absolute'
-      } inset-0 z-[999] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm`}
+      } inset-0 z-[999] flex flex-col items-center justify-center bg-black/80`}
     >
       <LoadingSpinner size="lg" />
       <p className="mt-4 text-sm text-gray-400 font-mono tracking-widest">{message}</p>
@@ -122,7 +122,7 @@ export const ResponsiveModal: React.FC<ResponsiveModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4">
       <div className={`${widthClasses[width]} bg-black border border-gray-800 shadow-2xl ${className}`}>
         {title && (
           <div className="flex justify-between items-center p-6 border-b border-gray-800">

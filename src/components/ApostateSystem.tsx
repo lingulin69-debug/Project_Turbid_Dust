@@ -208,7 +208,7 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95"
           >
             <div className="w-[500px] p-10 border border-gray-800 bg-black relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-900 to-transparent"></div>
@@ -245,7 +245,7 @@ export const ApostateSystem: React.FC<ApostateSystemProps> = ({ currentUser, cur
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80"
             onClick={() => setMenuOpen(false)}
           >
             <div className="w-[600px] h-[400px] bg-black border border-cyan-900/30 relative flex overflow-hidden shadow-[0_0_50px_rgba(34,211,238,0.1)]" onClick={e => e.stopPropagation()}>

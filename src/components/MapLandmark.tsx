@@ -86,6 +86,14 @@ const MapLandmarkComponent: React.FC<MapLandmarkProps> = ({
         ${isDevMode ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
       `}>
         <div className="font-bold">{landmark.name}</div>
+        {/* 人數需求：有 capacity 才顯示 */}
+        {isVisible && landmark.capacity != null && (
+          <div className={`text-[10px] mt-0.5 font-mono text-center
+            ${(landmark.occupants ?? 0) >= landmark.capacity ? 'text-red-400' : 'text-emerald-400'}`}>
+            {landmark.occupants ?? 0}/{landmark.capacity}
+            {(landmark.occupants ?? 0) >= landmark.capacity ? ' 已滿' : ''}
+          </div>
+        )}
         {isDevMode && <div className="text-[10px] text-cyan-400">({landmark.x.toFixed(1)}%, {landmark.y.toFixed(1)}%)</div>}
       </div>
     </div>
@@ -99,6 +107,7 @@ export const MapLandmark = React.memo(MapLandmarkComponent, (prevProps, nextProp
     prevProps.landmark.x === nextProps.landmark.x &&
     prevProps.landmark.y === nextProps.landmark.y &&
     prevProps.landmark.status === nextProps.landmark.status &&
+    prevProps.landmark.occupants === nextProps.landmark.occupants &&
     prevProps.isDevMode === nextProps.isDevMode &&
     prevProps.isVisible === nextProps.isVisible &&
     prevProps.scale === nextProps.scale

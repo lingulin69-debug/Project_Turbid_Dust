@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(__NEW_LINE_0cb77004ec229415__ echo \"=== 7. leader/tax — 找不到玩家 ===\")",
+      "Bash(__NEW_LINE_0cb77004ec229415__ echo \"\")",
+      "Bash(__NEW_LINE_7284167fb1178891__ echo \"=== 7. leader/tax — 找不到玩家 ===\")",
+      "Bash(__NEW_LINE_7284167fb1178891__ echo \"\")",
+      "Bash(__NEW_LINE_ef27aedf3d4d404b__ echo \"=== 1. auth/set-password — 帳號不存在 ===\")",
+      "Bash(__NEW_LINE_ef27aedf3d4d404b__ echo \"\")",
+      "Bash(__NEW_LINE_a0352e1ceebde5d7__ echo \"\")",
+      "Bash(__NEW_LINE_a6b266b7b42d031d__ echo \"=== 1. auth/set-password — 帳號不存在 ===\")",
+      "Bash(__NEW_LINE_a6b266b7b42d031d__ echo \"\")",
+      "Bash(node --input-type=commonjs:*)",
+      "Bash(cmd /c \"taskkill /PID 58544 /F\" 2)",
+      "Bash(1 sleep 2 netstat -ano)",
+      "Bash(__NEW_LINE_3d653230fabb5d22__ echo \"=== 1. auth/set-password — 帳號不存在 ===\")",
+      "Bash(__NEW_LINE_3d653230fabb5d22__ echo \"\")",
+      "Bash(__NEW_LINE_248b78fb323c1ad4__ echo \"=== 1. auth/set-password — 帳號不存在 ===\")",
+      "Bash(__NEW_LINE_248b78fb323c1ad4__ echo \"\")",
+      "Bash(npx tsc --noEmit)"
+    ]
+  }
+}

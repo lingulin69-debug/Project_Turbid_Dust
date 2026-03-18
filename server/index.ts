@@ -129,7 +129,7 @@ app.post('/api/dev/setup-test-users', async (req, res) => {
 
   const testUsers = [
     { oc_name: 'Vonn', faction: 'Turbid', identity_role: 'leader', leader_evil_points: 9, leader_treasury: 20, simple_password: '0000', is_in_party: false },
-    { oc_name: 'PlayerA', faction: 'Turbid', simple_password: '0000', is_in_party: false },
+    { oc_name: 'PlayerA', faction: 'Turbid', coins: 20, simple_password: '0000', is_in_party: false },
     { oc_name: 'PlayerB', faction: 'Pure', simple_password: '0000', is_in_party: false },
     { oc_name: 'PlayerC', faction: 'Turbid', simple_password: '0000', is_in_party: false },
     { oc_name: 'PlayerD', faction: 'Pure', simple_password: '0000', is_in_party: false },
@@ -138,6 +138,8 @@ app.post('/api/dev/setup-test-users', async (req, res) => {
     { oc_name: 'TraffickerA', faction: 'Neutral', npc_role: 'trafficker', movement_points: 3, prestige: 10, simple_password: '0000', is_in_party: false },
     { oc_name: 'InnOwnerA', faction: 'Neutral', npc_role: 'inn_owner', is_shop_open: true, simple_password: '0000', is_in_party: false },
     { oc_name: 'PetMerchantA', faction: 'Neutral', npc_role: 'pet_merchant', is_shop_open: false, simple_password: '0000', is_in_party: false },
+    { oc_name: 'ApostateA', faction: 'Turbid', identity_role: 'apostate', coins: 0, apostate_skill_used: false, simple_password: '0000', is_in_party: false },
+    { oc_name: 'BlackMerchantA', faction: 'Neutral', npc_role: 'black_merchant', coins: 0, simple_password: '0000', is_in_party: false },
     { oc_name: 'RescuerA', faction: 'Pure', coins: 10, simple_password: '0000', is_in_party: false },
     { oc_name: 'TargetE', faction: 'Turbid', is_lost: true, lost_until: new Date(Date.now() + 3600 * 1000).toISOString(), simple_password: '0000', is_in_party: false },
     { oc_name: 'TargetF', faction: 'Pure', simple_password: '0000', is_in_party: false },
@@ -174,6 +176,100 @@ app.post('/api/dev/setup-test-users', async (req, res) => {
   }
 });
 
+app.post('/api/dev/seed-black-market', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'dev only' });
+  }
+  try {
+    // Remove old test slots
+    await supabaseServer.from('market_slots').delete().eq('seller_oc', 'BlackMerchantA').eq('chapter_version', 'ch01_v3');
+    // Insert a test slot
+    const { data, error } = await supabaseServer.from('market_slots').insert({
+      seller_oc: 'BlackMerchantA',
+      seller_type: 'black_merchant',
+      item_type: 'dice_item',
+      item_id: 'rich_chest',
+      custom_name: '致富寶箱',
+      custom_description: '開箱一試，財富天定',
+      price: 4,
+      chapter_version: 'ch01_v3',
+      is_sold: false,
+      requires_dice: true,
+      dice_type: 'D6'
+    }).select().single();
+    if (error) throw error;
+    res.json({ success: true, slot_id: (data as any).id });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/dev/seed-comment-test', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'dev only' });
+  try {
+    // Get first available landmark
+    const { data: lm } = await supabaseServer.from('td_world_map_landmarks').select('id').limit(1).single();
+    if (!lm) return res.status(404).json({ error: 'NO_LANDMARK' });
+    const landmark_id = (lm as any).id;
+    const cv = 'ch01_v3';
+
+    // Upsert mission_log for PlayerA at this landmark
+    await supabaseServer.from('mission_logs').delete()
+      .eq('oc_name', 'PlayerA').eq('landmark_id', landmark_id).eq('chapter_version', cv);
+    const { error: mlErr } = await supabaseServer.from('mission_logs').insert({
+      oc_name: 'PlayerA',
+      mission_id: `${cv}-${landmark_id}-PlayerA`,
+      landmark_id,
+      chapter_version: cv,
+      status: 'reported',
+      gazette_type: 'mission',
+      report_content: 'dev seed'
+    });
+    if (mlErr) return res.status(500).json({ error: mlErr.message });
+
+    // Clear any existing comment by PlayerA at this landmark
+    await supabaseServer.from('landmark_messages').delete()
+      .eq('oc_name', 'PlayerA').eq('landmark_id', landmark_id);
+
+    res.json({ success: true, landmark_id });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Dev helper: inject karma_tags directly for testing
+app.post('/api/dev/inject-karma-tags', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'dev only' });
+  const { oc_name, karma_tags } = req.body;
+  if (!oc_name || !Array.isArray(karma_tags)) return res.status(422).json({ error: 'MISSING_FIELDS' });
+  try {
+    const { error } = await supabaseServer
+      .from('td_users')
+      .update({ karma_tags })
+      .eq('oc_name', oc_name);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Dev helper: inject inventory directly for testing
+app.post('/api/dev/inject-inventory', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ error: 'dev only' });
+  const { oc_name, inventory } = req.body;
+  if (!oc_name || !Array.isArray(inventory)) return res.status(422).json({ error: 'MISSING_FIELDS' });
+  try {
+    const { error } = await supabaseServer
+      .from('td_users')
+      .update({ inventory })
+      .eq('oc_name', oc_name);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // 1. Get Stats (Admin)
 app.get('/api/admin/stats', async (req, res) => {
@@ -3193,6 +3289,8 @@ app.get('/api/npc/black-merchant/items', async (req, res) => {
 app.post('/api/npc/black-merchant/buy', async (req, res) => {
   const { buyer_oc, item_id, chapter_version } = req.body;
   if (!buyer_oc || !item_id || !chapter_version) return res.status(422).json({ error: 'MISSING_FIELDS' });
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(item_id)) return res.status(404).json({ error: 'ITEM_NOT_FOUND' });
   try {
     const { data: slot, error: sErr } = await supabaseServer
       .from('market_slots')
@@ -3456,9 +3554,17 @@ app.get('/api/user/faded-marks/:oc_name', async (req, res) => {
     if (uErr) throw uErr;
     if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
 
-    // Faded marks are karma_tags that have been replaced (stored as JSON array with timestamp field)
-    const tags: any[] = (user as any).karma_tags || [];
-    const fadedMarks = tags.filter((t: any) => t.faded === true);
+    // Faded marks: karma_tags where is_faded === true
+    // tag shape: { tag: string, is_faded: boolean, faded_at?: string }
+    const tags: any[] = Array.isArray((user as any).karma_tags) ? (user as any).karma_tags : [];
+    const fadedMarks = tags
+      .filter((t: any) => t.is_faded === true)
+      .map((t: any) => ({
+        tag_id: t.tag,
+        name: t.tag,
+        description: t.description || '',
+        timestamp: t.faded_at || ''
+      }));
 
     res.json({ oc_name: (user as any).oc_name, faded_marks: fadedMarks });
   } catch (error: any) {
@@ -3505,8 +3611,20 @@ app.get('/api/user/relics/:oc_name', async (req, res) => {
     const { data: user } = await supabaseServer.from('td_users').select('oc_name, inventory').eq('oc_name', oc_name).maybeSingle();
     if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
 
-    const inventory: any[] = (user as any).inventory || [];
-    const relics = inventory.filter((item: any) => item.type === 'relic');
+    const inventory: any[] = Array.isArray((user as any).inventory) ? (user as any).inventory : [];
+    // Enrich relic items with metadata from items.json
+    const relicCatalog: any[] = (itemsData as any).relics || [];
+    const relics = inventory
+      .filter((item: any) => item.type === 'relic')
+      .map((item: any) => {
+        const meta = relicCatalog.find((r: any) => r.id === item.item_id) || {};
+        return {
+          relic_id: item.item_id,
+          name: meta.name || item.item_id,
+          description: meta.description || '',
+          image_url: meta.image_url || ''
+        };
+      });
 
     res.json({ oc_name: (user as any).oc_name, relics });
   } catch (error: any) {

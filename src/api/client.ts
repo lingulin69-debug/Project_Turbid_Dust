@@ -241,6 +241,75 @@ export const apiClient = {
     },
   },
 
+  // P3 §1: 褪色印記
+  fadedMarks: {
+    get: async (oc_name: string): Promise<{
+      oc_name: string;
+      faded_marks: { tag_id: string; name: string; description: string; timestamp: string }[];
+    }> => {
+      const res = await fetch(`${API_BASE}/user/faded-marks/${encodeURIComponent(oc_name)}`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to fetch faded marks');
+      }
+      return res.json();
+    }
+  },
+
+  // P3 §2: 天平結算 Lottie 動畫
+  settlement: {
+    getResult: async (chapter_version?: string): Promise<{
+      chapter_version: string;
+      final_balance_value: number;
+      winning_faction: 'Turbid' | 'Pure' | 'Draw';
+      lottie_animation_data: object | null;
+    }> => {
+      const query = chapter_version ? `?chapter_version=${encodeURIComponent(chapter_version)}` : '';
+      const res = await fetch(`${API_BASE}/balance/settlement-result${query}`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to fetch settlement result');
+      }
+      return res.json();
+    }
+  },
+
+  // P3 §3: 真結局遺物收集
+  relics: {
+    get: async (oc_name: string): Promise<{
+      oc_name: string;
+      relics: { relic_id: string; name: string; description: string; image_url: string | null; acquired_at: string }[];
+    }> => {
+      const res = await fetch(`${API_BASE}/user/relics/${encodeURIComponent(oc_name)}`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to fetch relics');
+      }
+      return res.json();
+    }
+  },
+
+  // P3 §4: 旅店距離區間細化
+  innDistance: {
+    getSettings: async (): Promise<{
+      rescue_distance_settings: {
+        inn_landmark_id: string;
+        distance_zones: {
+          zone_name: string;
+          landmark_ids: string[];
+          time_reduction_minutes: number;
+        }[];
+      }[];
+    }> => {
+      const res = await fetch(`${API_BASE}/inn/rescue-distance`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to fetch rescue distance settings');
+      }
+      return res.json();
+    }
+  },
+
   npc: {
     merchant: {
       listItem: async (merchant_oc: string, item_id: string, chapter_version: string, price: number) => {

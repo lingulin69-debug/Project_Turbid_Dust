@@ -7,14 +7,16 @@
 }
 
 :root {
-  font-family: 'Noto Sans TC', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  background-color: #0a0a0a;
-  color: #ffffff;
+  font-family: 'Noto Sans TC', 'Noto Serif TC', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background: linear-gradient(135deg, #f0ebe5 0%, #e2ddd5 100%);
+  color: #5a4e44;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   overflow: hidden;
+  background: linear-gradient(135deg, #f0ebe5 0%, #e2ddd5 100%);
 }
 
 /* iOS Modal Animations */
@@ -37,6 +39,12 @@ body {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* 業力結算按鈕呼吸燈 */
+@keyframes settlement-breathe {
+  0%, 100% { box-shadow: 0 0 0 0px var(--breathe-color, #7c3aed); opacity: 0.55; }
+  50%       { box-shadow: 0 0 10px 3px var(--breathe-color, #7c3aed); opacity: 1; }
 }
 
 @keyframes fadeOut {
@@ -114,3 +122,76 @@ body {
   50%  { transform: translateX(150%); }
   100% { transform: translateX(150%); }
 }
+
+/* ── 遺物集齊特效 ── */
+@keyframes feather-fall {
+  0%   { transform: translateY(-20px) rotate(var(--rot-start)) translateX(0); opacity: 0; }
+  10%  { opacity: 0.7; }
+  80%  { opacity: 0.5; }
+  100% { transform: translateY(110vh) rotate(var(--rot-end)) translateX(var(--drift)); opacity: 0; }
+}
+
+@keyframes relic-poem-fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes relic-poem-line {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes relic-poem-fadeout {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.relic-poem-overlay {
+  animation: relic-poem-fadein 1.2s ease forwards;
+}
+
+.relic-poem-overlay.fading-out {
+  animation: relic-poem-fadeout 1.5s ease forwards;
+}
+
+.relic-poem-line {
+  opacity: 0;
+  animation: relic-poem-line 0.8s ease forwards;
+}
+
+.feather-particle {
+  position: fixed;
+  top: -40px;
+  width: 6px;
+  height: 18px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  animation: feather-fall var(--fall-dur) ease-in forwards;
+  animation-delay: var(--fall-delay);
+  opacity: 0;
+}
+
+/* ── 手機響應式基礎規範 ───────────────────────────────── */
+
+/* 防止 iOS Safari 在點擊 input 時自動放大（需 font-size >= 16px） */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* 全域觸控優化：防止雙擊縮放干擾按鈕 */
+button, [role="button"], a {
+  touch-action: manipulation;
+}
+
+/* 手機按鈕最小點擊區域（Apple HIG: 44px） */
+@media (max-width: 640px) {
+  button {
+    min-height: 44px;
+  }
+}
+
+
+

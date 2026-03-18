@@ -108,15 +108,40 @@ NULL            一般玩家
 ## NPC移動規則
 
 ```
-移動型NPC（item_merchant / black_merchant / trafficker）：
-  每章 movement_points = 10
-  每步固定扣1
+移動型NPC（trafficker / 人販子）：
+  位置由 td_users.current_landmark_id 決定
+  每章 movement_points = 10，每步扣1
   只能移動到 status = 'open' 的據點
   共用 POST /api/npc/move
+  地圖 ICON 動態跟隨 current_landmark_id 對應的座標
 
-固定型NPC（inn_owner / pet_merchant）：
-  不移動
+固定型NPC（inn_owner / pet_merchant / black_merchant / item_merchant）：
+  不移動，地圖座標寫死在 MapTestView.tsx 的 MAP_NPCS 常數
   有開關店功能（is_shop_open 欄位）
+  inn_owner / pet_merchant 另有開關店 toggle API
+```
+
+---
+
+## NPC 介面架構（雙層）
+
+```
+玩家端互動 Modal（點擊地圖 NPC 圖標觸發）：
+  黑心商人 / 道具商人：瀏覽商品列表 → 購買（apiClient.npc.merchant.buy）
+  旅店老闆：申請治療（2幣, D20自動擲）/ 委託救援（5幣, 輸入目標OC）
+  寵物商人：瀏覽生物列表 → 購買（apiClient.pets.buy）
+  人販子：無互動，僅顯示存在感
+
+NPC 自身管理 Panel（NPCPanel.tsx，登入後 HUD NPC tab）：
+  黑心商人 / 道具商人：移動 + 上架商品（含骰子判定/R18 限黑心）
+  旅店老闆：開關店 toggle
+  寵物商人：開關店 + 勾選預設寵物（最多3隻）+ 新增自製款
+  人販子：移動 + 村民任務 + 技能（綁架/情報/扒竊）
+
+⚠️ 未實作：
+  - 商人下架已上架商品
+  - 骰子商品購買後的 D6/D20 結果展示給玩家
+  - 商人 Modal 按 oc_name 篩選商品（目前顯示全部未售出）
 ```
 
 ---
