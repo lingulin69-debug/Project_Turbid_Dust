@@ -55,154 +55,12 @@ import {
   CollectionPanel,
   SettingsPanel,
 } from './WhiteCrowPanels';
-import { PTD_UI_THEME, PTD_UI_TURBID_THEME, getPageTheme, usePTDUIStyles } from './PTD_UI_Theme';
+import { NpcInteractionModal, NpcMapEntry } from './NpcInteractionModal';
+import { LandmarkStoryModal, Landmark } from './LandmarkStoryModal';
+import { MAP_NPCS, landmarks, announcements, missions, NPC_ROLE_ICON, NPC_ROLE_LABEL, type Announcement, type Mission } from '@/data/mapConfig';
+import { getPageTheme, usePTDUIStyles } from './PTD_UI_Theme';
 import { Sounds } from '@/hooks/useSounds';
 import landmarkChaptersData from '@/data/landmark-chapters.json';
-
-// Extended Landmark Interface
-interface Landmark extends LandmarkData {
-  // Inherits from LandmarkData
-}
-
-// ── NPC 地圖實體 ──────────────────────────────────────────────────────────────
-interface NpcMapEntry {
-  id: string;
-  oc_name: string;       // 對應 td_users.oc_name
-  display_name: string;  // 顯示名稱
-  npc_role: 'black_merchant' | 'trafficker' | 'inn_owner' | 'pet_merchant';
-  x: number;             // 百分比 0-100
-  y: number;
-  is_open: boolean;      // 目前是否營業
-  status_text?: string;  // NPC 自訂狀態訊息
-}
-
-const NPC_ROLE_ICON: Record<NpcMapEntry['npc_role'], string> = {
-  black_merchant: '🎭',
-  trafficker:     '🪤',
-  inn_owner:      '🏠',
-  pet_merchant:   '🐾',
-};
-
-const NPC_ROLE_LABEL: Record<NpcMapEntry['npc_role'], string> = {
-  black_merchant: '黑心商人',
-  trafficker:     '人販子',
-  inn_owner:      '旅店老闆',
-  pet_merchant:   '寵物商人',
-};
-
-// 固定位置 NPC（inn_owner / pet_merchant / black_merchant / item_merchant）
-// 座標由管理員在此設定，不會改變
-// 人販子（trafficker）不在此列，位置由 current_landmark_id 動態決定
-const MAP_NPCS: NpcMapEntry[] = [
-  { id: 'npc_bm1',  oc_name: 'BlackMerchantA', display_name: '老黑',     npc_role: 'black_merchant', x: 32, y: 55, is_open: true,  status_text: '今日開張，稀有貨不多' },
-  { id: 'npc_inn1', oc_name: 'InnOwnerA',      display_name: '暖光旅店', npc_role: 'inn_owner',      x: 68, y: 35, is_open: true,  status_text: '今日接受治療與救援' },
-  { id: 'npc_pm1',  oc_name: 'PetMerchantA',   display_name: '獸語人',   npc_role: 'pet_merchant',   x: 82, y: 60, is_open: false, status_text: '今日休息' },
-];
-
-// Updated Data with Types
-const landmarks: Landmark[] = [
-  { id: 'l1_t01', name: '空衣街區', x: 20, y: 40, faction: 'Turbid', status: 'open', occupants: 2, capacity: 5, type: 'town' },
-  { id: 'l1_t04', name: '舊鐘樓觀測所', x: 45, y: 30, faction: 'Turbid', status: 'open', occupants: 0, capacity: 3, type: 'school' },
-  { id: 'l1_p01', name: '淨化尖塔', x: 75, y: 50, faction: 'Pure', status: 'open', occupants: 5, capacity: 10, type: 'church' },
-  { id: 'l1_p02', name: '中央圖書館', x: 60, y: 65, faction: 'Pure', status: 'open', occupants: 1, capacity: 8, type: 'school' },
-];
-
-interface Announcement {
-  id: string;
-  title: string;
-  content: string;
-  date: string;
-}
-
-const announcements: Announcement[] = [
-  { 
-    id: 'a1', 
-    title: '觀測日誌 · 殘篇 I', 
-    content: '紀錄於時光之隙的殘篇... 濁息濃度今日異常上升，請觀測者們遠離邊界迷霧。唯有保持理智，方能直視深淵而不被吞噬。', 
-    date: '2026.02.08' 
-  },
-  { 
-    id: 'a2', 
-    title: '系統公告 · 靜默協議', 
-    content: '終端將於近期進行乙太重組。屆時所有連接將暫時斷開，請觀測者們尋找安全據點避難。', 
-    date: '2026.02.07' 
-  },
-  {
-    id: 'a3',
-    title: '緊急通報 · 雙生鏡像',
-    content: '警告：在鏡像邊界觀測到不明數據波動。請勿相信任何非本陣營的訊號...它們可能是來自深淵的誘餌。',
-    date: '2026.02.06'
-  }
-];
-
-interface Mission {
-  id: string;
-  title: string;
-  description: string;
-  current: number;
-  max?: number; // Optional for side quests
-  status: 'active' | 'full';
-  faction: 'Turbid' | 'Pure' | 'Common';
-  type: 'main' | 'side';
-  chapterVersion: string;
-}
-
-interface MarketSlot {
-  id: string;
-  seller_oc: string;
-  item_id: string | null;
-  item_type: string;
-  custom_name: string | null;
-  custom_description: string | null;
-  price: number;
-  listed_at: string;
-  dice_type?: 'D6' | 'D20' | null;
-  is_sold?: boolean;
-}
-
-interface ShopPet {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  is_listed: boolean;
-  is_preset: boolean;
-}
-
-const missions: Mission[] = [
-  { 
-    id: 'm1', 
-    title: '重塑破碎的黃昏', 
-    description: '收集散落在邊界的微光碎片，修復舊觀測站的能源核心。', 
-    current: 1, 
-    max: 3, 
-    status: 'active', 
-    faction: 'Turbid',
-    type: 'main',
-    chapterVersion: '1.0'
-  },
-  { 
-    id: 'm2', 
-    title: '淨化儀式 · 序章', 
-    description: '前往中央圖書館協助整理受污染的古籍。', 
-    current: 3, 
-    max: 3, 
-    status: 'full', 
-    faction: 'Pure',
-    type: 'main',
-    chapterVersion: '1.0'
-  },
-  { 
-    id: 'm3', 
-    title: '收集濁息殘片', 
-    description: '在空衣街區尋找殘留的濁息結晶。', 
-    current: 42, 
-    status: 'active', 
-    faction: 'Common',
-    type: 'side',
-    chapterVersion: '1.0'
-  }
-];
 
 
 // ─── KidnapPopup ────────────────────────────────────────────────────────────
@@ -1078,11 +936,20 @@ export const MapTestView: React.FC = () => {
 
   return (
     <div
-      className="w-full h-screen overflow-hidden relative ptd-ui-base"
+      className="w-full h-screen ptd-ui-base"
       data-faction={playerFaction}
-      style={{ backgroundColor: pageTheme.bgBase, color: pageTheme.textPrimary }}
-      ref={containerRef}
+      style={{
+        backgroundColor:'#a29db4',
+        color: pageTheme.textPrimary,
+        backgroundImage: `radial-gradient(circle, ${pageTheme.textSecondary}18 1px, transparent 1px)`,
+        backgroundSize: '28px 28px',
+      }}
     >
+      <div
+        className="relative h-[calc(100vh-80px)] top-[20px] mx-auto overflow-hidden rounded-xl border border-white/10 shadow-xl"
+        style={{ maxWidth: '1200px', backgroundColor: 'rgba(191, 183, 204, 0.7)' }}
+        ref={containerRef}
+      >
       
       {/* Dev Control Panel */}
       <AnimatePresence>
@@ -2598,8 +2465,8 @@ export const MapTestView: React.FC = () => {
           chapterVersion="ch01_v3"
           onClose={() => setShowSettlement(false)}
         />
-      )}
-
-    </div>
-  );
-};
+              )}
+            </div>
+          </div>
+        );
+      };

@@ -27,8 +27,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70"
         >
-          <div className="w-[400px] p-8 relative overflow-hidden shadow-2xl"
-            style={{ backgroundColor: '#D9D7C5', border: '1px solid #737065' }}>
+          <div
+            className="w-[400px] p-8 relative overflow-hidden shadow-2xl ptd-ui-glass rounded-[6px]"
+            style={{ border: '1px solid #737065' }}
+          >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFBAA8] to-transparent" />
             <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#BFBAA8] to-transparent" />
 
@@ -48,7 +50,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   value={username}
                   onChange={(e) => onUsernameChange(e.target.value)}
                   placeholder="Enter OC Name..."
-                  className="w-full p-3 focus:outline-none transition-colors text-sm font-mono"
+                  className="w-full p-3 focus:outline-none transition-colors text-sm font-mono rounded-[6px]"
                   style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                 />
               </div>
@@ -59,14 +61,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full p-3 focus:outline-none transition-colors text-sm font-mono"
+                  className="w-full p-3 focus:outline-none transition-colors text-sm font-mono rounded-[6px]"
                   style={{ backgroundColor: '#BFBAA8', border: '1px solid #737065', color: '#403E34' }}
                 />
               </div>
 
               <button
                 onClick={() => onSubmit(username, password)}
-                className="w-full py-3 mt-4 text-sm font-bold tracking-widest uppercase transition-colors"
+                className="w-full py-3 mt-4 text-sm font-bold tracking-widest uppercase transition-colors rounded-[6px]"
                 style={{ backgroundColor: '#403E34', color: '#D9D7C5' }}
               >
                 Connect to Terminal

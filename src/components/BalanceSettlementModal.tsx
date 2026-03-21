@@ -141,7 +141,7 @@ export const BalanceSettlementModal: React.FC<BalanceSettlementModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(4,2,8,0.92)', backdropFilter: 'blur(4px)' }}
+      style={{ backgroundColor: 'rgba(4,2,8,0.92)' }}
     >
       <AnimatePresence mode="wait">
 

@@ -1,1 +1,12 @@
-[]
+{
+  "version": "1.0",
+  "comment": "距離以地圖座標百分比計算（0-100的歐幾里得距離）。系統自動計算旅店與失蹤玩家所在據點的距離，不需要手動列出每個據點。",
+  "near_threshold": 25,
+  "medium_threshold": 50,
+  "time_reductions": {
+    "near": 60,
+    "medium": 30,
+    "far": 10
+  },
+  "rescue_cost": 5
+}

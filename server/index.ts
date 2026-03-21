@@ -9,6 +9,7 @@ import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 import itemsData from '../src/components/items.json' assert { type: 'json' };
 import rescueDistanceData from '../src/data/rescue-distance.json' assert { type: 'json' };
+import landmarkPositionsData from '../src/data/landmark-positions.json' assert { type: 'json' };
 import npcDeliverTexts from '../src/data/npc-deliver-texts.json' assert { type: 'json' };
 import petTraits from '../src/data/pet-traits.json' assert { type: 'json' };
 import partyEventsData from '../src/data/party-events.json' assert { type: 'json' };
@@ -1132,6 +1133,39 @@ app.get('/api/npc/merchant/my-listings', async (req, res) => {
   }
 });
 
+// DELETE /api/npc/merchant/listings/:id — 商人下架商品
+app.delete('/api/npc/merchant/listings/:id', async (req, res) => {
+  const { id } = req.params;
+  const { merchant_oc } = req.body;
+
+  if (!merchant_oc || !id) {
+    return res.status(400).json({ error: '缺少必要欄位' });
+  }
+
+  try {
+    // 驗證此商品屬於該商人且尚未售出
+    const { data: slot, error: fetchErr } = await supabaseServer
+      .from('market_slots')
+      .select('id, seller_oc, is_sold')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (fetchErr || !slot) return res.status(404).json({ error: '商品不存在' });
+    if ((slot as any).seller_oc !== merchant_oc) return res.status(403).json({ error: '無權下架此商品' });
+    if ((slot as any).is_sold) return res.status(400).json({ error: '商品已售出，無法下架' });
+
+    const { error: delErr } = await supabaseServer
+      .from('market_slots')
+      .delete()
+      .eq('id', id);
+
+    if (delErr) throw delErr;
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 13. GET /api/npc/merchant/market
 app.get('/api/npc/merchant/market', async (req, res) => {
   const chapter = (req.query.chapter_version as string) || (req.query.chapter as string) || '1.0';
@@ -1867,9 +1901,6 @@ app.post('/api/npc/inn/rescue', async (req, res) => {
       .eq('oc_name', payerOc)
       .maybeSingle();
     if (payerErr || !payer) return res.status(404).json({ error: 'RESCUER_NOT_FOUND' });
-    if (((payer as any).coins ?? 0) < 5) {
-      return res.status(400).json({ error: 'INSUFFICIENT_COINS' });
-    }
 
     const { data: target, error: targetErr } = await supabaseServer
       .from('td_users')
@@ -1880,30 +1911,40 @@ app.post('/api/npc/inn/rescue', async (req, res) => {
     if (targetErr || !target) return res.status(404).json({ error: 'TARGET_NOT_FOUND' });
     if (!(target as any).is_lost) return res.status(400).json({ error: 'TARGET_NOT_LOST' });
 
-    // 距離判定：讀取 rescue-distance.json，若空則全部視為 mid（30分鐘）
-    let minutesUntilRelease = 30;
+    // 距離判定：根據旅店與目標玩家所在據點的座標自動計算
+    const distCfg = rescueDistanceData as any;
+    const nearThreshold: number = distCfg.near_threshold ?? 25;
+    const mediumThreshold: number = distCfg.medium_threshold ?? 50;
+    const timeReductions: Record<string, number> = distCfg.time_reductions ?? { near: 60, medium: 30, far: 10 };
+    const rescueCost: number = distCfg.rescue_cost ?? 5;
+
+    if (((payer as any).coins ?? 0) < rescueCost) {
+      return res.status(400).json({ error: 'INSUFFICIENT_COINS' });
+    }
+
+    let minutesUntilRelease = timeReductions.far ?? 10; // 預設：遠區
     try {
-      const rescueDistData = rescueDistanceData as any[];
-      if (rescueDistData.length > 0) {
-        const innLandmarkId = (innOwner as any).current_landmark_id;
-        const targetLandmarkId = (target as any).current_landmark_id;
-        const distConfig = rescueDistData.find((d: any) => d.inn_landmark_id === innLandmarkId);
-        if (distConfig) {
-          const zones: any[] = distConfig.distance_zones || [];
-          const match = zones.find((z: any) => z.landmark_ids?.includes(targetLandmarkId));
-          if (match?.zone === 'near') minutesUntilRelease = 10;
-          else if (match?.zone === 'far') minutesUntilRelease = 60;
-          // mid 維持 30
-        }
+      const positions = landmarkPositionsData as Array<{ id: string; x: number | null; y: number | null }>;
+      const innLandmarkId = (innOwner as any).current_landmark_id;
+      const targetLandmarkId = (target as any).current_landmark_id;
+      const innPos = positions.find(p => p.id === innLandmarkId);
+      const targetPos = positions.find(p => p.id === targetLandmarkId);
+      if (innPos && targetPos && innPos.x !== null && innPos.y !== null && targetPos.x !== null && targetPos.y !== null) {
+        const dx = innPos.x - targetPos.x;
+        const dy = innPos.y - targetPos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < nearThreshold) minutesUntilRelease = timeReductions.near ?? 60;
+        else if (dist < mediumThreshold) minutesUntilRelease = timeReductions.medium ?? 30;
+        // else 維持 far 預設
       }
     } catch (_) { /* 讀取失敗沿用預設值 */ }
 
     const lostUntil = new Date(Date.now() + minutesUntilRelease * 60 * 1000).toISOString();
 
-    // 扣除救援者 5 幣
+    // 扣除救援者費用
     const { error: deductErr } = await supabaseServer
       .from('td_users')
-      .update({ coins: (payer as any).coins - 5 })
+      .update({ coins: (payer as any).coins - rescueCost })
       .eq('oc_name', payerOc);
     if (deductErr) throw deductErr;
 
@@ -1941,7 +1982,7 @@ app.post('/api/npc/inn/rescue', async (req, res) => {
       success: true,
       message: 'Player rescue initiated.',
       updated_data: {
-        rescuer_coins: (payer as any).coins - 5,
+      rescuer_coins: (payer as any).coins - rescueCost,
         target_lost_until: lostUntil,
         minutes_until_release: minutesUntilRelease
       }
@@ -3637,7 +3678,7 @@ app.get('/api/user/relics/:oc_name', async (req, res) => {
 // ============================================================
 app.get('/api/inn/rescue-distance', async (req, res) => {
   try {
-    res.json({ rescue_distance_settings: rescueDistanceData });
+    res.json(rescueDistanceData);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

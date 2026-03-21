@@ -128,6 +128,7 @@ const MerchantPanel: React.FC<{
   const [diceType, setDiceType] = useState<'D6' | 'D20'>('D6');
   const [diceResults, setDiceResults] = useState<DiceResult[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [delistingId, setDelistingId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
 
   const isBlack = currentUser.npc_role === 'black_merchant';
@@ -197,6 +198,23 @@ const MerchantPanel: React.FC<{
       fetchListings();
     } catch { setMsg('連線失敗'); }
     finally { setSubmitting(false); }
+  };
+
+  const handleDelist = async (slotId: string) => {
+    setDelistingId(slotId);
+    setMsg('');
+    try {
+      const res = await fetch(`${API_BASE}/npc/merchant/listings/${slotId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ merchant_oc: currentUser.oc_name }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg(data.error || '下架失敗'); return; }
+      setListings(prev => prev.filter(s => s.id !== slotId));
+      setMsg('商品已下架');
+    } catch { setMsg('連線失敗'); }
+    finally { setDelistingId(null); }
   };
 
   const itemTypeLabel: Record<string, string> = {
@@ -374,14 +392,28 @@ const MerchantPanel: React.FC<{
                 className={`text-[11px] font-mono px-3 py-2 ${s.is_sold ? 'opacity-40' : ''}`}
                 style={{ border: '1px solid #BFBAA8', backgroundColor: 'rgba(191,186,168,0.2)' }}
               >
-                <div className="flex justify-between">
-                  <span style={{ color: '#403E34' }}>{s.custom_name || s.item_id || s.item_type}</span>
-                  <span style={{ color: '#737065' }}>{s.price} 幣</span>
-                </div>
-                <div className="flex gap-2 mt-0.5">
-                  <span style={{ color: '#737065' }}>{s.item_type}</span>
-                  {s.dice_type && <span style={{ color: '#737065' }}>{s.dice_type}</span>}
-                  {s.is_sold && <span className="text-green-700">已售出</span>}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between">
+                      <span style={{ color: '#403E34' }}>{s.custom_name || s.item_id || s.item_type}</span>
+                      <span style={{ color: '#737065' }}>{s.price} 幣</span>
+                    </div>
+                    <div className="flex gap-2 mt-0.5">
+                      <span style={{ color: '#737065' }}>{s.item_type}</span>
+                      {s.dice_type && <span style={{ color: '#737065' }}>{s.dice_type}</span>}
+                      {s.is_sold && <span className="text-green-700">已售出</span>}
+                    </div>
+                  </div>
+                  {!s.is_sold && (
+                    <button
+                      onClick={() => handleDelist(s.id)}
+                      disabled={delistingId === s.id}
+                      className="ml-2 shrink-0 text-[10px] px-2 py-0.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ border: '1px solid #737065', color: '#737065', backgroundColor: 'transparent' }}
+                    >
+                      {delistingId === s.id ? '...' : '下架'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

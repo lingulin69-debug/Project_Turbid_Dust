@@ -4,6 +4,27 @@
 
 ---
 
+## 變更記錄 (2026-03-20)
+
+### `DesignOverlay.tsx` 元件重構
+
+為了輔助 UI/UX 設計師進行畫面校準，今天對 `DesignOverlay.tsx` 進行了兩次重大更新：
+
+1.  **第一版（自主開關版）**：
+    *   將元件重構為一個完全獨立的個體，內部管理自己的 `isVisible` 狀態。
+    *   新增了全域鍵盤快捷鍵 `Shift + G` 來快速顯示/隱藏網格。
+    *   此版本後續被第二版取代。
+
+2.  **第二版（Figma 對齊工具最終版）**：
+    *   **目標**：模擬 Figma 的 Layout Grid 功能，供設計師在開發環境中精準對齊。
+    *   **移除快捷鍵**：改為接收外部 Props (`enabled: boolean`, `opacity?: number`)，以便整合到現有的開發者面板 (`DevPanel`) 進行統一控制。
+    *   **1200px 安全框**：在畫面中央建立 `max-width: 1200px` 的容器，並用**紅色實線**畫出左右邊界，明確標示安全範圍。
+    *   **12 欄網格**：在安全框內，使用**半透明藍色** (`rgba(0, 115, 255, opacity)`) 繪製了 12 個欄位，並設定了標準的 `gap` (24px) 和 `padding` (32px)。
+    *   **頂層顯示**：確保 `z-index` 為 `9999` 且 `pointer-events: none`，使其永遠在最上層但絕不干擾滑鼠操作。
+    *   **最終程式碼**：此版本為目前 `DesignOverlay.tsx` 的最終實作。
+
+---
+
 ## 專案基本資訊
 - **路徑**: `c:\Users\user\Desktop\委託網頁\Project_Turbid_Dust\`
 - **Dev server**: http://192.168.213.156:3088/
@@ -25,6 +46,27 @@
 | `src/index.css` | 全域樣式，含 `color-scheme: light` 防 Chrome 強制暗色 |
 | `src/hooks/useSounds.ts` | 音效系統：`Sounds.panelOpen()` / `Sounds.bell()` / `Sounds.coin()` |
 | `src/data/landmark-chapters.json` | 所有章節據點劇情（160+ 據點，Turbid + Pure 合併） |
+| `public/assets/portraits/` | 立繪圖檔目錄（見下方命名規則） |
+
+### 立繪圖檔命名規則（`public/assets/portraits/`）
+
+| 檔名 | 對應角色 |
+|------|---------|
+| `black_merchant.png` | 🎭 黑心商人 |
+| `item_merchant.png` | 📦 道具商人 |
+| `trafficker.png` | 🪤 人販子 |
+| `inn_owner.png` | 🏠 旅店老闆 |
+| `pet_merchant.png` | 🐾 寵物商人 |
+| `leader_turbid.png` | 濁息陣營領主 |
+| `leader_pure.png` | 淨塵陣營教主 |
+| `landmark_l1_t01.png` | 據點 l1_t01 專屬立繪（依 ID 命名）|
+| `landmark_default.png` | 據點無專屬立繪時的預設圖 |
+| `portrait_unknown.png` | 任何角色無圖時的通用 fallback |
+
+**立繪顯示規則：**
+- 桌機（≥ 640px）：顯示於視窗右側，`absolute left-full`，寬 180px，`object-bottom` 底部對齊
+- 手機（< 640px）：隱藏，視窗維持原寬
+- 載入失敗自動切換至 fallback 圖檔
 
 ---
 
@@ -161,7 +203,7 @@ NPC 玩家登入後在 HUD 的 NPC tab 看到，與玩家購買 Modal **分離**
 | 🪤 人販子 | 移動 + 村民任務（+3聲望）+ 技能（綁架/情報/扒竊，消耗聲望）|
 
 **目前缺少（未實作）：**
-- 商人下架已上架商品的功能
+- （無）
 
 ---
 

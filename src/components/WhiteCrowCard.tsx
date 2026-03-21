@@ -201,7 +201,7 @@ export const WhiteCrowCard: React.FC<WhiteCrowCardProps> = ({
         // ── 直接樣式 ──
         background:   theme.cardBg,
         border:       `1px solid ${theme.border}`,
-        borderRadius: '8px',
+        borderRadius: '6px',
         boxShadow:    theme.shadow,
         width:        'min(450px, calc(100vw - 32px))',
         maxHeight:    'calc(100vh - 160px)',
@@ -226,7 +226,7 @@ export const WhiteCrowCard: React.FC<WhiteCrowCardProps> = ({
           width: min(450px, calc(100vw - 32px));
           min-height: 480px;
           max-height: calc(100vh - 80px);
-          border-radius: 8px;
+          border-radius: 6px;
           font-family: 'Noto Serif TC', serif;
           position: relative;
           display: flex;

@@ -26,9 +26,9 @@ export const PTD_UI_THEME = {
   borderSolid: '#b89f86',
   divider: 'rgba(184, 159, 134, 0.2)',
 
-  borderRadius: '8px',
-  borderRadiusSm: '4px',
-  borderRadiusLg: '12px',
+  borderRadius: '6px',
+  borderRadiusSm: '6px',
+  borderRadiusLg: '6px',
 
   textPrimary: '#5a4e44',
   textSecondary: '#8b7355',
@@ -70,9 +70,9 @@ export const PTD_UI_TURBID_THEME = {
   borderSolid: '#7c3aed',
   divider: 'rgba(124, 58, 237, 0.2)',
 
-  borderRadius: '8px',
-  borderRadiusSm: '4px',
-  borderRadiusLg: '12px',
+  borderRadius: '6px',
+  borderRadiusSm: '6px',
+  borderRadiusLg: '6px',
 
   textPrimary: '#e4d5f5',
   textSecondary: '#c5a8e0',
@@ -228,7 +228,7 @@ export const generatePTDUIStyles = () => `
   .ptd-ui-panel, .ptd-ui-card {
     background: ${PTD_UI_THEME.cardBg} !important;
     border: 1px solid ${PTD_UI_THEME.borderSolid} !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
     box-shadow: 0 24px 64px rgba(100, 90, 75, 0.18), inset 0 1px 0 rgba(255,255,255,0.5);
     font-family: ${PTD_UI_FONTS.serif};
   }
@@ -238,7 +238,7 @@ export const generatePTDUIStyles = () => `
   [data-faction="Turbid"] .ptd-ui-card {
     background: ${PTD_UI_TURBID_THEME.cardBg} !important;
     border-color: ${PTD_UI_TURBID_THEME.borderSolid} !important;
-    border-radius: 8px !important;
+    border-radius: 6px !important;
     box-shadow: 0 24px 64px rgba(30, 0, 80, 0.55), inset 0 1px 0 rgba(155,89,182,0.2) !important;
   }
 
@@ -279,7 +279,7 @@ export const generatePTDUIStyles = () => `
     font-family: ${PTD_UI_FONTS.mono};
     font-size: 10px;
     padding: 4px 8px;
-    border-radius: 4px !important;
+    border-radius: 6px !important;
     letter-spacing: 0.05em;
   }
   [data-faction="Turbid"] .ptd-ui-tag {
@@ -314,8 +314,22 @@ export const generatePTDUIStyles = () => `
   [data-faction="Turbid"] .ptd-ui-divider { border-color: ${PTD_UI_TURBID_THEME.divider}; }
 
   /* ── Modal 背景遮罩 ──────────────────────────────────── */
-  .ptd-ui-modal-backdrop { background: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(4px); }
+  .ptd-ui-modal-backdrop { background: rgba(0, 0, 0, 0.4) !important; }
   [data-faction="Turbid"] .ptd-ui-modal-backdrop { background: rgba(0, 0, 0, 0.65) !important; }
+
+  /* ── Glassmorphism（套用在導覽/彈窗本體，不套遮罩）────── */
+  .ptd-ui-glass {
+    background: rgba(217, 215, 197, 0.72) !important;
+    border: 1px solid ${PTD_UI_THEME.border} !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  [data-faction="Turbid"] .ptd-ui-glass {
+    background: rgba(19, 8, 38, 0.68) !important;
+    border-color: ${PTD_UI_TURBID_THEME.border} !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  }
 
   /* ── 滾動條 ──────────────────────────────────────────── */
   .ptd-ui-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -329,7 +343,7 @@ export const generatePTDUIStyles = () => `
   /* ── 圓角 ────────────────────────────────────────────── */
   .ptd-ui-rounded-sm { border-radius: 4px; }
   .ptd-ui-rounded    { border-radius: 6px; }
-  .ptd-ui-rounded-lg { border-radius: 8px; }
+  .ptd-ui-rounded-lg { border-radius: 6px; }
 
   /* ── 陰影 ────────────────────────────────────────────── */
   .ptd-ui-shadow-sm { box-shadow: 0 2px 8px rgba(100,90,75,0.1), inset 0 1px 0 rgba(255,255,255,0.4); }
