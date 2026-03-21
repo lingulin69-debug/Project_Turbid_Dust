@@ -2,6 +2,18 @@ import { EventTarget } from 'cc';
 import { FactionType } from './PTD_UI_Theme';
 import type { LandmarkData } from './MapLandmark';
 
+// ── 背包道具介面（定義於資料層，UI 層從此處 import）────────────────────────────
+
+export interface ItemData {
+    id:          string;
+    name:        string;
+    description: string;
+    quantity:    number;
+    type:        string;
+    price:       number;   // 購買所需金幣
+    rarity?:     number;
+}
+
 // ── 事件名稱常數 ──────────────────────────────────────────────────────────────
 
 export const DATA_EVENTS = {
@@ -37,6 +49,21 @@ export interface BalanceResult {
     dominant: FactionType | 'Draw';
 }
 
+// ── 新增：遊戲狀態與章節介面 ────────────────────────────────────────
+
+export interface GameState {
+    phase: 'battle' | 'story' | 'transition';
+    current_chapter: number;
+}
+
+export interface ChapterStoryData {
+    title:           string;
+    content:         string;
+    bg_image_url?:   string;
+    bg_music_url?:   string;
+    winner_faction?: string;
+}
+
 // ── 全域事件總線（單例） ──────────────────────────────────────────────────────
 
 export const DataEventBus = new EventTarget();
@@ -47,6 +74,7 @@ class PTD_DataManagerClass {
 
     private _player: PlayerData | null = null;
     private _landmarks: Map<string, LandmarkSnapshot> = new Map();
+    private _inventory: ItemData[] = [];
 
     // ── 玩家初始化 ────────────────────────────────────────────────────────────
 
@@ -164,11 +192,107 @@ class PTD_DataManagerClass {
         return result;
     }
 
+    // ── 背包資料 ──────────────────────────────────────────────────────────────
+
+    /**
+     * 取得玩家背包道具列表。
+     * 正式版：從 Supabase 拉取 td_inventory 表（依 player_id 過濾）。
+     * 目前回傳 Mock Data，供 UI 渲染測試使用。
+     */
+    async fetchInventory(): Promise<ItemData[]> {
+        // TODO：正式串接時替換為 Supabase fetch，範例：
+        // const { data, error } = await supabase
+        //     .from('td_inventory')
+        //     .select('*')
+        //     .eq('player_id', this._player?.id);
+        // if (error) { console.warn('[DataManager] fetchInventory 失敗', error); return []; }
+        // this._inventory = data as ItemData[];
+        // return this._inventory;
+
+        // ── Mock Data（8 筆測試道具） ─────────────────────────────────────────
+        this._inventory = [
+            { id: 'item_001', name: '濁息藥劑',  description: '恢復 20 HP，帶有濃烈苦味。',    quantity: 3, type: 'consumable', price: 3,  rarity: 1 },
+            { id: 'item_002', name: '淨塵符咒',  description: '短暫驅散周圍的濁氣。',          quantity: 1, type: 'consumable', price: 5,  rarity: 2 },
+            { id: 'item_003', name: '黑市通行令', description: '進入黑心商人特殊貨架的憑證。',   quantity: 1, type: 'key',        price: 10, rarity: 3 },
+            { id: 'item_004', name: '破舊地圖',  description: '記載著某個廢棄據點的方位。',      quantity: 1, type: 'material',   price: 2,  rarity: 1 },
+            { id: 'item_005', name: '鏽蝕鎖鏈',  description: '不知用途，也許有人想要。',        quantity: 5, type: 'material',   price: 1,  rarity: 1 },
+            { id: 'item_006', name: '陣營徽章',  description: '證明歸屬的金屬徽章。',           quantity: 1, type: 'equipment',  price: 8,  rarity: 2 },
+            { id: 'item_007', name: '過期藥水',  description: '已無效果，但聞起來還行。',        quantity: 0, type: 'consumable', price: 0,  rarity: 1 },
+            { id: 'item_008', name: '白鴉羽毛',  description: '極為罕見，據說帶有神秘力量。',    quantity: 1, type: 'material',   price: 20, rarity: 4 },
+        ];
+        return this._inventory;
+    }
+
+    /** 取得本地快取的背包（不發網路請求）。 */
+    getInventory(): Readonly<ItemData[]> {
+        return this._inventory;
+    }
+
+    /**
+     * 購買道具：扣除金幣並加入背包。
+     * ⚠️ 此方法只操作本地快取，實際寫入資料庫須在 Controller 層呼叫對應 API。
+     *
+     * @returns success: false 若金幣不足；success: true 並附說明訊息。
+     */
+    purchaseItem(item: ItemData): { success: boolean; message: string } {
+        const player = this._player;
+
+        if (!player) {
+            return { success: false, message: '玩家資料未初始化' };
+        }
+        if (player.coins < item.price) {
+            return { success: false, message: '金幣不足' };
+        }
+
+        this.updateCoins(-item.price);
+
+        // 已有同 ID 道具則累加數量，否則新增一筆
+        const existing = this._inventory.find(i => i.id === item.id);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            this._inventory.push({ ...item, quantity: 1 });
+        }
+
+        return { success: true, message: `購買成功：${item.name}` };
+    }
+
+    // ── API：遊戲狀態與章節劇情 (從 MainGameController 移入) ────────────────
+
+    async fetchGameState(): Promise<GameState | null> {
+        try {
+            const response = await fetch(
+                'https://你的專案.supabase.co/rest/v1/td_game_state?id=eq.1',
+                { headers: { 'apikey': 'YOUR_ANON_KEY', 'Authorization': 'Bearer YOUR_ANON_KEY' } }
+            );
+            const data = await response.json();
+            return data && data.length > 0 ? data[0] as GameState : null;
+        } catch (err) {
+            console.error('[DataManager] fetchGameState 失敗', err);
+            return null;
+        }
+    }
+
+    async fetchChapterStory(chapterNumber: number): Promise<ChapterStoryData | null> {
+        try {
+            const response = await fetch(
+                `https://你的專案.supabase.co/rest/v1/td_chapter_stories?chapter_number=eq.${chapterNumber}`,
+                { headers: { 'apikey': 'YOUR_ANON_KEY', 'Authorization': 'Bearer YOUR_ANON_KEY' } }
+            );
+            const data = await response.json();
+            return data && data.length > 0 ? data[0] as ChapterStoryData : null;
+        } catch (err) {
+            console.error('[DataManager] fetchChapterStory 失敗', err);
+            return null;
+        }
+    }
+
     // ── 重置（換章 / 登出時使用） ─────────────────────────────────────────────
 
     reset(): void {
         this._player    = null;
         this._landmarks.clear();
+        this._inventory = [];
     }
 }
 
