@@ -1,54 +1,68 @@
-# 給 Claude 的快查筆記 — Project Turbid Dust
+# Claude Code 快查筆記 — Project Turbid Dust (Cocos Creator 版)
 
-> 每次新對話貼這個給 Claude，可大幅減少探索時間 (省 token)
+> 將此檔案放在專案根目錄命名為 `CLAUDE.md`，Claude Code 會自動讀取作為專案上下文。
+
+---
+
+## 專案基本資訊
+
+- **引擎**: Cocos Creator 3.x（TypeScript）
+- **專案路徑**: `c:\Users\user\Desktop\委託網頁\Project_Turbid_Dust\`
+- **Dev server**: Cocos Creator 內建預覽（或 `npm run dev`）
+- **Stack**: Cocos Creator 3.x + TypeScript + Supabase
 
 ---
 
 ## 變更記錄 (2026-03-20)
 
-### `DesignOverlay.tsx` 元件重構
+### `DesignOverlay` 元件重構 → **已移除**
 
-為了輔助 UI/UX 設計師進行畫面校準，今天對 `DesignOverlay.tsx` 進行了兩次重大更新：
-
-1.  **第一版（自主開關版）**：
-    *   將元件重構為一個完全獨立的個體，內部管理自己的 `isVisible` 狀態。
-    *   新增了全域鍵盤快捷鍵 `Shift + G` 來快速顯示/隱藏網格。
-    *   此版本後續被第二版取代。
-
-2.  **第二版（Figma 對齊工具最終版）**：
-    *   **目標**：模擬 Figma 的 Layout Grid 功能，供設計師在開發環境中精準對齊。
-    *   **移除快捷鍵**：改為接收外部 Props (`enabled: boolean`, `opacity?: number`)，以便整合到現有的開發者面板 (`DevPanel`) 進行統一控制。
-    *   **1200px 安全框**：在畫面中央建立 `max-width: 1200px` 的容器，並用**紅色實線**畫出左右邊界，明確標示安全範圍。
-    *   **12 欄網格**：在安全框內，使用**半透明藍色** (`rgba(0, 115, 255, opacity)`) 繪製了 12 個欄位，並設定了標準的 `gap` (24px) 和 `padding` (32px)。
-    *   **頂層顯示**：確保 `z-index` 為 `9999` 且 `pointer-events: none`，使其永遠在最上層但絕不干擾滑鼠操作。
-    *   **最終程式碼**：此版本為目前 `DesignOverlay.tsx` 的最終實作。
+原 Web 版 Figma 對齊工具（12 欄網格、1200px 安全框）**不適用於 Cocos**，已整組刪除。
+Cocos Creator 編輯器內建 Layout 輔助線與 Widget 元件可直接替代，無需另外實作。
 
 ---
 
-## 專案基本資訊
-- **路徑**: `c:\Users\user\Desktop\委託網頁\Project_Turbid_Dust\`
-- **Dev server**: http://192.168.213.156:3088/
-- **Stack**: React 18 + Vite + TypeScript + Tailwind + Framer Motion + Lucide React + Supabase
+## Cocos Creator 核心對應規則
+
+| Web（React + Tailwind） | Cocos Creator 3.x 對應 |
+|------------------------|----------------------|
+| `.tsx` 元件 | `Node` + `cc.Component`（`.ts` 腳本掛載） |
+| `useState` / `useEffect` | `@property` + 生命週期（`onLoad`, `start`, `update`） |
+| `className="..."` Tailwind | `UITransform` / `Widget` / `Layout` 元件屬性 |
+| `style={{ color, bg }}` inline | Label / Sprite Color、`node.color = new Color(...)` |
+| `motion.div`（Framer Motion）| `tween(node)` 或 `cc.Tween` |
+| `z-index` | `node.setSiblingIndex()` / Layer 排序 |
+| `pointer-events: none` | `node.getComponent(UITransform).hitTest = false`（或關閉 Button 元件） |
+| `fixed inset-0` Modal 遮罩 | 全屏 `Node`，`Widget` 四邊設 0，放在高層 Layer |
+| `backdrop-blur`（**禁用**）| Cocos 無直接對應，用半透明黑色蓋板替代 |
+| `grid-cols-6` 背包格 | `GridLayout` 元件，`startAxis: HORIZONTAL`，欄數 6 |
+| `onClick` 按鈕 | `Button` 元件 + `clickEvents` 或 `node.on(Node.EventType.TOUCH_END, ...)` |
+| `fetch` / Supabase API | 保持不變（TypeScript 環境相同） |
+| `localStorage` | `cc.sys.localStorage`（介面相同）|
+| CSS 動畫 `transition-opacity` | `tween(node).to(0.5, { opacity: 0 }).start()` |
 
 ---
 
-## 關鍵檔案一覽
+## 關鍵場景與節點一覽
 
-| 檔案 | 用途 |
-|------|------|
-| `src/components/WhiteCrowCard.tsx` | 基礎卡片系統 + FACTION_THEMES + 子組件 |
-| `src/components/WhiteCrowPanels.tsx` | 各功能面板（使用 WhiteCrowCard） |
-| `src/components/MapTestView.tsx` | 主遊戲畫面，掛載所有面板、地圖、NPC ICON |
-| `src/components/CharacterCard.tsx` | 角色卡 Modal（Tab 式，**1:2 比例**，max-w-300px） |
-| `src/components/MapLandmark.tsx` | 據點 ICON 組件，含 hover tooltip 人數顯示 |
-| `src/components/PTD_UI_Theme.tsx` | 全頁主題系統：PTD_UI_THEME / PTD_UI_TURBID_THEME / getPageTheme / usePTDUIStyles |
-| `src/components/BalanceSettlementModal.tsx` | 陣營結算 Modal（原名業力結算，已改名） |
-| `src/index.css` | 全域樣式，含 `color-scheme: light` 防 Chrome 強制暗色 |
-| `src/hooks/useSounds.ts` | 音效系統：`Sounds.panelOpen()` / `Sounds.bell()` / `Sounds.coin()` |
-| `src/data/landmark-chapters.json` | 所有章節據點劇情（160+ 據點，Turbid + Pure 合併） |
-| `public/assets/portraits/` | 立繪圖檔目錄（見下方命名規則） |
+> 對應原 Web 版的「關鍵檔案一覽」，改為 Cocos 場景/Prefab 結構。
 
-### 立繪圖檔命名規則（`public/assets/portraits/`）
+| Prefab / 場景 | 用途 |
+|--------------|------|
+| `prefabs/WhiteCrowCard.prefab` | 基礎卡片系統，含 FACTION_THEMES 切換邏輯 |
+| `prefabs/WhiteCrowPanels.prefab` | 各功能面板（使用 WhiteCrowCard） |
+| `scenes/MapTestView.scene` | 主遊戲場景，掛載所有面板、地圖、NPC 圖標 |
+| `prefabs/CharacterCard.prefab` | 角色卡 Modal（Tab 式，1:2 比例，寬 300px） |
+| `prefabs/MapLandmark.prefab` | 據點圖標節點，含 hover tooltip 人數顯示 |
+| `scripts/PTD_UI_Theme.ts` | 全頁主題系統：`PTD_UI_THEME` / `PTD_UI_TURBID_THEME` / `getPageTheme` |
+| `prefabs/BalanceSettlementModal.prefab` | 陣營結算 Modal（原名業力結算，已改名）|
+| `scripts/SoundManager.ts` | 音效系統（見下方音效章節）|
+| `resources/data/landmark-chapters.json` | 所有章節據點劇情（160+ 據點）|
+| `resources/portraits/` | 立繪圖檔目錄（見下方命名規則） |
+
+---
+
+## 立繪圖檔命名規則（`resources/portraits/`）
 
 | 檔名 | 對應角色 |
 |------|---------|
@@ -63,20 +77,57 @@
 | `landmark_default.png` | 據點無專屬立繪時的預設圖 |
 | `portrait_unknown.png` | 任何角色無圖時的通用 fallback |
 
-**立繪顯示規則：**
-- 桌機（≥ 640px）：顯示於視窗右側，`absolute left-full`，寬 180px，`object-bottom` 底部對齊
-- 手機（< 640px）：隱藏，視窗維持原寬
-- 載入失敗自動切換至 fallback 圖檔
+**立繪顯示規則（Cocos 實作）：**
+
+- 桌機（Canvas 寬 ≥ 640）：立繪節點 `active = true`，定位於 Modal 右側，`anchorPoint = (0, 0)`（底部對齊）
+- 手機（Canvas 寬 < 640）：立繪節點 `active = false`
+- 載入失敗：`spriteFrame` 切換為 `portrait_unknown`
+
+```typescript
+// 立繪載入範例
+resources.load(`portraits/${portraitId}`, SpriteFrame, (err, sf) => {
+    const fallback = err ? 'portraits/portrait_unknown' : null;
+    if (fallback) {
+        resources.load(fallback, SpriteFrame, (_, fSf) => {
+            this.portraitSprite.spriteFrame = fSf;
+        });
+    } else {
+        this.portraitSprite.spriteFrame = sf;
+    }
+});
+```
 
 ---
 
 ## 雙主題系統架構
 
-### 全頁切換（MapTestView 主畫面）
-- `usePTDUIStyles()` 注入 CSS class（`ptd-ui-nav-button`、`ptd-ui-base` 等）
-- `const pageTheme = getPageTheme(playerFaction)` — 玩家登入後 `playerFaction` 改變，所有 inline style 同步更新
-- 根容器：`className="... ptd-ui-base" data-faction={playerFaction} style={{ backgroundColor: pageTheme.bgBase }}`
-- CSS `[data-faction="Turbid"] .ptd-ui-nav-button` 選擇器以 `!important` 覆寫 class 預設值，實現 Pure/Turbid 全頁切換
+### 全頁切換（MapTestView 主場景）
+
+```typescript
+// scripts/PTD_UI_Theme.ts
+export const PTD_UI_THEME = {
+    Pure: {
+        bgBase: new Color(217, 215, 197),
+        textPrimary: new Color(90, 78, 68),
+        textSecondary: new Color(139, 115, 85),
+        primary: new Color(184, 159, 134),
+        border: new Color(184, 159, 134, 77),  // rgba(184,159,134,0.3)
+    },
+    Turbid: {
+        bgBase: new Color(19, 8, 38),
+        textPrimary: new Color(228, 213, 245),
+        textSecondary: new Color(197, 168, 224),
+        primary: new Color(155, 89, 182),
+        border: new Color(124, 58, 237, 102),  // rgba(124,58,237,0.4)
+    }
+};
+
+export function getPageTheme(faction: 'Pure' | 'Turbid') {
+    return PTD_UI_THEME[faction];
+}
+```
+
+**切換方式：** 玩家登入後取得 `playerFaction`，呼叫 `applyTheme(faction)` 統一更新所有 Label/Sprite Color。
 
 ### 主題顏色對照
 
@@ -88,27 +139,41 @@
 | primary | `#b89f86` | `#9b59b6` |
 | border | rgba(184,159,134,0.3) | rgba(124,58,237,0.4) |
 
-### 面板層（WhiteCrowCard / WhiteCrowPanels）
-- 傳 `faction="Turbid"|"Pure"` 給 `<WhiteCrowCard>` → 根 div 設 CSS 變數 (`--wc-xxx`)
-- 子組件 (`WCTabBar`, `WCButton` 等) 自動繼承，不需各自傳 faction
-- **背包 / NPC / 惡政面板**：已傳入 `faction={currentUser?.faction}`
+### 面板層（WhiteCrowCard Prefab）
 
-### 已遷移面板（使用 WhiteCrowCard + CSS vars）✅
-- AnnouncementPanel、QuestPanel、DailyPanel、CollectionPanel、SettingsPanel
-- InventoryPanel、NPCPanel、LeaderTyrannyPanel — 用 WhiteCrowCard 包覆，已套 faction prop
+- 傳入 `faction: 'Turbid' | 'Pure'` → 更新 Prefab 內所有 Label/Sprite 顏色
+- 子節點透過 `getComponentInParent` 取得 faction，不需各自傳入
+
+### 已遷移面板 ✅
+
+AnnouncementPanel、QuestPanel、DailyPanel、CollectionPanel、SettingsPanel、InventoryPanel、NPCPanel、LeaderTyrannyPanel — 均使用 WhiteCrowCard Prefab，已套 faction 切換邏輯。
 
 ---
 
-## 地圖系統（MapTestView.tsx）
+## 地圖系統（MapTestView.scene）
 
 ### 據點（Landmarks）
-- 資料結構：`{ id, name, x, y, faction, status, occupants, capacity, type }`
-- ID 格式：`l{章節}_{陣營}{序號}`（例：`l1_t01`、`l1_p02`）
-- hover tooltip 顯示人數：`occupants/capacity`（綠色=未滿、紅色=已滿）
-- 點擊開放據點 → 跳出劇情 Modal（讀 `landmark-chapters.json`）
+
+```typescript
+interface LandmarkData {
+    id: string;      // 格式：l{章節}_{陣營}{序號}，例：l1_t01、l1_p02
+    name: string;
+    x: number;       // 地圖節點本地座標
+    y: number;
+    faction: 'Turbid' | 'Pure';
+    status: 'open' | 'closed';
+    occupants: number;
+    capacity: number;
+    type: string;
+}
+```
+
+- hover（`MOUSE_ENTER`）：顯示 tooltip，人數 `occupants/capacity`（綠=未滿、紅=已滿）
+- 點擊開放據點 → 開啟劇情 Modal（讀 `landmark-chapters.json`）
 - Modal 含「申請加入」按鈕 → 呼叫 `POST /api/party/join`（同陣營 + 登入才顯示）
 
-### 劇情 JSON 格式（`src/data/landmark-chapters.json`）
+### 劇情 JSON 格式（`resources/data/landmark-chapters.json`）
+
 ```json
 {
   "chapters": [
@@ -132,20 +197,30 @@
 }
 ```
 
-### NPC 地圖 ICON
-- **固定位置 NPC**（black_merchant / inn_owner / pet_merchant / item_merchant）
-  - 座標寫在 `MAP_NPCS` 常數（MapTestView.tsx 約 L96）
-  - 管理員若要調整位置，直接改 x/y 數值
-- **移動型 NPC**（trafficker / 人販子）
-  - 從 Supabase `td_users.current_landmark_id` 讀取
-  - 自動對應到該據點的 x/y 座標，稍微偏移（+3, -4）避免重疊
-  - 沒有 `current_landmark_id` 時不顯示
-- 點擊 NPC ICON → 跳出互動 Modal（各角色顯示對應互動 UI）
-- `NPC_ROLE_ICON`：🎭黑心商人 / 🪤人販子 / 🏠旅店老闆 / 🐾寵物商人
+### NPC 地圖圖標
 
-### NPC 互動 Modal — 玩家端介面（已完成）
+**固定位置 NPC**（black_merchant / inn_owner / pet_merchant / item_merchant）
+- 座標寫在 `MapTestView.ts` 的 `MAP_NPCS` 常數（約 L96）
+- 調整位置直接改 `x / y` 數值
 
-背包面板**已移除**市集和寵物商店，改由地圖 NPC 圖標觸發。
+**移動型 NPC**（trafficker / 人販子）
+- 從 Supabase `td_users.current_landmark_id` 讀取
+- 自動對應到該據點的 `x / y` 座標，偏移 `(+3, -4)` 避免重疊
+- 無 `current_landmark_id` 時 `node.active = false`
+
+點擊 NPC 圖標 → 開啟互動 Modal（各角色顯示對應互動 UI）
+
+| NPC | emoji | 強調色 |
+|-----|-------|-------|
+| 黑心商人 | 🎭 | `#ef4444` |
+| 人販子 | 🪤 | `#d97706` |
+| 旅店老闆 | 🏠 | `#0d9488` |
+| 寵物商人 | 🐾 | `#9b59b6` |
+| 道具商人 | 📦 | — |
+
+---
+
+## NPC 互動 Modal — 玩家端介面
 
 | NPC | 玩家端介面內容 |
 |-----|--------------|
@@ -157,40 +232,44 @@
 
 **共用邏輯：**
 - 未登入 → 顯示「請先登入」
-- 貨幣不足 → 購買按鈕 disable（opacity-30）
+- 貨幣不足 → 購買按鈕 `interactable = false`（透明度降低）
 - 購買後即時更新 `currentUser.coins` + 刷新列表
-- 成功/失敗訊息顯示於 modal 底部（綠/紅，附對應色邊框）
+- 成功/失敗訊息顯示於 Modal 底部（綠/紅，附對應色框）
 - 點擊 NPC 時自動 fetch 商品（merchant → 按 `seller_oc === npc.oc_name` 篩選；pet_merchant → `GET /api/pets/all`）
 - 關閉 Modal 清除所有暫存狀態
 
-**設計系統（已對齊 WhiteCrowCard FACTION_THEMES）：**
-- 所有結構色（底色/邊框/陰影/列背景/輸入框）→ `wcTheme.*`
-- `roleColor`（每個 NPC 獨立強調色）只用於：頂部裝飾線、角色身分標籤、區塊標題、售價文字
-- NPC 強調色：🎭 `#ef4444` / 🪤 `#d97706` / 🏠 `#0d9488` / 🐾 `#9b59b6`
-- 動效：`motion.button whileTap={{ scale: 0.94 }}`（所有操作按鈕）、列 hover 用 `onMouseEnter/Leave` 直接改 style（不觸發 React re-render）
-- 骰子商品購買後觸發 `DiceResultOverlay`（數字跑馬燈 → Framer Motion 彈跳定格）
+**動效：**
+- 按鈕點擊：`tween(btn.node).to(0.05, { scale: new Vec3(0.94, 0.94, 1) }).to(0.05, { scale: Vec3.ONE }).start()`
+- 列 hover：直接修改 `node.color`，不觸發完整重繪
 
-**MapTestView.tsx 相關 state：**
-```
-npcActionMsg        { type: 'ok'|'err'; text: string } | null
-npcActionLoading    boolean（旅店治療/救援）
-innRescueTarget     string（救援輸入框）
-diceAnimState       DiceAnimData | null（骰子動畫，null = 不顯示）
+**骰子商品購買後觸發 `DiceResultOverlay`（數字跑馬燈 → tween 彈跳定格）**
+
+### MapTestView 相關屬性
+
+```typescript
+npcActionMsg: { type: 'ok' | 'err'; text: string } | null = null;
+npcActionLoading: boolean = false;    // 旅店治療/救援
+innRescueTarget: string = '';          // 救援輸入框
+diceAnimState: DiceAnimData | null = null;  // null = 不顯示骰子動畫
 ```
 
-**DiceAnimData 介面：**
-```ts
+### DiceAnimData 介面
+
+```typescript
 interface DiceAnimData {
-  dice_type: 'D6' | 'D20';
-  result: number;
-  message: string;
-  coins_delta: number;
-  status_tag: string;
+    dice_type: 'D6' | 'D20';
+    result: number;
+    message: string;
+    coins_delta: number;
+    status_tag: string;
 }
 ```
-⚠️ 骰子動畫需後端 buy API 在 `item` 物件內回傳 `dice_rolled` 才會觸發，否則退回文字訊息。
 
-### NPC 玩家端管理介面（NPCPanel.tsx）
+> ⚠️ 骰子動畫需後端 buy API 在 `item` 物件內回傳 `dice_rolled` 才會觸發，否則退回文字訊息。
+
+---
+
+## NPC 玩家端管理介面（NPCPanel Prefab）
 
 NPC 玩家登入後在 HUD 的 NPC tab 看到，與玩家購買 Modal **分離**。
 
@@ -202,17 +281,13 @@ NPC 玩家登入後在 HUD 的 NPC tab 看到，與玩家購買 Modal **分離**
 | 🐾 寵物商人 | 開關店 toggle + 勾選預設寵物上架（最多3隻）+ 新增自製特別款 |
 | 🪤 人販子 | 移動 + 村民任務（+3聲望）+ 技能（綁架/情報/扒竊，消耗聲望）|
 
-**目前缺少（未實作）：**
-- （無）
-
 ---
 
-## 角色卡（CharacterCard.tsx）現況
+## 角色卡（CharacterCard Prefab）現況
 
 - Tab 導航：基本 / 生物(n) / 遺物(n) / 見證
 - **雙主題**：`viewerFaction === 'Turbid'` → `TURBID_THEME`；Pure → `LIGHT_THEME`
-- `const theme = viewerFaction === 'Turbid' ? TURBID_THEME : LIGHT_THEME` 放在所有條件 return **之前**
-- 卡片尺寸：`max-w-[300px]`、`aspectRatio: '1 / 2'`（300×600px）、`maxHeight: '92vh'`
+- 卡片尺寸：寬 `300px`，高 `600px`（1:2 比例），最大高度 `92%` Canvas 高度
 - `RelicPoemModal` 背景固定深色（`#06040a`），文字用 `rgba(255,255,255,0.x)` 不跟 theme
 - 集齊「昔日的餘溫」系列遺物 → 觸發詩歌 Modal
 
@@ -220,24 +295,24 @@ NPC 玩家登入後在 HUD 的 NPC tab 看到，與玩家購買 Modal **分離**
 
 ## 尺寸規格（最新，2026-03-17）
 
-### Border-radius
+### Border-radius（Cocos 使用 `Graphics` 元件或 Sprite 九宮格）
 
 | 元素類型 | 值 |
 |---------|-----|
-| **主面板 / Modal** | **8px** |
+| 主面板 / Modal | 8px |
 | 按鈕（一般）| 6px |
 | 標籤 / 徽章 | 4px |
-| 導航按鈕（側邊）| 12px (`rounded-xl`) |
-| 圓形按鈕（HUD）| 50% |
+| 導航按鈕（側邊）| 12px |
+| 圓形按鈕（HUD）| 50%（正方形節點） |
 
 ### 按鈕尺寸
 
 | 類型 | 尺寸 | 圓角 |
 |------|------|------|
-| 左側導航按鈕 | **40 × 40 px** (w-10 h-10) | 12px |
-| WhiteCrowCard 關閉鈕 | **36 × 36 px** | 50% |
+| 左側導航按鈕 | 40 × 40 px | 12px |
+| WhiteCrowCard 關閉鈕 | 36 × 36 px | 50% |
 | HUD 頂部圓形按鈕 | ~32 px | 50% |
-| NPC ICON | **36 × 36 px** (w-9 h-9) | 50% |
+| NPC 圖標 | 36 × 36 px | 50% |
 
 ### 面板尺寸
 
@@ -247,77 +322,157 @@ NPC 玩家登入後在 HUD 的 NPC tab 看到，與玩家購買 Modal **分離**
 | CharacterCard | 300px | 600px（1:2 比例）|
 | 據點劇情 Modal | 480px | auto |
 | NPC 互動 Modal | 420px | auto |
-| 背包格子 | — | **6 欄** (grid-cols-6) |
+| 背包格子 | — | **6 欄** GridLayout |
 
-### 陰影（統一來源：PTD_UI_Theme + WhiteCrowCard FACTION_THEMES）
+### 陰影（Cocos 用 `Shadow` 或自訂 Sprite 陰影節點）
 
 | 等級 | Pure | Turbid |
 |------|------|--------|
-| lg（面板）| `0 24px 64px rgba(100,90,75,0.18)` + inset | `0 24px 64px rgba(30,0,80,0.55)` + inset |
-| md | `0 8px 24px rgba(100,90,75,0.15)` + inset | `0 8px 24px rgba(30,0,80,0.35)` + inset |
+| lg（面板）| `rgba(100,90,75,0.18)` 偏移 `(0, -24)` 模糊 `64` | `rgba(30,0,80,0.55)` 偏移 `(0, -24)` 模糊 `64` |
+| md | `rgba(100,90,75,0.15)` 偏移 `(0, -8)` 模糊 `24` | `rgba(30,0,80,0.35)` 偏移 `(0, -8)` 模糊 `24` |
 
 ---
 
-## 音效系統（src/hooks/useSounds.ts）
+## 音效系統（`scripts/SoundManager.ts`）
 
-音效檔放在 `/public/sounds/`，設計師提供後替換即可。
+音效檔放在 `resources/sounds/`，設計師提供後替換即可。
+
+```typescript
+// 使用方式
+SoundManager.panelOpen();   // 公告/任務/日誌/圖鑑 按鈕點擊
+SoundManager.bell();        // 鈴鐺按鈕點擊
+SoundManager.coin();        // 貨幣欄位點擊
+```
 
 | 方法 | 檔案 | 觸發位置 |
 |------|------|---------|
-| `Sounds.panelOpen()` | `/sounds/page_flip.mp3` | 公告/任務/日誌/圖鑑 按鈕點擊 |
-| `Sounds.bell()` | `/sounds/bell.mp3` | 鈴鐺按鈕點擊 |
-| `Sounds.coin()` | `/sounds/coin.mp3` | 貨幣欄位點擊 |
+| `SoundManager.panelOpen()` | `sounds/page_flip.mp3` | 公告/任務/日誌/圖鑑 按鈕點擊 |
+| `SoundManager.bell()` | `sounds/bell.mp3` | 鈴鐺按鈕點擊 |
+| `SoundManager.coin()` | `sounds/coin.mp3` | 貨幣欄位點擊 |
+
+```typescript
+// SoundManager.ts 基本結構
+import { _decorator, Component, AudioSource, AudioClip, resources } from 'cc';
+
+export class SoundManager {
+    private static _source: AudioSource;
+
+    static init(source: AudioSource) { this._source = source; }
+
+    static play(path: string) {
+        resources.load(`sounds/${path}`, AudioClip, (err, clip) => {
+            if (!err) this._source.playOneShot(clip);
+        });
+    }
+
+    static panelOpen() { this.play('page_flip'); }
+    static bell()      { this.play('bell'); }
+    static coin()      { this.play('coin'); }
+}
+```
+
+> 音效需使用者觸摸互動後才能觸發（瀏覽器/行動裝置自動播放政策），程式已靜默處理。
 
 ---
 
 ## 響應式斷點（手機支援）
 
-- 主要斷點：`640px`（`sm:`）
-- WhiteCrowCard：`min(450px, 100vw-32px)`
-- Modal：`w-full max-w-[500px] mx-4`
-- HUD 頂部：`top-3 right-3 sm:top-6 sm:right-8`
-- 全域 `button` min-height: 44px（手機）
-- iOS input font-size ≥ 16px 防自動縮放
+- 主要斷點：Canvas 寬度 `640px`
+- 使用 `view.getVisibleSize()` 取得畫面大小，動態調整節點
+- WhiteCrowCard：`Math.min(450, visibleWidth - 32)`
+- Modal：寬度 `Math.min(500, visibleWidth - 32)`，置中對齊
+- HUD 頂部偏移：手機 `top: 12, right: 12`；桌機 `top: 24, right: 32`
+- 全域 Button `minHeight: 44px`（手機觸控）
+- 輸入框字體 ≥ 16px 防 iOS 自動縮放
 
 ---
 
-## 效能規範（已驗證，2026-03-18）
+## 效能規範
 
-### backdrop-filter: blur() 使用限制
+### `backdrop-filter: blur()` → **在 Cocos 中不使用**
 
-**禁止**在全螢幕/大面積遮罩層上使用 `backdrop-blur-*`，動畫期間每幀重算模糊導致明顯卡頓。
+Cocos 無原生 CSS backdrop-filter。所有遮罩層一律改用：
 
+```typescript
+// 半透明黑色蓋板（無模糊），效能最佳
+maskNode.color = new Color(0, 0, 0, 180);  // alpha 約 0.7
 ```
-✅ 允許：小型靜態元素（tooltip、HUD 按鈕、小徽章）
-❌ 禁止：fixed inset-0 的 modal 遮罩、有 animate/exit 的 motion.div 遮罩
+
+**禁止**在動畫中對大面積節點做昂貴的遮罩效果，已驗證可能導致明顯卡頓。
+
+### Modal 動畫規範
+
+```typescript
+// ✅ 只 tween 需要的屬性
+tween(modalNode)
+    .to(0.5, { opacity: 255 })
+    .start();
+
+// ❌ 禁止同時 tween scale + position + color（瀏覽器預覽卡頓）
 ```
-
-**已處理的檔案（共 14 處）：**
-- `MapTestView.tsx`：NPC Modal、據點 Modal、driftModal、設定 Modal、迷霧遮罩×2
-- `CharacterCard.tsx`：角色卡遮罩×4
-- `LoginModal.tsx`：登入遮罩
-- `LiquidatorSystem.tsx`：清算者 Modal
-- `ApostateSystem.tsx`：背道者 Modal×2
-- `UIComponents.tsx`：通用 Modal×2
-- `AdminApostateControl.tsx`：管理員控制 Modal
-
-**迷霧遮罩附加修正：**
-`transition-all duration-1000` → `transition-opacity duration-500`（只 transition 需要屬性，避免瀏覽器計算不必要的屬性）
 
 ---
 
 ## 已知問題
-- `DraggableUIButton` 有 3 個既有 TS `style` 型別錯誤（非我們的變更）
-- 音效需使用者互動後才能觸發（瀏覽器自動播放政策），程式已靜默處理
+
+- `DraggableUIButton` 有 3 個既有 TS `style` 型別錯誤（非本次變更，暫不處理）
+- 音效需使用者互動後才能觸發，程式已靜默處理
+
+---
+
+## 🔴 死命令（Claude Code 必須嚴格遵守）
+
+### 1｜防燃燒 Token 鐵律
+- **禁止主動掃描整個資料夾。** 不確定目標檔案位置時，先問使用者，確認後再單一檔案逐一處理。
+- 每次只讀取、修改任務直接相關的檔案，不旁及其他。
+- 需要了解模組關係時，優先讀 `CLAUDE.md`，其次讀單一腳本頂部的 `import`，而不是遞迴展開整個 `src/`。
+
+### 2｜絕對禁止 Web 語法輸出
+生成或修改任何 `.ts` / Prefab 腳本時，**嚴禁出現下列任何內容**：
+
+| 禁止項目 | 正確替代 |
+|---------|---------|
+| HTML 標籤（`<div>`, `<span>`, `<button>` 等） | Cocos `Node` + `UITransform` |
+| CSS class 字串（`className="..."`, Tailwind） | `node.color` / `Widget` 元件屬性 |
+| React Hooks（`useState`, `useEffect`, `useRef`） | `@property` + `onLoad` / `start` / `update` |
+| Framer Motion（`motion.div`, `animate`, `exit`） | `tween()` / `cc.Tween` |
+| `style={{ }}` inline CSS | `Label.color` / `Sprite.color` / `node.setPosition()` |
+
+違反以上任一項視為輸出錯誤，需立即自我更正。
+
+### 3｜Shader / Material 預留接口規範
+所有視覺元件（WhiteCrowCard、CharacterCard、MapLandmark 等）建立時，**必須預留 Material 切換接口**，以利後續套用濁息視覺效果（裂紋皮膚、黑霧、粒子噪波等）。
+
+```typescript
+// ✅ 每個有視覺輸出的 Component 都加上這段
+@property(Material)
+turbidMaterial: Material = null;   // 濁息狀態覆蓋材質（可為 null）
+
+@property(Material)
+pureMaterial: Material = null;     // 淨塵狀態覆蓋材質（可為 null）
+
+applyFactionMaterial(faction: 'Turbid' | 'Pure') {
+    const mat = faction === 'Turbid' ? this.turbidMaterial : this.pureMaterial;
+    if (mat) {
+        this.getComponent(Sprite)?.customMaterial = mat;
+    }
+    // Shader Uniform 預留點（後續填入）
+    // mat?.setProperty('u_crackIntensity', 0.0);
+    // mat?.setProperty('u_fogDensity', 0.0);
+}
+```
+
+- 尚未製作美術資源時，`turbidMaterial` / `pureMaterial` 保持 `null`，程式走預設路徑，不影響現有功能。
+- 後續設計師提供 `.mtl` 後，直接在 Inspector 拖入即可啟用，無需再動程式邏輯。
 
 ---
 
 ## 節省 Token 的說話方式
 
 **好的提問（快）:**
-> 「修改 `WhiteCrowCard.tsx` 的 Turbid 主題，把 `cardBg` 換成 `url(/assets/ui/turbid_bg.png)`」
+> 「修改 `WhiteCrowCard.ts` 的 Turbid 主題，把 `cardBg` 換成載入 `turbid_bg` SpriteFrame」
 
 **容易浪費 Token 的提問（慢）:**
-> 「幫我改一下深色那個視窗的背景」（Claude 需要先找檔案再定位）
+> 「幫我改一下深色那個視窗的背景」（需要先找 Prefab 再定位腳本）
 
-**貼圖截圖** 比描述更快——直接貼截圖讓 Claude 看到問題在哪。
+**貼截圖** 比描述更快——直接貼截圖讓 Claude 看到問題在哪。
