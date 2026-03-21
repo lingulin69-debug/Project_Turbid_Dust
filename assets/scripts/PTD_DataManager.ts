@@ -18,6 +18,7 @@ export interface PlayerData {
     coins:    number;
     hp:       number;
     max_hp:   number;
+    current_landmark_id?: string; // <--- 補上這行
 }
 
 /** 天平計算所需的據點快照 */
