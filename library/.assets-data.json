@@ -1,0 +1,122 @@
+{
+  "5daeeb30-88f3-4f57-8396-ddf680f1767b": {
+    "url": "db://assets/scripts",
+    "value": {},
+    "versionCode": 0
+  },
+  "a96497f8-7192-4f3a-9dc4-ade0315b189e": {
+    "url": "db://assets/scripts/1",
+    "value": {},
+    "versionCode": 0
+  },
+  "33b978f5-5c36-4a33-b908-16d89d7f09f5": {
+    "url": "db://assets/scripts/BalanceOverlay.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "f8d4cc71-35ed-4d77-86d6-cb0342744e60": {
+    "url": "db://assets/scripts/ChapterStoryModal.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "7cbd094e-763a-43f8-93e9-af899e4a9577": {
+    "url": "db://assets/scripts/CharacterCard.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "e6e3328d-07e6-414a-b3d5-2ebcb2705880": {
+    "url": "db://assets/scripts/DiceResultOverlay.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "44ae0f44-bb42-4b87-878e-1a2b68aeb4bd": {
+    "url": "db://assets/scripts/DonationTracker.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "e368e735-5031-4345-bc3a-845c16dcdd39": {
+    "url": "db://assets/scripts/EventCalendar.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "43bfa855-60f0-4e91-84e6-c2a01b5941cb": {
+    "url": "db://assets/scripts/HUDController.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "747ee35b-0387-48e3-bfce-db461c2b1326": {
+    "url": "db://assets/scripts/InventoryPanel.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "ee244988-b06d-4f65-8e22-74f2dce7d132": {
+    "url": "db://assets/scripts/ItemDetailModal.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "b3c3912d-e247-4e6b-b2bb-16813edaff27": {
+    "url": "db://assets/scripts/ItemSlot.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "c8d3872c-c6bd-4f64-91cc-070299132291": {
+    "url": "db://assets/scripts/LoginController.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "eb486b4c-326a-45df-96c3-fd5cd5dacb3c": {
+    "url": "db://assets/scripts/MainGameController.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "c719109b-589b-40e6-9643-26bfd164e6bf": {
+    "url": "db://assets/scripts/MapController.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "78f2cb88-4af7-47f5-b20f-fce4fceaa452": {
+    "url": "db://assets/scripts/MapLandmark.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "4a710a00-1290-4931-875b-f9dfcca19031": {
+    "url": "db://assets/scripts/MusicDiscController.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "c5da3ae0-dd3b-427f-9d9c-e437e26f8765": {
+    "url": "db://assets/scripts/NPCModal.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "07b4a7b3-8ae3-487f-a444-e9eebb2d2fc1": {
+    "url": "db://assets/scripts/PTD_DataManager.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "e4fdd2ea-03ce-4a4e-bb77-d68ac009f13e": {
+    "url": "db://assets/scripts/PTD_UI_Theme.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "8facf0f2-423e-4119-822e-ea7a5eea46fb": {
+    "url": "db://assets/scripts/RelicPoemModal.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "c75e3003-c034-4ad0-8555-3163e24975a4": {
+    "url": "db://assets/scripts/SoundManager.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "82d03245-8dee-47ba-bf36-cb6cb8d5fdd3": {
+    "url": "db://assets/scripts/WhiteCrowCard.ts",
+    "value": {},
+    "versionCode": 0
+  },
+  "f0a56563-e25b-4df9-9195-36c64046897a": {
+    "url": "db://assets/scripts/1/PTD_DataManager.ts",
+    "value": {},
+    "versionCode": 0
+  }
+}

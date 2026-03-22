@@ -346,31 +346,33 @@ class PTD_DataManagerClass {
     }
 
     /**
+/**
      * 更新玩家密碼。必須在 login() 成功後呼叫（需要 _token）。
      * 
      * @throws Error 若尚未登入或 API 回傳錯誤
      */
     async updatePassword(newPassword: string): Promise<void> {
-    if (!this._token) {
-        throw new Error('[DataManager] updatePassword：尚未登入，缺少 token');
-    }
+        if (!this._token) {
+            throw new Error('[DataManager] updatePassword：尚未登入，缺少 token');
+        }
 
-    const url = `${SUPABASE_CONFIG.URL}/functions/v1/update-password`;  // ← 確認這行
-    
-    const response = await fetch(url, {
-        method:  'POST',
-        headers: {
-            'Content-Type':  'application/json',
-            'Authorization': `Bearer ${this._token}`,  // ← 確認這行
-        },
-        body: JSON.stringify({ new_password: newPassword }),  // ← 確認這行
-    });
+        const url = `${SUPABASE_CONFIG.URL}/functions/v1/update-password`;
+        
+        const response = await fetch(url, {
+            method:  'POST',
+            headers: {
+                'Content-Type':  'application/json',
+                'Authorization': `Bearer ${SUPABASE_CONFIG.ANON_KEY}`,
+                'x-custom-token': this._token,
+            },
+            body: JSON.stringify({ new_password: newPassword }),
+        });
 
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(err?.message ?? `改密失敗（HTTP ${response.status}）`);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({})) as { message?: string };
+            throw new Error(err?.message ?? `改密失敗（HTTP ${response.status}）`);
+        }
     }
-}
 
     // ── 重置（換章 / 登出時使用） ─────────────────────────────────────────────
 

@@ -1,0 +1,171 @@
+{
+  "version": "1.0.0",
+  "map": {
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts": {
+      "time": 1774168723271.6863,
+      "uuid": "5daeeb30-88f3-4f57-8396-ddf680f1767b"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\BalanceOverlay.ts": {
+      "time": 1774108656929.7869,
+      "uuid": "33b978f5-5c36-4a33-b908-16d89d7f09f5"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\ChapterStoryModal.ts": {
+      "time": 1774113854301.588,
+      "uuid": "f8d4cc71-35ed-4d77-86d6-cb0342744e60"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\CharacterCard.ts": {
+      "time": 1774105769238.54,
+      "uuid": "7cbd094e-763a-43f8-93e9-af899e4a9577"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\DiceResultOverlay.ts": {
+      "time": 1774108169908.3376,
+      "uuid": "e6e3328d-07e6-414a-b3d5-2ebcb2705880"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\DonationTracker.ts": {
+      "time": 1774118065817.8145,
+      "uuid": "44ae0f44-bb42-4b87-878e-1a2b68aeb4bd"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\EventCalendar.ts": {
+      "time": 1774118074697.4624,
+      "uuid": "e368e735-5031-4345-bc3a-845c16dcdd39"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\HUDController.ts": {
+      "time": 1774114328584.5205,
+      "uuid": "43bfa855-60f0-4e91-84e6-c2a01b5941cb"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\InventoryPanel.ts": {
+      "time": 1774107604375.1265,
+      "uuid": "747ee35b-0387-48e3-bfce-db461c2b1326"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\ItemDetailModal.ts": {
+      "time": 1774107586604.2166,
+      "uuid": "ee244988-b06d-4f65-8e22-74f2dce7d132"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\ItemSlot.ts": {
+      "time": 1774107565809.731,
+      "uuid": "b3c3912d-e247-4e6b-b2bb-16813edaff27"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\LoginController.ts": {
+      "time": 1774121227003.932,
+      "uuid": "c8d3872c-c6bd-4f64-91cc-070299132291"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MainGameController.ts": {
+      "time": 1774166981516.3628,
+      "uuid": "eb486b4c-326a-45df-96c3-fd5cd5dacb3c"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MapController.ts": {
+      "time": 1774104760803.4485,
+      "uuid": "c719109b-589b-40e6-9643-26bfd164e6bf"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MapLandmark.ts": {
+      "time": 1774097267557.5034,
+      "uuid": "78f2cb88-4af7-47f5-b20f-fce4fceaa452"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MusicDiscController.ts": {
+      "time": 1774118071545.4167,
+      "uuid": "4a710a00-1290-4931-875b-f9dfcca19031"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\NPCModal.ts": {
+      "time": 1774108503475.1467,
+      "uuid": "c5da3ae0-dd3b-427f-9d9c-e437e26f8765"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\PTD_DataManager.ts": {
+      "time": 1774128512699.1233,
+      "uuid": "07b4a7b3-8ae3-487f-a444-e9eebb2d2fc1"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\PTD_UI_Theme.ts": {
+      "time": 1774096626638.4797,
+      "uuid": "e4fdd2ea-03ce-4a4e-bb77-d68ac009f13e"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\RelicPoemModal.ts": {
+      "time": 1774108839098.2686,
+      "uuid": "8facf0f2-423e-4119-822e-ea7a5eea46fb"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\SoundManager.ts": {
+      "time": 1774103992722.6196,
+      "uuid": "c75e3003-c034-4ad0-8555-3163e24975a4"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\WhiteCrowCard.ts": {
+      "time": 1774103961324.7515,
+      "uuid": "82d03245-8dee-47ba-bf36-cb6cb8d5fdd3"
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts.meta": {
+      "time": 1774168530768.0469
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\BalanceOverlay.ts.meta": {
+      "time": 1774168530771.0486
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\ChapterStoryModal.ts.meta": {
+      "time": 1774168530783.0486
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\CharacterCard.ts.meta": {
+      "time": 1774168530784.048
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\DiceResultOverlay.ts.meta": {
+      "time": 1774168530787.0493
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\DonationTracker.ts.meta": {
+      "time": 1774168530796.0461
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\EventCalendar.ts.meta": {
+      "time": 1774168530796.0461
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\HUDController.ts.meta": {
+      "time": 1774168530797.0476
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\InventoryPanel.ts.meta": {
+      "time": 1774168530798.0476
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\ItemDetailModal.ts.meta": {
+      "time": 1774168530800.0488
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\ItemSlot.ts.meta": {
+      "time": 1774168530802.0486
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\LoginController.ts.meta": {
+      "time": 1774168530802.0486
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MainGameController.ts.meta": {
+      "time": 1774168530803.0479
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MapController.ts.meta": {
+      "time": 1774168530803.0479
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MapLandmark.ts.meta": {
+      "time": 1774168530806.0493
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\MusicDiscController.ts.meta": {
+      "time": 1774168530807.047
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\NPCModal.ts.meta": {
+      "time": 1774168530808.0486
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\PTD_DataManager.ts.meta": {
+      "time": 1774168530810.0503
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\PTD_UI_Theme.ts.meta": {
+      "time": 1774168530810.0503
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\RelicPoemModal.ts.meta": {
+      "time": 1774168530813.0486
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\SoundManager.ts.meta": {
+      "time": 1774168530814.0493
+    },
+    "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\WhiteCrowCard.ts.meta": {
+      "time": 1774168530814.0493
+    }
+  },
+  "missing": {
+    "a96497f8-7192-4f3a-9dc4-ade0315b189e": {
+      "path": "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\1",
+      "time": 1774168530765.5286,
+      "removeTime": 1774168723288
+    },
+    "f0a56563-e25b-4df9-9195-36c64046897a": {
+      "path": "E:\\Game_Dev_Main\\Project_Turbid_Dust\\assets\\scripts\\1\\PTD_DataManager.ts",
+      "time": 1774122873218.3748,
+      "removeTime": 1774168723288
+    }
+  }
+}

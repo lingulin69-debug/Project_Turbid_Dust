@@ -60,5 +60,9 @@
   "overrides": {
     "hono": "^4.12.7",
     "@hono/node-server": "^1.19.10"
-  }
+  },
+  "creator": {
+    "version": "3.8.2"
+  },
+  "uuid": "e670f99a-bf05-4de6-bfec-4867cd2b311d"
 }

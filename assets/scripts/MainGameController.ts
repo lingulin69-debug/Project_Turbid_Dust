@@ -3,6 +3,7 @@ import {
     Component,
     Node,
     Vec3,
+    director,
 } from 'cc';
 import { MapController } from './MapController';
 import { HUDController, HUDPanelId } from './HUDController';
@@ -106,6 +107,13 @@ export class MainGameController extends Component {
     }
 
 async start(): Promise<void> {
+        // 🛡️ 登入守衛：防止玩家繞過登入畫面
+    if (!DataManager.getPlayer()) {
+        console.warn('[MainGameController] 尚未登入，重新導向登入場景');
+        director.loadScene('LoginScene');  // ⚠️ 確認你的登入場景名稱
+        return;
+    }
+    
         await this._loadInventory();
         await this._initGameState();   // <-- 新增：啟動時取得伺服器最新章節狀態
         this._startRealtimeListener(); // <-- 新增：開始 60 秒輪詢
