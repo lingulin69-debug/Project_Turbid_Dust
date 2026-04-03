@@ -65,6 +65,11 @@ export class MapLandmark extends Component {
 
     private _data: LandmarkData | null = null;
 
+    /** 取得地標資料快照（唯讀） */
+    get landmarkData(): LandmarkData | null {
+        return this._data;
+    }
+
     // ── 公開初始化 ────────────────────────────────────────────────────────────
 
     init(data: LandmarkData): void {

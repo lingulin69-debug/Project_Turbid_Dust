@@ -35,6 +35,8 @@ export interface PlayerData {
     hp:                  number;
     max_hp:              number;
     current_landmark_id?: string;
+    role?:               'admin' | 'gm' | 'player';  // 權限角色
+    chapter?:            number;                       // 當前章節
 }
 
 /** 登入 API 回傳資料（含 password 用於偵測初始密碼 0000） */
@@ -48,6 +50,8 @@ export interface LoginResponse {
     hp:                   number;
     max_hp:               number;
     current_landmark_id?: string;
+    role?:                'admin' | 'gm' | 'player';
+    chapter?:             number;
 }
 
 /** 天平計算所需的據點快照 */
@@ -79,6 +83,26 @@ export interface ChapterStoryData {
     bg_image_url?:   string;
     bg_music_url?:   string;
     winner_faction?: string;
+}
+
+/** 任務資料 */
+export interface QuestData {
+    id:          string;
+    title:       string;
+    description: string;
+    status:      'active' | 'completed' | 'locked';
+    chapter?:    number;
+    reward?:     string;
+}
+
+/** 圖鑑條目 */
+export interface CollectionEntry {
+    id:          string;
+    name:        string;
+    category:    'landmark' | 'npc' | 'relic' | 'creature';
+    description: string;
+    unlocked:    boolean;
+    image_url?:  string;
 }
 
 // ── 事件名稱常數 ──────────────────────────────────────────────────────────────
@@ -286,6 +310,40 @@ class PTD_DataManagerClass {
     }
 
     // ── 遊戲狀態與章節劇情 API ────────────────────────────────────────────────
+
+    /** 任務資料 */
+    async fetchQuests(): Promise<QuestData[]> {
+        if (!this._player?.id) {
+            console.warn('[DataManager] fetchQuests：玩家未初始化');
+            return [];
+        }
+        try {
+            const url = `${SUPABASE_CONFIG.URL}/rest/v1/td_quests?player_id=eq.${this._player.id}&select=*`;
+            const response = await fetch(url, { headers: HEADERS });
+            if (!response.ok) return [];
+            return await response.json() as QuestData[];
+        } catch (err) {
+            console.error('[DataManager] fetchQuests 失敗', err);
+            return [];
+        }
+    }
+
+    /** 圖鑑收集資料 */
+    async fetchCollection(): Promise<CollectionEntry[]> {
+        if (!this._player?.id) {
+            console.warn('[DataManager] fetchCollection：玩家未初始化');
+            return [];
+        }
+        try {
+            const url = `${SUPABASE_CONFIG.URL}/rest/v1/td_collection?player_id=eq.${this._player.id}&select=*`;
+            const response = await fetch(url, { headers: HEADERS });
+            if (!response.ok) return [];
+            return await response.json() as CollectionEntry[];
+        } catch (err) {
+            console.error('[DataManager] fetchCollection 失敗', err);
+            return [];
+        }
+    }
 
     async fetchGameState(): Promise<GameState | null> {
         try {

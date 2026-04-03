@@ -86,13 +86,13 @@
 **主要功能：**
 
 1.  **執行村民任務 (Deliver)**
-    *   **API:** `POST /api/npc/trafficker/deliver`
+    *   **API:** `POST /api/npc/trafficker/villager-mission`
     *   **功能：** 在所在的據點執行任務以獲得聲望。
     *   **條件：** 人販子必須位於目標據點。
     *   **效果：** 獲得 +3 聲望（上限 10）。
 
 2.  **綁架 (Kidnap)**
-    *   **API:** `POST /api/npc/trafficker/kidnap`
+    *   **API:** `POST /api/npc/trafficker/skill/kidnap`
     *   **功能：** 使指定玩家進入「失蹤」狀態，持續 6 小時。
     *   **條件：**
         *   聲望需達到 5 點或以上。
@@ -101,7 +101,7 @@
     *   **效果：** 目標玩家被標記為失蹤，並收到強制彈窗通知。
 
 3.  **黑市情報 (Intel)**
-    *   **API:** `POST /api/npc/trafficker/intel`
+    *   **API:** `POST /api/npc/trafficker/skill/intel`
     *   **功能：** 查詢當前章節中，有哪些玩家曾到訪過人販子所在的據點。
     *   **條件：**
         *   聲望需達到 3 點或以上。
@@ -110,7 +110,7 @@
     *   **效果：** 獲得一份該據點的不重複訪客 OC 名稱列表。
 
 4.  **扒竊 (Pickpocket)**
-    *   **API:** `POST /api/npc/trafficker/pickpocket`
+    *   **API:** `POST /api/npc/trafficker/skill/pickpocket`
     *   **功能：** 隨機從一名符合條件的玩家身上偷取其 10% 的貨幣。
     *   **條件：** 聲望需達到 8 點或以上。
     *   **成本：** 消耗 8 點聲望。

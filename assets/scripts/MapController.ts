@@ -144,7 +144,7 @@ export class MapController extends Component {
         lm.init(data);
         // 同步更新 DataManager 快照
         DataManager.syncLandmarks(
-            [...this._landmarks.values()].map(l => (l as any)['_data'] as LandmarkData).filter(Boolean),
+            [...this._landmarks.values()].map(l => l.landmarkData).filter((d): d is LandmarkData => d !== null),
         );
     }
 

@@ -118,8 +118,8 @@ export class LoginController extends Component {
      * Inspector 綁定路徑：LoginController → onLoginPressed
      */
     async onLoginPressed(): Promise<void> {
-        const ocName   = this.ocNameInput?.string.trim()   ?? '';
-        const password = this.passwordInput?.string.trim() ?? '';
+        const ocName   = this.ocNameInput?.string?.trim()   ?? '';
+        const password = this.passwordInput?.string?.trim() ?? '';
 
         if (!ocName || !password) {
             this._setLoginError('請輸入 OC 名稱與密碼');
@@ -159,8 +159,8 @@ export class LoginController extends Component {
      * Inspector 綁定路徑：LoginController → onConfirmResetPressed
      */
     async onConfirmResetPressed(): Promise<void> {
-        const newPwd     = this.newPasswordInput?.string.trim()     ?? '';
-        const confirmPwd = this.confirmPasswordInput?.string.trim() ?? '';
+        const newPwd     = this.newPasswordInput?.string?.trim()     ?? '';
+        const confirmPwd = this.confirmPasswordInput?.string?.trim() ?? '';
 
         if (newPwd.length < MIN_PASSWORD_LENGTH) {
             this._setResetError(`密碼長度至少 ${MIN_PASSWORD_LENGTH} 位`);
@@ -249,6 +249,8 @@ export class LoginController extends Component {
             hp:                   data.hp,
             max_hp:               data.max_hp,
             current_landmark_id:  data.current_landmark_id,
+            role:                 data.role,
+            chapter:              data.chapter,
         });
     }
 

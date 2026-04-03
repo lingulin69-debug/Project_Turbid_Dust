@@ -2,7 +2,9 @@
 # Project Turbid Dust — Mobile Responsive Plan
 
 > 建立日期：2026-03-17
+> 最後驗證：2026-03-31
 > 執行順序：Phase 1 → Phase 3 → Phase 2 → Phase 4
+> **狀態：✅ 全部完成（Phase 1-4 皆已實作）**
 
 ---
 
@@ -21,7 +23,7 @@
 
 ---
 
-## Phase 1 — Modal 與卡片寬度（最高優先）
+## Phase 1 — Modal 與卡片寬度（最高優先）✅ 已完成
 
 ### 1-A. WhiteCrowCard.tsx
 - **修改**：`width: '450px'` → `width: 'min(450px, calc(100vw - 32px))'`
@@ -41,7 +43,7 @@
 
 ---
 
-## Phase 3 — 全域響應式斷點
+## Phase 3 — 全域響應式斷點 ✅ 已完成
 
 ### 3-A. PTD_UI_Theme.tsx — generatePTDUIStyles()
 新增 `@media (max-width: 640px)` 區塊：
@@ -58,7 +60,7 @@
 
 ---
 
-## Phase 2 — 地圖操作與 HUD 按鈕
+## Phase 2 — 地圖操作與 HUD 按鈕 ✅ 已完成
 
 ### 2-A. 地圖容器（已有 touch-none，維持不變）
 地圖本身使用 `@use-gesture/react` 的 `useGesture` 處理拖曳，
@@ -73,7 +75,7 @@
 
 ---
 
-## Phase 4 — 觸控體驗優化
+## Phase 4 — 觸控體驗優化 ✅ 已完成
 
 ### 4-A. 全域 touch-manipulation
 在 `index.css` 對所有互動元素加：

@@ -7,6 +7,7 @@ import cors from 'cors';
 // import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 // import Database from 'better-sqlite3';
 import { createClient } from '@supabase/supabase-js';
+import cron from 'node-cron';
 import itemsData from '../src/components/items.json' assert { type: 'json' };
 import rescueDistanceData from '../src/data/rescue-distance.json' assert { type: 'json' };
 import landmarkPositionsData from '../src/data/landmark-positions.json' assert { type: 'json' };
@@ -368,12 +369,14 @@ app.post('/api/admin/liquidator-select', async (req, res) => {
   const { countPerFaction, chapter } = req.body;
 
   try {
-    const candidates = await prisma.td_users.findMany({
-      where: { identity_role: 'citizen' }
-    });
+    const { data: candidates, error: fetchErr } = await supabaseServer
+      .from('td_users')
+      .select('id, username, oc_name, faction')
+      .eq('identity_role', 'citizen');
+    if (fetchErr) throw new Error(fetchErr.message);
 
-    const turbidCandidates = candidates.filter(u => u.faction === 'Turbid');
-    const pureCandidates = candidates.filter(u => u.faction === 'Pure');
+    const turbidCandidates = (candidates || []).filter(u => u.faction === 'Turbid');
+    const pureCandidates = (candidates || []).filter(u => u.faction === 'Pure');
 
     const selectRandom = (arr: any[], n: number) => {
       const shuffled = [...arr].sort(() => 0.5 - Math.random());
@@ -386,10 +389,11 @@ app.post('/api/admin/liquidator-select', async (req, res) => {
     const selectedIds = allSelected.map(u => u.id);
 
     if (selectedIds.length > 0) {
-      await prisma.td_users.updateMany({
-        where: { id: { in: selectedIds } },
-        data: { identity_role: 'liquidator' }
-      });
+      const { error: updateError } = await supabaseServer
+        .from('td_users')
+        .update({ identity_role: 'liquidator' })
+        .in('id', selectedIds);
+      if (updateError) throw new Error(updateError.message);
     }
 
     res.json({ 
@@ -400,6 +404,157 @@ app.post('/api/admin/liquidator-select', async (req, res) => {
         deviation: (Math.random() * (25 - 15) + 15).toFixed(2) + 'Hz'
       }))
     });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================
+// 跨線事件系統（Cross-Line Event System）
+// ============================================================
+interface CrossLineEvent {
+  key: string;
+  chapter: string;
+  label: string;
+  faction_target: 'Pure' | 'Turbid' | 'Both';
+  content_pure?: string;
+  content_turbid?: string;
+}
+
+const CROSS_LINE_CATALOG: CrossLineEvent[] = [
+  {
+    key: 'ch2_1a',
+    chapter: 'Ch2',
+    label: '淨塵完成「收復學校」',
+    faction_target: 'Both',
+    content_pure: `【城市動態】北區廢棄學校今起重新開放，入口已掛白旗。\n附近排水渠道本週進行了清洗作業。\n（消息來源：教會公告欄）`,
+    content_turbid: `【感染者低語】有人說，北區那所廢校的地下，最近傳出過哭聲。\n教會說沒有這件事。\n沒有人確認。`,
+  },
+  {
+    key: 'ch3_1a',
+    chapter: 'Ch3',
+    label: '濁息完成「無名墳塚」',
+    faction_target: 'Pure',
+    content_pure: `【城市動態】朝聖路側面的無名地段本週起設置圍欄。\n教會說明：「土質鬆動，暫時封閉。」預計封閉期間未定。\n請淨化隊員在巡邏時紀錄週邊異常，但勿靠近。`,
+  },
+  {
+    key: 'ch3_1b',
+    chapter: 'Ch3',
+    label: '濁息完成「枯井」',
+    faction_target: 'Pure',
+    content_pure: `【城市動態】西段舊水道附近的老井今日加裝了鐵蓋。\n施工人員未說明原因，作業約進行了二十分鐘。\n附近居民表示昨夜有異響，描述不一。`,
+  },
+  {
+    key: 'ch3_1c',
+    chapter: 'Ch3',
+    label: '濁息完成「神龕骨頭」',
+    faction_target: 'Turbid',
+    content_turbid: `【身體感知】今天黃昏，你的裂紋亮了一下。\n\n不是那種通常的頻率——\n是一種更密、更短的光，\n像是某個地方有人在用什麼計數，\n骨頭對骨頭。\n\n然後停了。\n你不確定你算對了。`,
+  },
+  {
+    key: 'ch4_1a',
+    chapter: 'Ch4',
+    label: '濁息完成「老屋頂天台」',
+    faction_target: 'Pure',
+    content_pure: `【城市動態】今天天氣晴朗，能見度特別好。\n\n從城北高點往下看，黑霧的邊界線今天形狀清晰。\n有人描述它看起來像是兩個輪廓——\n但教會說那只是光線折射。\n\n（城市觀察員日誌，非官方記錄）`,
+  },
+  {
+    key: 'ch4_1b',
+    chapter: 'Ch4',
+    label: '濁息完成「北廠房」',
+    faction_target: 'Pure',
+    content_pure: `【教會公告】北廠房附近昨夜有大量感染者聚集後往北移動。\n相關情況已由淨化編隊確認。\n教會判斷為：感染者習性聚集，已自然散開。\n無需追蹤，請維持正常任務節奏。`,
+  },
+  {
+    key: 'ch5_1a',
+    chapter: 'Ch5',
+    label: '濁息完成「黑霧波動」⭐核心事件',
+    faction_target: 'Pure',
+    content_pure: `【教會公告】黑霧警報\n\n黑霧今夜向西推進十八公尺。\n西北朝聖路全段暫時封閉。\n淨化編隊集結待命，請服用今日血清後就位。\n\n（附注：今日部分血清藥丸外殼有細線裂痕。\n 教會確認：不影響使用。請正常服用。）`,
+  },
+  {
+    key: 'ch5_1b',
+    chapter: 'Ch5',
+    label: '淨塵完成「地下管道調查」',
+    faction_target: 'Turbid',
+    content_turbid: `【感染者低語】今天東城地下有金屬敲擊聲。\n\n三下。停。三下。停。\n\n有人說不像是水管，像是有人在測試什麼。\n沒有人說是誰。`,
+  },
+  {
+    key: 'ch5_1c',
+    chapter: 'Ch5',
+    label: '淨塵 Ch5 主線里程碑推進',
+    faction_target: 'Turbid',
+    content_turbid: `【身體感知】今天，手背上的裂紋突然亮了一下。\n\n不是那種持續的振動——\n是一種非常短的、像是弦被撥了一下的感覺，\n然後消失了，\n\n你不確定那是不是你感覺到什麼，\n但你確定那個亮，是真的。`,
+  },
+  {
+    key: 'ch6_1a',
+    chapter: 'Ch6',
+    label: '淨塵完成「病歷系統調查」',
+    faction_target: 'Both',
+    content_pure: `【教會公告】醫療站系統整備通知\n\n教會醫療站病歷申請窗口即日起暫時關閉。\n理由：系統整備中。\n預計重新開放時間：未定。`,
+    content_turbid: `【感染者低語】有人說，教會的舊病歷系統最近在動。\n\n上面原本就有些名字對不上，\n現在更找不到了。\n\n不知道是整理，還是別的什麼。`,
+  },
+  {
+    key: 'ch7_1a',
+    chapter: 'Ch7',
+    label: '任一陣營完成「礦脈意識接觸」',
+    faction_target: 'Both',
+    content_pure: `【城市動態】異常光源記錄\n\n昨夜聖座地下第二層通風格柵有淡藍白色的光滲出，\n持續時間約二十分鐘，後自行消失。\n\n教會說明：礦物自然反應，不需處理。`,
+    content_turbid: `【身體感知】今夜礦脈的振動頻率變了。\n\n不是之前那個頻率——\n是一個你從沒感受過的，更輕的，\n非常短，非常安靜，\n\n像是有人說：我在這裡。\n\n然後停了。`,
+  },
+  {
+    key: 'ch7_1b',
+    chapter: 'Ch7',
+    label: '淨塵關鍵玩家停止服用血清',
+    faction_target: 'Turbid',
+    content_turbid: `【感染者低語】有人說，這幾天城裡的血清分配少了兩份。\n\n教會沒有說明原因。`,
+  },
+];
+
+// GET 跨線事件目錄（供 Admin UI 使用）
+app.get('/api/admin/cross-line-events/catalog', async (_req, res) => {
+  res.json({ catalog: CROSS_LINE_CATALOG });
+});
+
+// POST 觸發跨線事件
+app.post('/api/admin/cross-line-events/trigger', async (req, res) => {
+  const { event_key, triggered_by } = req.body;
+  if (!event_key || !triggered_by) {
+    return res.status(422).json({ error: 'MISSING_FIELDS' });
+  }
+
+  const event = CROSS_LINE_CATALOG.find(e => e.key === event_key);
+  if (!event) {
+    return res.status(404).json({ error: 'EVENT_NOT_FOUND' });
+  }
+
+  try {
+    const factionFilter: string[] =
+      event.faction_target === 'Pure' ? ['Pure'] :
+      event.faction_target === 'Turbid' ? ['Turbid'] :
+      ['Pure', 'Turbid'];
+
+    const { data: users, error: userErr } = await supabaseServer
+      .from('td_users')
+      .select('oc_name, faction')
+      .in('faction', factionFilter);
+    if (userErr) throw userErr;
+
+    const notifications: { target_oc: string; content: string; notification_type: string }[] = [];
+    for (const user of (users || [])) {
+      const content = user.faction === 'Pure' ? event.content_pure : event.content_turbid;
+      if (!content) continue;
+      notifications.push({ target_oc: user.oc_name, content, notification_type: 'popup' });
+    }
+
+    if (notifications.length === 0) {
+      return res.json({ success: true, sent: 0, message: '無符合對象' });
+    }
+
+    const { error: insertErr } = await supabaseServer.from('player_notifications').insert(notifications);
+    if (insertErr) throw insertErr;
+
+    res.json({ success: true, sent: notifications.length, event_key, triggered_by });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -589,19 +744,15 @@ app.post('/api/user/deduct-hp', async (req, res) => {
 // 6. Get High Affinity Candidates (Admin)
 app.get('/api/admin/candidates', async (req, res) => {
   try {
-    const candidates = await prisma.td_users.findMany({
-      where: {
-        is_high_affinity_candidate: true,
-        identity_role: 'citizen'
-      },
-      select: {
-        username: true,
-        faction: true
-      }
-    });
+    const { data: candidates, error: fetchErr } = await supabaseServer
+      .from('td_users')
+      .select('username, faction')
+      .eq('is_high_affinity_candidate', true)
+      .eq('identity_role', 'citizen');
+    if (fetchErr) throw new Error(fetchErr.message);
     
     // Mock anomaly level for visualization
-    const result = candidates.map(c => ({
+    const result = (candidates || []).map(c => ({
       ...c,
       anomaly: Math.floor(Math.random() * (95 - 60) + 60) + '%'
     }));
@@ -615,14 +766,12 @@ app.get('/api/admin/candidates', async (req, res) => {
 // 7. Get Global Registry (Admin)
 app.get('/api/admin/registry', async (req, res) => {
   try {
-    const users = await prisma.td_users.findMany({
-      select: {
-        username: true,
-        faction: true,
-        identity_role: true
-      }
-    });
-    res.json(users);
+    const { data: users, error: fetchErr } = await supabaseServer
+      .from('td_users')
+      .select('username, faction, identity_role');
+    if (fetchErr) throw new Error(fetchErr.message);
+
+    res.json(users || []);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -1485,252 +1634,6 @@ app.post('/api/npc/trafficker/villager-mission', async (req, res) => {
       mission_text: deliverText,
       updated_data: { prestige: newPrestige }
     });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 14. POST /api/npc/trafficker/kidnap
-app.post('/api/npc/trafficker/kidnap', async (req, res) => {
-  const { trafficker_oc, target_oc } = req.body;
-
-  if (!trafficker_oc || !target_oc) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  try {
-    const { data: trafficker, error: tErr } = await supabaseServer
-      .from('td_users')
-      .select('npc_role, prestige')
-      .eq('oc_name', trafficker_oc)
-      .maybeSingle();
-
-    if (tErr || !trafficker) return res.status(404).json({ error: '人販子不存在' });
-    if ((trafficker as any).npc_role !== 'trafficker') return res.status(403).json({ error: '無人販子權限' });
-    if (((trafficker as any).prestige ?? 0) < 5) return res.status(400).json({ error: '聲望不足（需5點）' });
-
-    const { data: target, error: targetErr } = await supabaseServer
-      .from('td_users')
-      .select('oc_name, is_lost')
-      .eq('oc_name', target_oc)
-      .maybeSingle();
-
-    if (targetErr || !target) return res.status(404).json({ error: '目標不存在' });
-    if ((target as any).is_lost) return res.status(400).json({ error: '目標已處於失蹤狀態' });
-
-    const lostUntil = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
-
-    // 扣 5 聲望
-    const { error: prestigeErr } = await supabaseServer
-      .from('td_users')
-      .update({ prestige: (trafficker as any).prestige - 5 })
-      .eq('oc_name', trafficker_oc);
-    if (prestigeErr) throw prestigeErr;
-
-    // 設定目標失蹤
-    const { error: updateErr } = await supabaseServer
-      .from('td_users')
-      .update({ is_lost: true, lost_until: lostUntil })
-      .eq('oc_name', target_oc);
-    if (updateErr) throw updateErr;
-
-    // 強制彈窗通知目標
-    const { error: notifErr } = await supabaseServer
-      .from('player_notifications')
-      .insert({
-        target_oc,
-        content: '你在黑暗中醒來，四周是陌生的氣味。你暫時無法行動。',
-        notification_type: 'popup'
-      });
-    if (notifErr) throw notifErr;
-
-    // 寫入小道消息（匿名代號暫用 target_oc，待匿名系統完成後替換）
-    const { error: gazetteErr } = await supabaseServer
-      .from('mission_logs')
-      .insert({
-        oc_name: trafficker_oc,
-        mission_id: `kidnap-${target_oc}-${Date.now()}`,
-        chapter_version: 'current',
-        gazette_type: 'system',
-        gazette_content: `「${target_oc}」在黑霧中消失了`
-      });
-    if (gazetteErr) throw gazetteErr;
-
-    await addKarmaTag(target_oc, '曾經消失的人');
-
-    res.json({ success: true, lost_until: lostUntil });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 14-B. POST /api/npc/trafficker/deliver
-app.post('/api/npc/trafficker/deliver', async (req, res) => {
-  const { npc_oc, landmark_id } = req.body;
-
-  if (!npc_oc || !landmark_id) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  try {
-    const { data: npc, error: nErr } = await supabaseServer
-      .from('td_users')
-      .select('npc_role, prestige, current_landmark_id')
-      .eq('oc_name', npc_oc)
-      .maybeSingle();
-
-    if (nErr || !npc) return res.status(404).json({ error: '人販子不存在' });
-    if ((npc as any).npc_role !== 'trafficker') return res.status(403).json({ error: '無人販子權限' });
-    if ((npc as any).current_landmark_id !== landmark_id) {
-      return res.status(403).json({ error: '人販子不在此據點' });
-    }
-
-    // 隨機抽取村民任務文本
-    const texts = npcDeliverTexts as any[];
-    const deliverText = texts.length > 0
-      ? texts[Math.floor(Math.random() * texts.length)].text
-      : '你完成了一件無人知曉的小事。';
-
-    // prestige + 3，上限 10
-    const currentPrestige = (npc as any).prestige ?? 0;
-    const newPrestige = Math.min(10, currentPrestige + 3);
-
-    const { error: updateErr } = await supabaseServer
-      .from('td_users')
-      .update({ prestige: newPrestige })
-      .eq('oc_name', npc_oc);
-    if (updateErr) throw updateErr;
-
-    // 寫入 npc_actions
-    const { error: logErr } = await supabaseServer
-      .from('npc_actions')
-      .insert({
-        npc_oc,
-        action_type: 'deliver',
-        landmark_id,
-        result: deliverText,
-        chapter_version: 'current'
-      });
-    if (logErr) throw logErr;
-
-    res.json({ success: true, text: deliverText, new_prestige: newPrestige });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 14-C. POST /api/npc/trafficker/intel
-app.post('/api/npc/trafficker/intel', async (req, res) => {
-  const { npc_oc, landmark_id } = req.body;
-
-  if (!npc_oc || !landmark_id) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  try {
-    const { data: npc, error: nErr } = await supabaseServer
-      .from('td_users')
-      .select('npc_role, prestige')
-      .eq('oc_name', npc_oc)
-      .maybeSingle();
-
-    if (nErr || !npc) return res.status(404).json({ error: '人販子不存在' });
-    if ((npc as any).npc_role !== 'trafficker') return res.status(403).json({ error: '無人販子權限' });
-    if (((npc as any).prestige ?? 0) < 3) return res.status(400).json({ error: '聲望不足（需3點）' });
-
-    // 查詢本章到訪該據點的 oc_name（不重複）
-    const { data: logs, error: logErr } = await supabaseServer
-      .from('mission_logs')
-      .select('oc_name')
-      .eq('landmark_id', landmark_id)
-      .eq('chapter_version', 'current');
-    if (logErr) throw logErr;
-
-    const visitors = [...new Set((logs || []).map((l: any) => l.oc_name))];
-
-    const newPrestige = (npc as any).prestige - 3;
-    const { error: updateErr } = await supabaseServer
-      .from('td_users')
-      .update({ prestige: newPrestige })
-      .eq('oc_name', npc_oc);
-    if (updateErr) throw updateErr;
-
-    res.json({ success: true, visitors, new_prestige: newPrestige });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 14-D. POST /api/npc/trafficker/pickpocket
-app.post('/api/npc/trafficker/pickpocket', async (req, res) => {
-  const { npc_oc } = req.body;
-
-  if (!npc_oc) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
-
-  try {
-    const { data: npc, error: nErr } = await supabaseServer
-      .from('td_users')
-      .select('npc_role, prestige, coins')
-      .eq('oc_name', npc_oc)
-      .maybeSingle();
-
-    if (nErr || !npc) return res.status(404).json({ error: '人販子不存在' });
-    if ((npc as any).npc_role !== 'trafficker') return res.status(403).json({ error: '無人販子權限' });
-    if (((npc as any).prestige ?? 0) < 8) return res.status(400).json({ error: '聲望不足（需8點）' });
-
-    // 查詢所有可偷目標：排除自己、is_lost、npc_role非NULL、coins=0
-    const { data: candidates, error: cErr } = await supabaseServer
-      .from('td_users')
-      .select('oc_name, coins')
-      .neq('oc_name', npc_oc)
-      .eq('is_lost', false)
-      .is('npc_role', null)
-      .gt('coins', 0);
-    if (cErr) throw cErr;
-
-    if (!candidates || candidates.length === 0) {
-      return res.status(400).json({ error: '目前沒有可偷取的目標' });
-    }
-
-    const targetData = candidates[Math.floor(Math.random() * candidates.length)] as any;
-    const stolen = Math.max(1, Math.floor(targetData.coins * 0.1));
-
-    // 扣目標貨幣
-    const { error: targetErr } = await supabaseServer
-      .from('td_users')
-      .update({ coins: targetData.coins - stolen })
-      .eq('oc_name', targetData.oc_name);
-    if (targetErr) throw targetErr;
-
-    // 加人販子貨幣 + 扣 8 聲望
-    const { error: npcUpdateErr } = await supabaseServer
-      .from('td_users')
-      .update({
-        coins: ((npc as any).coins ?? 0) + stolen,
-        prestige: (npc as any).prestige - 8
-      })
-      .eq('oc_name', npc_oc);
-    if (npcUpdateErr) throw npcUpdateErr;
-
-    // 私人通知人販子
-    await supabaseServer.from('player_notifications').insert({
-      target_oc: npc_oc,
-      content: `帶走了${stolen}枚貨幣。`,
-      notification_type: 'private'
-    });
-
-    // 私人通知目標
-    await supabaseServer.from('player_notifications').insert({
-      target_oc: targetData.oc_name,
-      content: '你的貨幣少了一些，像是被人摸走的。',
-      notification_type: 'private'
-    });
-
-    await addKarmaTag(targetData.oc_name, '口袋有洞的人');
-
-    res.json({ success: true, stolen_amount: stolen, new_prestige: (npc as any).prestige - 8 });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -3684,7 +3587,154 @@ app.get('/api/inn/rescue-distance', async (req, res) => {
   }
 });
 
+// ============================================================
+// 大章節推進 — 天平結算後觸發
+// ============================================================
+app.post('/api/chapter/advance', async (req, res) => {
+  const { admin_password } = req.body as { admin_password?: string };
+  if (admin_password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'UNAUTHORIZED' });
+  }
+  try {
+    // 1. 取得當前天平值
+    const { data: stats, error: sErr } = await supabaseServer
+      .from('global_stats')
+      .select('balance_value, current_chapter')
+      .eq('id', 'singleton')
+      .maybeSingle();
+    if (sErr) throw sErr;
+    if (!stats) return res.status(404).json({ error: 'GLOBAL_STATS_NOT_FOUND' });
+
+    const balanceValue = (stats as Record<string, unknown>).balance_value as number ?? 50;
+    const currentChapter = (stats as Record<string, unknown>).current_chapter as number ?? 1;
+    const nextChapter = currentChapter + 1;
+
+    if (nextChapter > 8) {
+      return res.json({ success: true, message: 'ALL_CHAPTERS_COMPLETED', current_chapter: currentChapter });
+    }
+
+    let winningFaction: 'Turbid' | 'Pure' | 'Draw' = 'Draw';
+    if (balanceValue < 50) winningFaction = 'Turbid';
+    else if (balanceValue > 50) winningFaction = 'Pure';
+
+    // 2. 推進至下一章
+    const { error: uErr } = await supabaseServer
+      .from('global_stats')
+      .update({
+        current_chapter: nextChapter,
+        last_settlement_balance: balanceValue,
+        last_settlement_winner: winningFaction,
+        last_settlement_at: new Date().toISOString(),
+      })
+      .eq('id', 'singleton');
+    if (uErr) throw uErr;
+
+    // 3. 記錄結算歷史
+    await supabaseServer
+      .from('chapter_settlements')
+      .insert({
+        chapter_version: `${currentChapter}.0`,
+        balance_value: balanceValue,
+        winning_faction: winningFaction,
+        settled_at: new Date().toISOString(),
+      });
+
+    res.json({
+      success: true,
+      previous_chapter: currentChapter,
+      new_chapter: nextChapter,
+      balance_value: balanceValue,
+      winning_faction: winningFaction,
+      breathing_scene_transition: `ch${currentChapter}_to_ch${nextChapter}`,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================
+// 取得當前章節與前呼吸場景狀態
+// ============================================================
+app.get('/api/chapter/current', async (_req, res) => {
+  try {
+    const { data: stats, error } = await supabaseServer
+      .from('global_stats')
+      .select('current_chapter, last_settlement_balance, last_settlement_winner, last_settlement_at')
+      .eq('id', 'singleton')
+      .maybeSingle();
+    if (error) throw error;
+
+    res.json({
+      current_chapter: (stats as Record<string, unknown>)?.current_chapter ?? 1,
+      last_settlement: stats ? {
+        balance_value: (stats as Record<string, unknown>).last_settlement_balance,
+        winning_faction: (stats as Record<string, unknown>).last_settlement_winner,
+        settled_at: (stats as Record<string, unknown>).last_settlement_at,
+      } : null,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+    res.status(500).json({ error: message });
+  }
+});
+
+// ============================================================
+// 排程：每週日 20:00 自動天平結算 + 大章節推進
+// cron: 秒(0) 分(0) 時(20) 日(*) 月(*) 週(0=Sunday)
+// ============================================================
+cron.schedule('0 0 20 * * 0', async () => {
+  console.log('[CRON] 週日 20:00 — 開始天平結算與大章節推進');
+  try {
+    const { data: stats, error: sErr } = await supabaseServer
+      .from('global_stats')
+      .select('balance_value, current_chapter')
+      .eq('id', 'singleton')
+      .maybeSingle();
+    if (sErr) throw sErr;
+    if (!stats) { console.error('[CRON] global_stats not found'); return; }
+
+    const balanceValue = (stats as Record<string, unknown>).balance_value as number ?? 50;
+    const currentChapter = (stats as Record<string, unknown>).current_chapter as number ?? 1;
+    const nextChapter = currentChapter + 1;
+
+    if (nextChapter > 8) {
+      console.log('[CRON] 所有章節已完成，跳過推進');
+      return;
+    }
+
+    let winningFaction: 'Turbid' | 'Pure' | 'Draw' = 'Draw';
+    if (balanceValue < 50) winningFaction = 'Turbid';
+    else if (balanceValue > 50) winningFaction = 'Pure';
+
+    const { error: uErr } = await supabaseServer
+      .from('global_stats')
+      .update({
+        current_chapter: nextChapter,
+        last_settlement_balance: balanceValue,
+        last_settlement_winner: winningFaction,
+        last_settlement_at: new Date().toISOString(),
+      })
+      .eq('id', 'singleton');
+    if (uErr) throw uErr;
+
+    await supabaseServer
+      .from('chapter_settlements')
+      .insert({
+        chapter_version: `${currentChapter}.0`,
+        balance_value: balanceValue,
+        winning_faction: winningFaction,
+        settled_at: new Date().toISOString(),
+      });
+
+    console.log(`[CRON] 章節推進完成: Ch${currentChapter} → Ch${nextChapter} | 天平=${balanceValue} | 勝方=${winningFaction}`);
+  } catch (error) {
+    console.error('[CRON] 天平結算錯誤:', error);
+  }
+}, { timezone: 'Asia/Taipei' });
+
 app.listen(port, () => {
   console.log(`[Turbid Dust Server] Running on port ${port}`);
   console.log(`[Turbid Dust Server] API Base: http://localhost:${port}/api`);
+  console.log(`[Turbid Dust Server] CRON: 每週日 20:00 天平結算已啟動`);
 });

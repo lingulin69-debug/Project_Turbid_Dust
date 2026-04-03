@@ -7,7 +7,7 @@
 ## 專案基本資訊
 
 - **引擎**: Cocos Creator 3.x（TypeScript）
-- **專案路徑**: `c:\Users\user\Desktop\委託網頁\Project_Turbid_Dust\`
+- **專案路徑**: `E:\Game_Dev_Main\Project_Turbid_Dust\`
 - **Dev server**: Cocos Creator 內建預覽（或 `npm run dev`）
 - **Stack**: Cocos Creator 3.x + TypeScript + Supabase
 
@@ -149,7 +149,20 @@ export function getPageTheme(faction: 'Pure' | 'Turbid') {
 
 ### 已遷移面板 ✅
 
-AnnouncementPanel、QuestPanel、DailyPanel、CollectionPanel、SettingsPanel、InventoryPanel、NPCPanel、LeaderTyrannyPanel — 均使用 WhiteCrowCard Prefab，已套 faction 切換邏輯。
+**使用 WhiteCrowCard Prefab 的面板**（傳入 faction 切換色彩）：
+AnnouncementPanel、QuestPanel、DailyPanel、CollectionPanel、SettingsPanel、InventoryPanel、NPCPanel
+
+**獨立面板**（自建 UI 結構，含獨立 mask + bgSprite）：
+
+| 面板 | 用途 | 備註 |
+|------|------|------|
+| LeaderTyrannyPanel | 領主/教皇惡政面板（5 類政令） | EVIL_RED 主題色 `#7f3030` |
+| LeaderboardPanel | 排行榜面板 | **僅 admin/gm 可見**，`show()` 檢查 `player.role` |
+| BalanceSettlementModal | 章結天平結算動畫 | 5 階段動畫：出現→傾斜→揭曉，beam 旋轉 `tween(eulerAngles)` |
+| ApostatePanel | 背道者面板 | 暗色主題，隱匿任務 |
+| LiquidatorPanel | 清算者面板 | EVIL_RED 主題 |
+| LandmarkStoryModal | 據點劇情彈窗 | 打字機效果 |
+| KidnapPopup | 人販子綁架通知 | 不可手動關閉（倒數後自動消失）|
 
 ---
 
@@ -423,85 +436,43 @@ tween(modalNode)
 
 ---
 
-## 🔴 死命令（Claude Code 必須嚴格遵守）
+## 修復紀錄
 
-### 1｜防燃燒 Token 鐵律
-- **禁止主動掃描整個資料夾。** 不確定目標檔案位置時，先問使用者，確認後再單一檔案逐一處理。
-- 每次只讀取、修改任務直接相關的檔案，不旁及其他。
-- 需要了解模組關係時，優先讀 `CLAUDE.md`，其次讀單一腳本頂部的 `import`，而不是遞迴展開整個 `src/`。
+### 2026-07-14 — P0-P4 全面審計 & 修復
 
-### 2｜絕對禁止 Web 語法輸出
-生成或修改任何 `.ts` / Prefab 腳本時，**嚴禁出現下列任何內容**：
+**背景**：對 server/index.ts（78 routes）與前端元件做完整交叉檢查。
 
-| 禁止項目 | 正確替代 |
-|---------|---------|
-| HTML 標籤（`<div>`, `<span>`, `<button>` 等） | Cocos `Node` + `UITransform` |
-| CSS class 字串（`className="..."`, Tailwind） | `node.color` / `Widget` 元件屬性 |
-| React Hooks（`useState`, `useEffect`, `useRef`） | `@property` + `onLoad` / `start` / `update` |
-| Framer Motion（`motion.div`, `animate`, `exit`） | `tween()` / `cc.Tween` |
-| `style={{ }}` inline CSS | `Label.color` / `Sprite.color` / `node.setPosition()` |
+#### ✅ 已修復
 
-違反以上任一項視為輸出錯誤，需立即自我更正。
+| # | 範圍 | 修復內容 | 影響檔案 |
+|---|------|---------|---------|
+| 1 | `POST /api/admin/liquidator-select` | Prisma → Supabase（`prisma.td_users.findMany/updateMany` 改為 `supabaseServer.from().select/update`） | `server/index.ts` |
+| 2 | `GET /api/admin/candidates` | Prisma → Supabase | `server/index.ts` |
+| 3 | `GET /api/admin/registry` | Prisma → Supabase | `server/index.ts` |
+| 4 | 人販子重複路由（4組） | 移除未被前端使用的 `/trafficker/kidnap`、`/deliver`、`/intel`、`/pickpocket`，保留 `/skill/*` 版本 | `server/index.ts`（-250行） |
+| 5 | `client.ts` trafficker 路徑 | `/npc/trafficker/kidnap` → `/npc/trafficker/skill/kidnap`，補 `chapter_version` | `src/api/client.ts` |
+| 6 | 文件路由更新 | 更新 `world_map_schema.md`、`NPC_功能與權能列表.md` 中的人販子 API 路徑 | `docs/` ×2 |
 
-### 3｜Shader / Material 預留接口規範
-所有視覺元件（WhiteCrowCard、CharacterCard、MapLandmark 等）建立時，**必須預留 Material 切換接口**，以利後續套用濁息視覺效果（裂紋皮膚、黑霧、粒子噪波等）。
+#### ⚠️ 待處理（已識別但未修復）
 
-```typescript
-// ✅ 每個有視覺輸出的 Component 都加上這段
-@property(Material)
-turbidMaterial: Material = null;   // 濁息狀態覆蓋材質（可為 null）
+| # | 問題 | 風險等級 | 說明 |
+|---|------|---------|------|
+| 1 | 無速率限制 | 中 | 所有 API 端點無 rate limiting |
+| 2 | Admin 認證薄弱 | 中 | 僅檢查 `ocName === 'vonn'`，無 token/session |
+| 3 | `npc_actions` 表只寫不讀 | 低 | 資料有寫入但無讀取端點 |
+| 4 | karma tag 錯誤靜默吞掉 | 低 | `addKarmaTag` 失敗時不會拋出錯誤 |
 
-@property(Material)
-pureMaterial: Material = null;     // 淨塵狀態覆蓋材質（可為 null）
+#### 📁 檔案清理（同日）
 
-applyFactionMaterial(faction: 'Turbid' | 'Pure') {
-    const mat = faction === 'Turbid' ? this.turbidMaterial : this.pureMaterial;
-    if (mat) {
-        this.getComponent(Sprite)?.customMaterial = mat;
-    }
-    // Shader Uniform 預留點（後續填入）
-    // mat?.setProperty('u_crackIntensity', 0.0);
-    // mat?.setProperty('u_fogDensity', 0.0);
-}
-```
+- **刪除 9 檔**：`daemon.py`、5 個過期 SQL、`P0_API契約` 根目錄副本、`test_run.cjs`、`project.pen.bak`
+- **移動 2 檔**至 `docs/archived/`：`update_apostate_schema.sql`、`update_liquidator_schema.sql`
 
-- 尚未製作美術資源時，`turbidMaterial` / `pureMaterial` 保持 `null`，程式走預設路徑，不影響現有功能。
-- 後續設計師提供 `.mtl` 後，直接在 Inspector 拖入即可啟用，無需再動程式邏輯。
+#### 路由統計
+
+- 修復前：78 routes（含 3 壞掉 + 4 重複）
+- 修復後：74 routes（全部使用 Supabase，零 Prisma 活躍呼叫）
 
 ---
-
-## 節省 Token 的說話方式
-
-**好的提問（快）:**
-> 「修改 `WhiteCrowCard.ts` 的 Turbid 主題，把 `cardBg` 換成載入 `turbid_bg` SpriteFrame」
-
-**容易浪費 Token 的提問（慢）:**
-> 「幫我改一下深色那個視窗的背景」（需要先找 Prefab 再定位腳本）
-
-**貼截圖** 比描述更快——直接貼截圖讓 Claude 看到問題在哪。
-
-
-# 專案開發最高指導原則 (Project Integrity Rules)
-
-## 1. 架構紀律 (MVC Strict Enforcement)
-- **絕對禁止**在 UI 層 (如 `HUDController`、`ChapterStoryModal`) 或 控制層 (`MainGameController`) 裡面直接寫 `fetch` 呼叫 Supabase API。
-- 所有的資料庫請求、資料結構定義 (`interface`)，都必須集中在 `PTD_DataManager.ts` 中處理。
-- UI 組件只能透過 `DataManager.get...` 或事件監聽來更新畫面。
-
-## 2. Cocos Creator 3.x 開發規範
-- 不得使用過時的 Cocos 2.x 語法。完全支援且鼓勵使用 `async/await`。
-- 載入遠端圖片必須使用 `assetManager.loadRemote<ImageAsset>` 並轉換為 `SpriteFrame`。
-- 事件綁定後，必須在 `onDestroy()` 中使用 `targetOff()` 確實解除綁定，禁止造成 Memory Leak。
-- 必須使用型別安全的 `getComponent(ClassName)`，禁止使用字串 `getComponent('ClassName')`。
-
-## 3. 誠實驗證原則 (No Fake Validation)
-- 不得捏造自動化測試的結果。
-- 只要修改或新增功能邏輯，請提供「Cocos 編輯器內的具體手動驗證步驟」，包含：
-  1. 該把這個腳本掛在哪個節點上？
-  2. Inspector 面板需要綁定哪些東西？
-  3. 預期的 Console Log 輸出是什麼？
-  4. 畫面上應該看到什麼變化？
-- 若遇到程式碼錯誤，必須誠實指出錯誤行號與原因，禁止偷偷把原本寫好的其他功能刪除或覆蓋。
 
 ## 4. 遊戲核心業務邏輯 (Game Design & Business Rules)
 這部分為企劃鐵律，開發功能時必須遵守：
@@ -515,3 +486,245 @@ applyFactionMaterial(faction: 'Turbid' | 'Pure') {
   - **移動型（人販子 trafficker）**：位置跟隨 `current_landmark_id`，每章移動點數 10 點，只能走開放據點。
   - **固定型（黑心商人、道具商人、旅店老闆、寵物商人）**：位置固定，具備開關店 (`is_shop_open`) 狀態。
 - **名詞統一**：遊戲內的錢一律顯示為「貨幣」，但資料庫欄位名稱維持 `coins` 不可變動。
+
+---
+
+## 修復紀錄 (2026-08-03) — P5 章節轉場系統
+
+### 新增檔案
+
+| 檔案 | 用途 |
+|------|------|
+| `src/components/BreathingSceneModal.tsx` | 30 秒全螢幕前呼吸場景（進度條 + 跳過） |
+| `src/components/ChapterOpeningModal.tsx` | 章節標題卡（開場白 + 背景圖預留） |
+| `src/components/MajorChapterModal.tsx` | 可捲動大章節長篇敘事彈窗 |
+
+### 修改檔案
+
+| 檔案 | 變更 |
+|------|------|
+| `src/data/landmark-chapters.json` | 新增 `breathing_scenes[]`（10 筆）、`chapter_openings[]`（16 筆，含完整開場敘事） |
+| `server/index.ts` | 新增 `POST /api/chapter/advance`、`GET /api/chapter/current`、node-cron 週日 20:00 排程 |
+| `src/api/client.ts` | 新增 `chapter.getCurrent()` / `chapter.advance()` |
+| `src/components/MapTestView.tsx` | 整合三個 Modal + Supabase Realtime 監聽 `current_chapter` 變更 + 結算後自動觸發轉場 |
+| `supabase_schema.sql` | Wave 7：`global_stats` 新增 4 欄位 + `chapter_settlements` 表 |
+
+### 轉場流程
+
+```
+週日 20:00 cron → 天平結算 → global_stats.current_chapter++ 
+→ Supabase Realtime 推播 → 前端接收
+→ BreathingSceneModal（30s）→ ChapterOpeningModal → MajorChapterModal
+```
+
+### 章節推進 API
+
+```
+POST /api/chapter/advance  — 需 ADMIN_PASSWORD，手動推進
+GET  /api/chapter/current   — 回傳 current_chapter + last_settlement
+```
+
+### DB 變更（supabase_schema.sql Wave 7）
+
+```sql
+-- global_stats 新增欄位
+ALTER TABLE global_stats
+  ADD COLUMN IF NOT EXISTS current_chapter INTEGER DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS last_settlement_balance INTEGER DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS last_settlement_winner TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS last_settlement_at TIMESTAMPTZ DEFAULT NULL;
+
+-- 新表
+CREATE TABLE chapter_settlements (
+  chapter_version TEXT, balance_value INTEGER, winning_faction TEXT, settled_at TIMESTAMPTZ
+);
+```
+
+### 新增依賴
+
+- `node-cron` + `@types/node-cron`（server 端排程）
+
+---
+
+## Cocos 相容性修補 (2026-08-03) — P5 章節轉場 Cocos 化
+
+### 新增 Cocos 腳本
+
+| 檔案 | 用途 |
+|------|------|
+| `assets/scripts/BreathingSceneController.ts` | 呼吸場景控制器（`update(dt)` 驅動進度、`tween` 淡入淡出、`UIOpacity` 動畫） |
+| `assets/scripts/ChapterOpeningController.ts` | 章節開幕標題卡（`tween` 滑入動畫、`assetManager.loadRemote` 背景圖、`applyFactionMaterial`） |
+
+### 修改 Cocos 腳本
+
+| 檔案 | 變更 |
+|------|------|
+| `assets/scripts/ChapterStoryModal.ts` | 補上 `turbidMaterial` / `pureMaterial` `@property` 插座 + `applyFactionMaterial` 呼叫 |
+| `assets/scripts/MainGameController.ts` | 新增 `breathingSceneCtrl` / `chapterOpeningCtrl` 插座、三段式連鎖流程、`resources.load` 載入 JSON |
+
+### 資料路徑
+
+| 來源 | Cocos 路徑 |
+|------|-----------|
+| `src/data/landmark-chapters.json` | 複製到 `assets/resources/data/landmark-chapters.json`，用 `resources.load('data/landmark-chapters', JsonAsset)` 載入 |
+
+### Cocos 三段式連鎖流程
+
+```
+_triggerChapterTransition()
+  → BreathingSceneController.show()   [30s 氛圍過場]
+    → emit 'breathing-complete'
+      → ChapterOpeningController.show()  [章節標題卡]
+        → emit 'opening-continue'
+          → ChapterStoryModal.init()     [打字機敘事]
+            → emit 'close-modal'
+              → _loadNewChapter()
+```
+
+### 所有視覺組件 Material 接口狀態
+
+| 組件 | `turbidMaterial` | `pureMaterial` | 狀態 |
+|------|-----------------|---------------|------|
+| MapLandmark | ✅ | ✅ | 已有 |
+| WhiteCrowCard | ✅ | ✅ | 已有 |
+| LoginController | ✅ | ✅ | 已有 |
+| ChapterStoryModal | ✅ | ✅ | 本次新增 |
+| BreathingSceneController | ✅ | ✅ | 本次新增 |
+| ChapterOpeningController | ✅ | ✅ | 已有 |
+| BalanceSettlementModal | ✅ | ✅ | Phase 4 新增 |
+| LeaderboardPanel | ✅ | ✅ | Phase 4 新增 |
+| LeaderTyrannyPanel | ✅ | ✅ | Phase 4 新增 |
+| ApostatePanel | ✅ | ✅ | 已有 |
+| LiquidatorPanel | ✅ | ✅ | 已有 |
+| LandmarkStoryModal | ✅ | ✅ | 已有 |
+| KidnapPopup | ✅ | ✅ | 已有 |
+| QuestPanel | ✅ | ✅ | 已有 |
+| CollectionPanel | ✅ | ✅ | 已有 |
+| SettingsPanel | ✅ | ✅ | 已有 |
+| NotificationPanel | ✅ | ✅ | 已有 |
+
+### Inspector 綁定指南
+
+**BreathingSceneController 節點**：
+1. 在場景建立全螢幕遮罩節點
+2. 掛上 `BreathingSceneController` 腳本
+3. Inspector 綁定：`titleLabel` → Label 節點、`textLabel` → Label 節點、`skipButton` → 按鈕節點、`progressBar` → Filled Sprite（Type=Filled）、`backgroundSprite` → 背景 Sprite
+4. 將節點拖入 MainGameController 的 `breathingSceneCtrl` 插座
+
+**ChapterOpeningController 節點**：
+1. 建立全螢幕標題卡節點
+2. 掛上 `ChapterOpeningController` 腳本
+3. Inspector 綁定：`chapterSubtitle` → "Chapter N" Label、`chapterTitleLabel` → 標題 Label、`openingTextLabel` → 開幕文字 Label、`continueButton` → 按鈕節點、`backgroundSprite` → 背景 Sprite、`dividerSprite` → 分隔線 Sprite
+4. 將節點拖入 MainGameController 的 `chapterOpeningCtrl` 插座
+
+---
+
+## Cocos 面板開關慣例（hide() 冪等規範）
+
+所有獨立面板的 `hide()` 方法遵守統一慣例：
+
+```typescript
+hide() {
+    if (!this.node.active) return;           // 冪等守衛：已關閉就跳過
+    // 或使用 if (!this._isVisible) return;  （部分面板使用內部旗標）
+    tween(this.node.getComponent(UIOpacity)!)
+        .to(0.25, { opacity: 0 })
+        .call(() => {
+            this.node.active = false;
+            this.node.emit('panel-closed');   // 統一事件名稱
+        })
+        .start();
+}
+```
+
+**重要規則**：
+- `MainGameController._closeAllPanels()` 呼叫各面板的 `hide()`（而非直接 `node.active = false`），避免截斷 tween 動畫
+- 10 個面板走 `hide()`：QuestPanel、CollectionPanel、SettingsPanel、NotificationPanel、LandmarkStoryModal、ApostatePanel、LiquidatorPanel、BalanceSettlementModal、LeaderboardPanel、LeaderTyrannyPanel
+- 3 個元件直接 `node.active = false`：whiteCrowCard、inventoryPanel、npcModal
+- KidnapPopup 不可手動關閉（倒數結束後自動消失），不納入 `_closeAllPanels()`
+
+---
+
+## MapLandmark 資料存取
+
+`MapLandmark` 元件的 `_data` 為私有屬性，存取需透過公開 getter：
+
+```typescript
+// MapLandmark.ts
+get landmarkData(): LandmarkData | null {
+    return this._data;
+}
+```
+
+使用方式（MainGameController / MapController）：
+```typescript
+const data = landmark.landmarkData;
+if (data) {
+    // 安全存取 data.id, data.name, data.faction, data.status
+}
+```
+
+> ⚠️ **禁止** 使用 `(landmark as any)['_data']` 或直接存取 `landmark.id`（那是 Component 的 Node name，不是 LandmarkData）
+
+---
+
+## PlayerData 介面更新
+
+```typescript
+interface PlayerData {
+    ocName: string;
+    faction: 'Turbid' | 'Pure';
+    coins: number;
+    hp: number;
+    maxHp: number;
+    role?: 'admin' | 'gm' | 'player';   // 新增：用於 LeaderboardPanel 權限檢查
+    chapter?: number;                     // 新增：當前章節，用於 BalanceSettlementModal
+}
+```
+
+`LoginResponse` 同步新增 `role?` 和 `chapter?` 欄位，`LoginController._initPlayer()` 負責傳遞。
+
+---
+
+## 修復紀錄 — Phase 4 面板建設 + 雙輪審計（12 項修復）
+
+### 新增 Cocos 腳本
+
+| 檔案 | 用途 | @property 數量 |
+|------|------|---------------|
+| `BalanceSettlementModal.ts` | 章結天平結算動畫（5 階段 tween） | 16 |
+| `LeaderboardPanel.ts` | 排行榜面板（僅 admin/gm 可見） | 14 |
+| `LeaderTyrannyPanel.ts` | 領主/教皇惡政面板（5 類政令） | ~30 |
+
+### 修改 Cocos 腳本
+
+| 檔案 | 變更摘要 |
+|------|---------|
+| `MainGameController.ts` | 新增 3 面板 @property + import；`_closeAllPanels()` 重構為呼叫 `hide()`（10 面板）；`_onLandmarkSelected` 改用 `landmarkData` getter |
+| `PTD_DataManager.ts` | `PlayerData` + `LoginResponse` 新增 `role?`、`chapter?` 欄位 |
+| `LoginController.ts` | `_initPlayer()` 傳遞 role/chapter；4 處 EditBox `.string.trim()` → `.string?.trim()` |
+| `MapLandmark.ts` | 新增 `get landmarkData()` 公開 getter |
+| `MapController.ts` | `(l as any)['_data']` → `l.landmarkData` + 型別守衛 |
+
+### 審計修復明細
+
+| # | 嚴重度 | 問題 | 修復 |
+|---|--------|------|------|
+| 1 | 🔴 CRITICAL | `PlayerData` 缺少 `role`/`chapter` 欄位 | 新增欄位至 PlayerData + LoginResponse + LoginController |
+| 2 | 🔴 CRITICAL | `_closeAllPanels()` 直接 `node.active=false` 截斷 tween | 改為呼叫各面板 `hide()` |
+| 3 | 🔴 CRITICAL | BalanceSettlementModal `scheduleOnce` 關閉後仍觸發 | `hide()` + `onDestroy()` 加 `unscheduleAllCallbacks()` |
+| 4 | 🔴 CRITICAL | `_onLandmarkSelected` 存取 Component 屬性而非 LandmarkData | 改用 `landmark.landmarkData` getter |
+| 5 | 🟡 MEDIUM | EditBox `.string.trim()` 可能 undefined | 改為 `.string?.trim()` |
+| 6 | 🟡 MEDIUM | MapController/MainGameController 使用 `as any` | 改用 `landmarkData` getter |
+| 7 | 🟡 MEDIUM | BalanceSettlementModal `eulerAngles` 為 `as any` | 改用 `new Vec3(0,0,angle)` |
+| 8 | 🟡 MEDIUM | BalanceSettlementModal 事件名 `'modal-closed'` 不一致 | 統一為 `'panel-closed'` |
+| 9 | 🟢 LOW | LeaderboardPanel `hide()` 缺冪等守衛 | 加 `if (!this.node.active) return;` |
+| 10 | 🟢 LOW | LeaderTyrannyPanel `hide()` 缺冪等守衛 | 加 `if (!this.node.active) return;` |
+| 11 | 🟢 LOW | BalanceSettlementModal `hide()` 缺冪等守衛 | 加 `if (!this.node.active) return;` |
+| 12 | 🟢 LOW | BalanceSettlementModal `onDestroy()` 未清排程 | 加 `unscheduleAllCallbacks()` |
+
+### 新增文件
+
+| 檔案 | 用途 |
+|------|------|
+| `COCOS_SETUP_GUIDE.md`（在 `E:\PTD-COCOS\`）| 從零開始套用 Cocos 環境的引導手冊 |

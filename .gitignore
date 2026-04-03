@@ -6,4 +6,11 @@ dev.db
 dev.db-journal
 /generated/prisma
 .DS_Store
+
+# Cocos Creator generated
+/library/
+/temp/
+/build/
+/profiles/
+/local/
 *.log

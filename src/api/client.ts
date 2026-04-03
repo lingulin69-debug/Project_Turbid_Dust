@@ -344,10 +344,10 @@ export const apiClient = {
     },
     trafficker: {
       kidnap: async (trafficker_oc: string, target_oc: string) => {
-        const res = await fetch(`${API_BASE}/npc/trafficker/kidnap`, {
+        const res = await fetch(`${API_BASE}/npc/trafficker/skill/kidnap`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trafficker_oc, target_oc })
+          body: JSON.stringify({ trafficker_oc, target_oc, chapter_version: 'current' })
         });
         if (!res.ok) {
           const err = await res.json();
@@ -382,5 +382,71 @@ export const apiClient = {
         return res.json() as Promise<{ success: boolean; message: string }>;
       }
     }
-  }
+  },
+
+  // 跨線事件系統（Cross-Line Event System）
+  crossLine: {
+    getCatalog: async (): Promise<{
+      catalog: {
+        key: string;
+        chapter: string;
+        label: string;
+        faction_target: 'Pure' | 'Turbid' | 'Both';
+        content_pure: string | null;
+        content_turbid: string | null;
+      }[];
+    }> => {
+      const res = await fetch(`${API_BASE}/admin/cross-line-events/catalog`);
+      if (!res.ok) throw new Error('Failed to fetch cross-line catalog');
+      return res.json();
+    },
+    trigger: async (event_key: string, triggered_by: string): Promise<{ success: boolean; sent: number; event_key: string }> => {
+      const res = await fetch(`${API_BASE}/admin/cross-line-events/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_key, triggered_by })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Trigger failed');
+      }
+      return res.json();
+    }
+  },
+
+  // 大章節推進與查詢
+  chapter: {
+    getCurrent: async (): Promise<{
+      current_chapter: number;
+      last_settlement: {
+        balance_value: number;
+        winning_faction: 'Turbid' | 'Pure' | 'Draw';
+        settled_at: string;
+      } | null;
+    }> => {
+      const res = await fetch(`${API_BASE}/chapter/current`);
+      if (!res.ok) throw new Error('Failed to fetch current chapter');
+      return res.json();
+    },
+    advance: async (admin_password: string): Promise<{
+      success: boolean;
+      previous_chapter: number;
+      new_chapter: number;
+      balance_value: number;
+      winning_faction: 'Turbid' | 'Pure' | 'Draw';
+      breathing_scene_transition: string;
+      message?: string;
+    }> => {
+      const res = await fetch(`${API_BASE}/chapter/advance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_password }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Chapter advance failed');
+      }
+      return res.json();
+    },
+  },
 };

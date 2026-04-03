@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/api/client';
 import { UserData } from './ReportSystemLogic';
-import { Shield, Users, RefreshCw, AlertTriangle, Dice5, FileText, X, ChevronDown, ChevronUp, Activity, List, Globe } from 'lucide-react';
+import { Shield, Users, RefreshCw, AlertTriangle, Dice5, FileText, X, ChevronDown, ChevronUp, Activity, List, Globe, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AdminApostateControlProps {
@@ -17,7 +17,7 @@ interface Dossier {
   identity_role?: string; // For registry
 }
 
-type ViewMode = 'dashboard' | 'candidates' | 'registry';
+type ViewMode = 'dashboard' | 'candidates' | 'registry' | 'crossline';
 
 export const AdminApostateControl: React.FC<AdminApostateControlProps> = ({ currentUser, onUpdate }) => {
   const [candidatesCount, setCandidatesCount] = useState<{ turbid: number, pure: number } | null>(null);
@@ -32,6 +32,20 @@ export const AdminApostateControl: React.FC<AdminApostateControlProps> = ({ curr
   
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [listData, setListData] = useState<Dossier[]>([]);
+
+  // Cross-line event state
+  interface CatalogEntry {
+    key: string;
+    chapter: string;
+    label: string;
+    faction_target: 'Pure' | 'Turbid' | 'Both';
+    content_pure: string | null;
+    content_turbid: string | null;
+  }
+  const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
+  const [selectedEventKey, setSelectedEventKey] = useState<string>('');
+  const [crossLineLoading, setCrossLineLoading] = useState(false);
+  const [crossLineMessage, setCrossLineMessage] = useState('');
 
   // Only render for admin
   if ((currentUser.oc_name || '').toLowerCase() !== 'vonn') return null;
@@ -74,8 +88,34 @@ export const AdminApostateControl: React.FC<AdminApostateControlProps> = ({ curr
     }
   };
 
+  const fetchCrossLineCatalog = async () => {
+    try {
+      const { catalog: data } = await apiClient.crossLine.getCatalog();
+      setCatalog(data);
+      if (data.length > 0 && !selectedEventKey) setSelectedEventKey(data[0].key);
+    } catch (err: any) {
+      setCrossLineMessage(`Error: ${err.message}`);
+    }
+  };
+
+  const triggerCrossLineEvent = async () => {
+    if (!selectedEventKey) return;
+    if (!confirm(`確定要觸發跨線事件「${catalog.find(e => e.key === selectedEventKey)?.label}」嗎？\n玩家將立即收到彈窗通知，此操作不可撤銷。`)) return;
+    setCrossLineLoading(true);
+    setCrossLineMessage('傳送中...');
+    try {
+      const result = await apiClient.crossLine.trigger(selectedEventKey, currentUser.oc_name);
+      setCrossLineMessage(`✓ 成功發送至 ${result.sent} 位玩家`);
+    } catch (err: any) {
+      setCrossLineMessage(`✗ ${err.message}`);
+    } finally {
+      setCrossLineLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
+    fetchCrossLineCatalog();
   }, []);
 
   const runLottery = async (countPerFaction: number, chapter: string) => {
@@ -191,6 +231,13 @@ export const AdminApostateControl: React.FC<AdminApostateControlProps> = ({ curr
                  >
                    <Globe className="w-3 h-3 mx-auto mb-1" />
                    名冊
+                 </button>
+                 <button
+                   onClick={() => setViewMode('crossline')}
+                   className={`flex-1 py-1 text-center transition-colors ${viewMode === 'crossline' ? 'text-amber-400 bg-amber-900/20' : 'text-gray-600 hover:text-gray-400'}`}
+                 >
+                   <Radio className="w-3 h-3 mx-auto mb-1" />
+                   跨線
                  </button>
               </div>
 
@@ -355,6 +402,74 @@ export const AdminApostateControl: React.FC<AdminApostateControlProps> = ({ curr
                   <div className={`p-1 text-[9px] text-right border-t border-gray-800/50 ${viewMode === 'candidates' ? 'text-red-500/50' : 'text-emerald-500/50'}`}>
                     COUNT: {listData.length.toString().padStart(3, '0')} // SYNC_OK
                   </div>
+                </motion.div>
+              )}
+
+              {viewMode === 'crossline' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                  <div className="text-[10px] text-amber-500/70 uppercase tracking-widest border-b border-amber-900/30 pb-1">
+                    ── 跨線事件廣播 ──
+                  </div>
+
+                  {catalog.length === 0 ? (
+                    <div className="text-[10px] text-gray-600 text-center py-4">載入中…</div>
+                  ) : (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-gray-500 uppercase">選擇事件</label>
+                        <select
+                          value={selectedEventKey}
+                          onChange={e => setSelectedEventKey(e.target.value)}
+                          className="w-full bg-black border border-gray-700 text-gray-300 text-[10px] p-1 rounded focus:outline-none focus:border-amber-700"
+                        >
+                          {catalog.map(ev => (
+                            <option key={ev.key} value={ev.key}>
+                              [{ev.chapter}] {ev.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {(() => {
+                        const ev = catalog.find(e => e.key === selectedEventKey);
+                        if (!ev) return null;
+                        return (
+                          <div className="space-y-2 text-[10px]">
+                            <div className="text-gray-500">
+                              對象：<span className="text-amber-400">{ev.faction_target === 'Both' ? '兩陣營' : ev.faction_target === 'Pure' ? '淨塵派' : '濁息派'}</span>
+                            </div>
+                            {ev.content_pure && (
+                              <div className="border border-amber-900/30 bg-amber-950/10 p-2 rounded space-y-1">
+                                <div className="text-amber-600/60 uppercase tracking-widest">淨塵版</div>
+                                <pre className="text-gray-400 whitespace-pre-wrap font-sans leading-relaxed">{ev.content_pure}</pre>
+                              </div>
+                            )}
+                            {ev.content_turbid && (
+                              <div className="border border-purple-900/30 bg-purple-950/10 p-2 rounded space-y-1">
+                                <div className="text-purple-500/60 uppercase tracking-widest">濁息版</div>
+                                <pre className="text-gray-400 whitespace-pre-wrap font-sans leading-relaxed">{ev.content_turbid}</pre>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      <button
+                        onClick={triggerCrossLineEvent}
+                        disabled={crossLineLoading || !selectedEventKey}
+                        className="w-full py-2 bg-amber-900/20 border border-amber-800 text-amber-400 hover:bg-amber-900/40 hover:text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Radio className="w-3 h-3" />
+                        {crossLineLoading ? '傳送中...' : '確認觸發廣播'}
+                      </button>
+
+                      {crossLineMessage && (
+                        <p className="text-[10px] text-center" style={{ color: crossLineMessage.startsWith('✓') ? '#86efac' : '#f87171' }}>
+                          {crossLineMessage}
+                        </p>
+                      )}
+                    </>
+                  )}
                 </motion.div>
               )}
 

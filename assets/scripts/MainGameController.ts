@@ -4,6 +4,8 @@ import {
     Node,
     Vec3,
     director,
+    resources,
+    JsonAsset,
 } from 'cc';
 import { MapController } from './MapController';
 import { HUDController, HUDPanelId } from './HUDController';
@@ -19,6 +21,20 @@ import { ChapterStoryModal } from './ChapterStoryModal';
 import { DonationTracker } from './DonationTracker';
 import { EventCalendar } from './EventCalendar';
 import { MusicDiscController } from './MusicDiscController';
+import { BreathingSceneController } from './BreathingSceneController';
+import { ChapterOpeningController } from './ChapterOpeningController';
+import { FactionType } from './PTD_UI_Theme';
+import { NotificationPanel } from './NotificationPanel';
+import { SettingsPanel } from './SettingsPanel';
+import { QuestPanel } from './QuestPanel';
+import { CollectionPanel } from './CollectionPanel';
+import { LandmarkStoryModal } from './LandmarkStoryModal';
+import { ApostatePanel } from './ApostatePanel';
+import { LiquidatorPanel } from './LiquidatorPanel';
+import { KidnapPopup } from './KidnapPopup';
+import { BalanceSettlementModal } from './BalanceSettlementModal';
+import { LeaderboardPanel } from './LeaderboardPanel';
+import { LeaderTyrannyPanel } from './LeaderTyrannyPanel';
 
 const { ccclass, property } = _decorator;
 
@@ -90,12 +106,66 @@ export class MainGameController extends Component {
     @property(MusicDiscController)
     musicDiscController: MusicDiscController = null;
 
+    /** 呼吸場景控制器（章節轉場第一階段） */
+    @property(BreathingSceneController)
+    breathingSceneCtrl: BreathingSceneController = null;
+
+    /** 章節開幕控制器（章節轉場第二階段） */
+    @property(ChapterOpeningController)
+    chapterOpeningCtrl: ChapterOpeningController = null;
+
+    /** 通知面板 */
+    @property(NotificationPanel)
+    notificationPanel: NotificationPanel = null;
+
+    /** 設定面板 */
+    @property(SettingsPanel)
+    settingsPanel: SettingsPanel = null;
+
+    /** 任務面板 */
+    @property(QuestPanel)
+    questPanel: QuestPanel = null;
+
+    /** 圖鑑面板 */
+    @property(CollectionPanel)
+    collectionPanel: CollectionPanel = null;
+
+    /** 地標劇情彈窗 */
+    @property(LandmarkStoryModal)
+    landmarkStoryModal: LandmarkStoryModal = null;
+
+    /** 叛教者面板 */
+    @property(ApostatePanel)
+    apostatePanel: ApostatePanel = null;
+
+    /** 清算者面板 */
+    @property(LiquidatorPanel)
+    liquidatorPanel: LiquidatorPanel = null;
+
+    /** 綁架彈窗 */
+    @property(KidnapPopup)
+    kidnapPopup: KidnapPopup = null;
+
+    /** 天平結算動畫彈窗 */
+    @property(BalanceSettlementModal)
+    balanceSettlementModal: BalanceSettlementModal = null;
+
+    /** 排行榜面板（僅管理員可見） */
+    @property(LeaderboardPanel)
+    leaderboardPanel: LeaderboardPanel = null;
+
+    /** 領袖惡政面板 */
+    @property(LeaderTyrannyPanel)
+    leaderTyrannyPanel: LeaderTyrannyPanel = null;
+
 
 
     // ── 私有狀態 (章節與遊戲階段) ─────────────────────────────────────────────
     
     private _gamePhase: 'battle' | 'story' | 'transition' = 'battle';
     private _currentChapter: number = 1;
+    private _breathingScenes: Array<{ transition: string; title: string; faction: string; text: string; duration_seconds: number }> = [];
+    private _chapterOpenings: Array<{ chapter_version: string; faction: string; title: string; opening_text: string; background_image?: string }> = [];
 
     // ── 生命週期 ──────────────────────────────────────────────────────────────
 
@@ -103,6 +173,7 @@ export class MainGameController extends Component {
         this._registerEvents();
         this._registerNpcEvents();
         this._registerRelicEvents();
+        this._registerTransitionEvents();
         this.initNPCs();
     }
 
@@ -116,6 +187,7 @@ async start(): Promise<void> {
     
         await this._loadInventory();
         await this._initGameState();   // <-- 新增：啟動時取得伺服器最新章節狀態
+        await this._loadLandmarkChaptersData();  // 載入章節轉場 JSON 資料
         this._startRealtimeListener(); // <-- 新增：開始 60 秒輪詢
 
         // 👇 新增這兩行：喚醒新組件 👇
@@ -127,12 +199,15 @@ async start(): Promise<void> {
     onDestroy(): void {
         this.mapController?.node.off('landmark-selected', this._onLandmarkSelected, this);
         this.hudController?.node.off('panel-open', this._onPanelOpen, this);
+        this.hudController?.node.off('panel-close', this._onPanelClose, this);
+        this.hudController?.node.off('bell-tapped', this._onBellTapped, this);
         this.inventoryPanel?.node.off('show-item-detail', this._onShowItemDetail, this);
         this.itemDetailModal?.node.off('use-item', this._onUseItem, this);
         this.npcModal?.node.off('npc-action', this._onNpcAction, this);
         this.npcModal?.node.off('buy-item',   this._onBuyItem,   this);
         this.whiteCrowCard?.node.off('show-relic-poem', this._onShowRelicPoem, this);
         this._unregisterNpcEvents();
+        this._unregisterTransitionEvents();
         
         this._stopRealtimeListener();  // <-- 新增：記得關閉輪詢
     }
@@ -151,16 +226,100 @@ async start(): Promise<void> {
 
         this.mapController.node.on('landmark-selected', this._onLandmarkSelected, this);
         this.hudController.node.on('panel-open', this._onPanelOpen, this);
+        this.hudController.node.on('panel-close', this._onPanelClose, this);
+        this.hudController.node.on('bell-tapped', this._onBellTapped, this);
     }
 
     private _onLandmarkSelected(landmarkId: string): void {
         console.log(`[MainGameController] 準備開啟據點 ${landmarkId} 劇情`);
-        // TODO：呼叫劇情 Modal，傳入 landmarkId
+        if (this.landmarkStoryModal) {
+            this._closeAllPanels();
+            // 從 MapController 取得據點資料
+            const landmark = this.mapController?.getLandmark(landmarkId);
+            const data = landmark?.landmarkData;
+            if (data) {
+                this.landmarkStoryModal.show({
+                    id: data.id,
+                    name: data.name ?? landmarkId,
+                    faction: data.faction,
+                    status: data.status,
+                    occupants: data.occupants ?? 0,
+                    capacity: data.capacity ?? 5,
+                    intro_text: '',
+                    mission_text: undefined,
+                    teamup_text: undefined,
+                    outro_text: undefined,
+                    chapter_number: this._currentChapter,
+                });
+            }
+        }
     }
 
     private _onPanelOpen(panelId: HUDPanelId): void {
-        console.log(`[MainGameController] 準備開啟 ${panelId} 面板`);
-        // TODO：顯示對應面板節點
+        console.log(`[MainGameController] 開啟面板：${panelId}`);
+
+        // 先關閉所有面板
+        this._closeAllPanels();
+
+        switch (panelId) {
+            case 'announcement':
+                // 公告使用 WhiteCrowCard 通用面板
+                if (this.whiteCrowCard) {
+                    this.whiteCrowCard.node.active = true;
+                }
+                break;
+            case 'quest':
+                if (this.questPanel) this.questPanel.show();
+                break;
+            case 'daily':
+                // 日誌使用 WhiteCrowCard 通用面板（切換 tab）
+                if (this.whiteCrowCard) {
+                    this.whiteCrowCard.node.active = true;
+                }
+                break;
+            case 'collection':
+                if (this.collectionPanel) this.collectionPanel.show();
+                break;
+            case 'inventory':
+                if (this.inventoryPanel) {
+                    this.inventoryPanel.node.active = true;
+                }
+                break;
+            case 'npc':
+                // NPC 面板由 NPC 點擊觸發，此處僅做安全開關
+                if (this.npcModal) this.npcModal.node.active = true;
+                break;
+            case 'settings':
+                if (this.settingsPanel) this.settingsPanel.show();
+                break;
+        }
+    }
+
+    /** 關閉所有面板節點（有 hide() 的面板呼叫 hide()，否則直接關閉） */
+    private _closeAllPanels(): void {
+        if (this.whiteCrowCard) this.whiteCrowCard.node.active = false;
+        if (this.inventoryPanel) this.inventoryPanel.node.active = false;
+        if (this.npcModal) this.npcModal.node.active = false;
+        if (this.questPanel) this.questPanel.hide();
+        if (this.collectionPanel) this.collectionPanel.hide();
+        if (this.settingsPanel) this.settingsPanel.hide();
+        if (this.notificationPanel) this.notificationPanel.hide();
+        if (this.landmarkStoryModal) this.landmarkStoryModal.hide();
+        if (this.apostatePanel) this.apostatePanel.hide();
+        if (this.liquidatorPanel) this.liquidatorPanel.hide();
+        if (this.balanceSettlementModal) this.balanceSettlementModal.hide();
+        if (this.leaderboardPanel) this.leaderboardPanel.hide();
+        if (this.leaderTyrannyPanel) this.leaderTyrannyPanel.hide();
+    }
+
+    private _onPanelClose(panelId: HUDPanelId): void {
+        this._closeAllPanels();
+    }
+
+    private _onBellTapped(): void {
+        if (this.notificationPanel) {
+            this.notificationPanel.toggle();
+        }
     }
 
     // ── 事件串接：NPC 點擊 ────────────────────────────────────────────────────
@@ -472,7 +631,7 @@ async start(): Promise<void> {
         for (const id of landmarkIds) {
             const landmark = this.mapController.getLandmark(id);
             if (landmark) {
-                const oldData = (landmark as any)['_data']; 
+                const oldData = landmark.landmarkData; 
                 if (oldData) {
                     // 讓據點變成灰色關閉狀態，而不是直接消失
                     landmark.init({ ...oldData, status: 'closed' });
@@ -482,8 +641,129 @@ async start(): Promise<void> {
     }
 
     private _showWaitingScreen(): void {
-        console.log('[MainGameController] 等待新章節開始');
-        // TODO: 實作等待畫面 UI
+        console.log('[MainGameController] 章節轉場中，啟動三段式過場');
+        this._triggerChapterTransition();
+    }
+
+    // ── 三段式章節轉場（呼吸場景 → 開幕標題卡 → 大章節敘事）─────────────────
+
+    private _registerTransitionEvents(): void {
+        if (this.breathingSceneCtrl) {
+            this.breathingSceneCtrl.node.on('breathing-complete', this._onBreathingComplete, this);
+        }
+        if (this.chapterOpeningCtrl) {
+            this.chapterOpeningCtrl.node.on('opening-continue', this._onOpeningContinue, this);
+        }
+    }
+
+    private _unregisterTransitionEvents(): void {
+        this.breathingSceneCtrl?.node.targetOff(this);
+        this.chapterOpeningCtrl?.node.targetOff(this);
+    }
+
+    /**
+     * 從 resources/data/landmark-chapters.json 載入呼吸場景 + 章節開幕資料。
+     * 於 start() 階段呼叫一次，快取於記憶體中。
+     */
+    private _loadLandmarkChaptersData(): Promise<void> {
+        return new Promise((resolve) => {
+            resources.load('data/landmark-chapters', JsonAsset, (err, jsonAsset) => {
+                if (err) {
+                    console.warn('[MainGameController] 載入 landmark-chapters.json 失敗', err);
+                    resolve();
+                    return;
+                }
+
+                const data = jsonAsset.json as {
+                    breathing_scenes?: typeof this._breathingScenes;
+                    chapter_openings?: typeof this._chapterOpenings;
+                };
+
+                this._breathingScenes = data?.breathing_scenes ?? [];
+                this._chapterOpenings = data?.chapter_openings ?? [];
+
+                console.log(`[MainGameController] 載入成功：${this._breathingScenes.length} 個呼吸場景、${this._chapterOpenings.length} 個章節開幕`);
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * 觸發完整的三段式章節轉場流程：
+     *   1. 呼吸場景（30 秒氛圍文字）
+     *   2. 章節開幕標題卡
+     *   3. 大章節敘事（ChapterStoryModal 打字機效果）
+     *
+     * 若找不到呼吸場景資料，直接跳到第 2 階段；都找不到則直接進入新章節。
+     */
+    private _triggerChapterTransition(): void {
+        const prevChapter = this._currentChapter - 1;
+        const transitionKey = `ch${prevChapter}_to_ch${this._currentChapter}`;
+        const player = DataManager.getPlayer();
+        const playerFaction: FactionType = player?.faction === 'Pure' ? 'Pure' : 'Turbid';
+
+        // 第一階段：呼吸場景
+        const breathingScene = this._breathingScenes.find(s => s.transition === transitionKey);
+        if (breathingScene && this.breathingSceneCtrl) {
+            console.log(`[MainGameController] 播放呼吸場景：${transitionKey}`);
+            this.breathingSceneCtrl.show(breathingScene, playerFaction);
+            return; // 等待 'breathing-complete' 事件
+        }
+
+        // 沒有呼吸場景，直接進入第二階段
+        this._showChapterOpening(playerFaction);
+    }
+
+    private _onBreathingComplete(): void {
+        const player = DataManager.getPlayer();
+        const playerFaction: FactionType = player?.faction === 'Pure' ? 'Pure' : 'Turbid';
+        this._showChapterOpening(playerFaction);
+    }
+
+    private _showChapterOpening(playerFaction: FactionType): void {
+        const chapterVersion = `ch${this._currentChapter}_${playerFaction.toLowerCase()}`;
+        const opening = this._chapterOpenings.find(o => o.chapter_version === chapterVersion);
+
+        if (opening && this.chapterOpeningCtrl) {
+            console.log(`[MainGameController] 顯示章節開幕：${chapterVersion}`);
+            this.chapterOpeningCtrl.show(opening, playerFaction);
+            return; // 等待 'opening-continue' 事件
+        }
+
+        // 沒有開幕資料，直接進入第三階段
+        this._showChapterNarrative(playerFaction, '');
+    }
+
+    private _onOpeningContinue(openingText: string): void {
+        const player = DataManager.getPlayer();
+        const playerFaction: FactionType = player?.faction === 'Pure' ? 'Pure' : 'Turbid';
+        this._showChapterNarrative(playerFaction, openingText);
+    }
+
+    private _showChapterNarrative(playerFaction: FactionType, narrativeText: string): void {
+        if (!narrativeText || !this.chapterStoryModal) {
+            // 沒有敘事文字，直接進入新章節
+            this._loadNewChapter(this._currentChapter);
+            return;
+        }
+
+        const opening = this._chapterOpenings.find(o =>
+            o.chapter_version === `ch${this._currentChapter}_${playerFaction.toLowerCase()}`
+        );
+        const title = opening?.title ?? `第 ${this._currentChapter} 章`;
+
+        this.chapterStoryModal.init({
+            chapter: this._currentChapter,
+            title,
+            content: narrativeText,
+            winnerFaction: playerFaction,
+        });
+        this.chapterStoryModal.node.active = true;
+
+        // 關閉後進入新章節
+        this.chapterStoryModal.node.once('close-modal', () => {
+            this._loadNewChapter(this._currentChapter);
+        });
     }
 
     private _markStoryWatched(chapterNumber: number): void {

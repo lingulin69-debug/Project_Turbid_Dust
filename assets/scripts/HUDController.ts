@@ -190,24 +190,29 @@ export class HUDController extends Component {
             })
             .start();
     }
-// ── 章節劇情按鈕控制 (新增) ──────────────────────────────────────────────
+// ── 章節劇情按鈕控制 ──────────────────────────────────────────────────────
+
+    @property(Node)
+    chapterStoryBtnNode: Node = null;
 
     /** 由 MainGameController 呼叫，顯示進入劇情的提示按鈕 */
     showChapterStoryButton(chapterNumber: number): void {
-        console.log(`[HUDController] 準備顯示第 ${chapterNumber} 章結算劇情按鈕`);
-        // TODO: 這裡日後可以綁定一個真實的 UI 按鈕，讓它 active = true
-        // 玩家點擊該按鈕時，請執行：this.node.emit('chapter-story-click');
-        
-        // 為了方便現在測試，我們直接模擬玩家 2 秒後點擊了按鈕：
-        this.scheduleOnce(() => {
-            this.node.emit('chapter-story-click');
-        }, 2.0);
+        console.log(`[HUDController] 顯示第 ${chapterNumber} 章結算劇情按鈕`);
+        if (this.chapterStoryBtnNode) {
+            this.chapterStoryBtnNode.active = true;
+            this.chapterStoryBtnNode.targetOff(this);
+            this.chapterStoryBtnNode.on(Node.EventType.TOUCH_END, () => {
+                this.node.emit('chapter-story-click');
+            }, this);
+        }
     }
 
     /** 隱藏劇情按鈕 */
     hideChapterStoryButton(): void {
-        console.log(`[HUDController] 隱藏章節劇情按鈕`);
-        // TODO: 將真實的 UI 按鈕 active = false
+        if (this.chapterStoryBtnNode) {
+            this.chapterStoryBtnNode.active = false;
+            this.chapterStoryBtnNode.targetOff(this);
+        }
     }
 
     // ── 生命週期清理 ──────────────────────────────────────────────────────────
@@ -215,6 +220,7 @@ export class HUDController extends Component {
     onDestroy(): void {
         this.navButtons.forEach(btn => btn?.targetOff(this));
         this.bellButtonNode?.targetOff(this);
+        this.chapterStoryBtnNode?.targetOff(this);
         DataEventBus.off(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
         DataEventBus.off(DATA_EVENTS.HP_CHANGED,    this._updateHpLabel,    this);
     }

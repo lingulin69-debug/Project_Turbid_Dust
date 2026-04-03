@@ -2,6 +2,7 @@ import {
     _decorator,
     Component,
     Label,
+    Material,
     Node,
     Sprite,
     AudioSource,
@@ -11,6 +12,7 @@ import {
     SpriteFrame,
 } from 'cc';
 import { SoundManager } from './SoundManager';
+import { applyFactionMaterial, FactionType } from './PTD_UI_Theme';
 
 const { ccclass, property } = _decorator;
 
@@ -39,6 +41,14 @@ export class ChapterStoryModal extends Component {
 
     @property(Node)
     backdropNode: Node = null;
+
+    // ── Material 預留接口（濁息 / 淨塵視覺效果）──────────────────
+
+    @property(Material)
+    turbidMaterial: Material = null;
+
+    @property(Material)
+    pureMaterial: Material = null;
 
     // ── 私有狀態 ──────────────────────────────────────────────────
 
@@ -69,6 +79,12 @@ export class ChapterStoryModal extends Component {
         winnerFaction?: string;
     }): Promise<void> {
         
+        // 套用陣營材質
+        if (config.winnerFaction && this.bgImageSprite) {
+            const faction: FactionType = config.winnerFaction === 'Pure' ? 'Pure' : 'Turbid';
+            applyFactionMaterial(this.bgImageSprite, faction, this.turbidMaterial, this.pureMaterial);
+        }
+
         // 設定標題
         if (this.chapterTitleLabel) {
             this.chapterTitleLabel.string = config.title;

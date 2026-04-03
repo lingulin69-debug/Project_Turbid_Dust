@@ -480,10 +480,10 @@ POST /api/black-merchant/haggle       黑市議價
 
 **人販子 NPC**
 ```
-POST /api/npc/trafficker/kidnap       人販子綁架
-POST /api/npc/trafficker/deliver      人販子村民任務
-POST /api/npc/trafficker/intel        人販子黑市情報
-POST /api/npc/trafficker/pickpocket   人販子扒竊
+POST /api/npc/trafficker/skill/kidnap       人販子綁架
+POST /api/npc/trafficker/villager-mission   人販子村民任務
+POST /api/npc/trafficker/skill/intel        人販子黑市情報
+POST /api/npc/trafficker/skill/pickpocket   人販子扒竊
 ```
 
 **旅店 NPC**

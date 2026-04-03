@@ -57,6 +57,9 @@ import {
 } from './WhiteCrowPanels';
 import { NpcInteractionModal, NpcMapEntry } from './NpcInteractionModal';
 import { LandmarkStoryModal, Landmark } from './LandmarkStoryModal';
+import { BreathingSceneModal } from './BreathingSceneModal';
+import { ChapterOpeningModal } from './ChapterOpeningModal';
+import { MajorChapterModal } from './MajorChapterModal';
 import { MAP_NPCS, landmarks, announcements, missions, NPC_ROLE_ICON, NPC_ROLE_LABEL, type Announcement, type Mission } from '@/data/mapConfig';
 import { getPageTheme, usePTDUIStyles } from './PTD_UI_Theme';
 import { Sounds } from '@/hooks/useSounds';
@@ -153,6 +156,73 @@ const KidnapPopup: React.FC<KidnapPopupProps> = ({
   );
 };
 // ─── End KidnapPopup ─────────────────────────────────────────────────────────
+
+// ─── SystemEventPopup ────────────────────────────────────────────────────────
+interface SystemEventPopupProps {
+  notification: { id: string; content: string };
+  faction: 'Pure' | 'Turbid';
+  onMarkRead: () => void;
+}
+
+const SystemEventPopup: React.FC<SystemEventPopupProps> = ({ notification, faction, onMarkRead }) => {
+  const [dismissed, setDismissed] = useState(false);
+
+  const handleClose = () => {
+    onMarkRead();
+    setDismissed(true);
+  };
+
+  if (dismissed) return null;
+
+  const accentColor = faction === 'Pure' ? '#d4a853' : '#a78bfa';
+  const bgColor = faction === 'Pure' ? 'rgba(30,20,5,0.97)' : 'rgba(15,5,30,0.97)';
+  const headerTag = faction === 'Pure' ? '[ 城市廣播 ]' : '[ 感染者頻道 ]';
+
+  return (
+    <div className="absolute inset-0 z-[85] flex items-center justify-center pointer-events-none">
+      <div
+        className="pointer-events-auto relative max-w-xs w-full mx-6 rounded-lg shadow-2xl border font-mono text-xs overflow-hidden"
+        style={{ backgroundColor: bgColor, borderColor: `${accentColor}40` }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-4 py-2 border-b text-[10px] tracking-[0.3em] uppercase"
+          style={{ borderColor: `${accentColor}30`, color: `${accentColor}90` }}
+        >
+          <span>{headerTag}</span>
+          <button
+            onClick={handleClose}
+            className="hover:opacity-60 transition-opacity"
+            style={{ color: accentColor }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 py-4">
+          <pre
+            className="whitespace-pre-wrap text-gray-300 leading-relaxed text-[11px] font-sans"
+          >
+            {notification.content}
+          </pre>
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 pb-3 flex justify-end">
+          <button
+            onClick={handleClose}
+            className="text-[10px] tracking-widest uppercase px-4 py-1 border rounded transition-all hover:opacity-80"
+            style={{ borderColor: `${accentColor}50`, color: accentColor }}
+          >
+            已閱
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+// ─── End SystemEventPopup ─────────────────────────────────────────────────────
 
 // ── 骰子判定動畫 Overlay ──────────────────────────────────────────────────────
 interface DiceAnimData {
@@ -772,6 +842,64 @@ export const MapTestView: React.FC = () => {
   const [zoomControlsPos, setZoomControlsPos] = useState({ x: 0, y: 0 });
   const [navPositions, setNavPositions] = useState<Record<string, {x: number, y: number}>>({});
   const [showSettlement, setShowSettlement] = useState(false);
+  const [showBreathingScene, setShowBreathingScene] = useState(false);
+  const [breathingSceneData, setBreathingSceneData] = useState<typeof landmarkChaptersData.breathing_scenes[0] | null>(null);
+  const [showChapterOpening, setShowChapterOpening] = useState(false);
+  const [chapterOpeningData, setChapterOpeningData] = useState<typeof landmarkChaptersData.chapter_openings[0] | null>(null);
+  const [showMajorChapter, setShowMajorChapter] = useState(false);
+  const [majorChapterNarrative, setMajorChapterNarrative] = useState<{ title: string; text: string } | null>(null);
+
+  // 大章節過渡流程觸發器：天平結算 → 前呼吸 → 章節開幕 → 大章節
+  const triggerChapterTransition = useCallback((transitionKey: string, newChapterVersion: string, faction: 'Turbid' | 'Pure' | 'Common') => {
+    const factionFilter = faction === 'Common' ? 'both' : faction;
+
+    // 1. 找前呼吸場景
+    const scene = landmarkChaptersData.breathing_scenes?.find(
+      s => s.transition === transitionKey && (s.faction === 'both' || s.faction === factionFilter)
+    ) ?? null;
+
+    // 2. 找章節開幕
+    const opening = landmarkChaptersData.chapter_openings?.find(
+      o => o.chapter_version === newChapterVersion && (o.faction === factionFilter || o.faction === 'both')
+    ) ?? null;
+
+    setBreathingSceneData(scene);
+    setChapterOpeningData(opening);
+    setMajorChapterNarrative(opening ? { title: opening.title, text: opening.opening_text ?? '' } : null);
+
+    // 啟動流程：先播前呼吸
+    if (scene) {
+      setShowBreathingScene(true);
+    } else if (opening) {
+      setShowChapterOpening(true);
+    }
+  }, []);
+
+  // Realtime 監聽：伺服器推進章節時自動觸發轉場
+  useEffect(() => {
+    const channel = supabase
+      .channel('chapter_advance_listener')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'global_stats', filter: 'id=eq.singleton' },
+        (payload) => {
+          const oldChapter = (payload.old as Record<string, unknown>)?.current_chapter as number | undefined;
+          const newChapter = (payload.new as Record<string, unknown>)?.current_chapter as number | undefined;
+          if (oldChapter && newChapter && newChapter > oldChapter) {
+            const faction = currentUser?.faction ?? 'Common';
+            const factionKey = (faction === 'Turbid' || faction === 'Pure') ? faction : 'Common';
+            triggerChapterTransition(
+              `ch${oldChapter}_to_ch${newChapter}`,
+              `${newChapter}.0`,
+              factionKey as 'Turbid' | 'Pure' | 'Common'
+            );
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentUser?.faction, triggerChapterTransition]);
+
   const [fogButtonPos, setFogButtonPos] = useState({ x: 0, y: 0 });
   const [fogActive, setFogActive] = useState(true);
   const [fogDispersing, setFogDispersing] = useState(false);
@@ -2449,6 +2577,15 @@ export const MapTestView: React.FC = () => {
         />
       )}
 
+      {/* System Event Popup — 跨線事件廣播彈窗 */}
+      {popupNotification && !currentUser?.is_lost && currentUser && (
+        <SystemEventPopup
+          notification={popupNotification}
+          faction={currentUser.faction}
+          onMarkRead={() => markRead(popupNotification.id)}
+        />
+      )}
+
       {/* Character Card Modal */}
       {characterCardTarget && currentUser && (
         <CharacterCard
@@ -2463,9 +2600,61 @@ export const MapTestView: React.FC = () => {
       {showSettlement && (
         <BalanceSettlementModal
           chapterVersion="ch01_v3"
-          onClose={() => setShowSettlement(false)}
+          onClose={() => {
+            setShowSettlement(false);
+            // 結算結束 → 觸發章節過渡流程（前呼吸 → 開幕 → 大章節）
+            const faction = currentUser?.faction ?? 'Common';
+            const factionKey = faction === 'Turbid' || faction === 'Pure' ? faction : 'Common';
+            // 預設使用第 1 章到第 2 章的過渡，實際應從 API 取得當前章節
+            triggerChapterTransition('ch1_to_ch2', '2.0', factionKey as 'Turbid' | 'Pure' | 'Common');
+          }}
         />
-              )}
+      )}
+
+      {/* 前呼吸場景 */}
+      <BreathingSceneModal
+        isOpen={showBreathingScene}
+        scene={breathingSceneData}
+        playerFaction={currentUser?.faction ?? 'Common'}
+        onComplete={() => {
+          setShowBreathingScene(false);
+          // 前呼吸結束 → 展示章節開幕
+          if (chapterOpeningData) {
+            setShowChapterOpening(true);
+          }
+        }}
+      />
+
+      {/* 章節開幕文字 */}
+      <ChapterOpeningModal
+        isOpen={showChapterOpening}
+        opening={chapterOpeningData}
+        playerFaction={currentUser?.faction ?? 'Common'}
+        onContinue={() => {
+          setShowChapterOpening(false);
+          // 章節開幕結束 → 展示大章節敘事（如有）
+          if (majorChapterNarrative) {
+            setShowMajorChapter(true);
+          }
+        }}
+      />
+
+      {/* 大章節敘事 */}
+      {majorChapterNarrative && (
+        <MajorChapterModal
+          isOpen={showMajorChapter}
+          onClose={() => {
+            setShowMajorChapter(false);
+            setMajorChapterNarrative(null);
+            setChapterOpeningData(null);
+            setBreathingSceneData(null);
+          }}
+          chapterVersion=""
+          chapterTitle={majorChapterNarrative.title}
+          narrativeText={majorChapterNarrative.text}
+          playerFaction={currentUser?.faction ?? 'Common'}
+        />
+      )}
             </div>
           </div>
         );
