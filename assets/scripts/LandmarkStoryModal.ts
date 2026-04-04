@@ -137,9 +137,9 @@ export class LandmarkStoryModal extends Component {
     }
 
     onDestroy(): void {
-        this.closeButton?.targetOff(this);
-        this.maskNode?.targetOff(this);
-        this.joinButton?.targetOff(this);
+        if (this.closeButton?.isValid) this.closeButton.targetOff(this);
+        if (this.maskNode?.isValid) this.maskNode.targetOff(this);
+        if (this.joinButton?.isValid) this.joinButton.targetOff(this);
     }
 
     // ── 公開 API ──────────────────────────────────────────────────────────────

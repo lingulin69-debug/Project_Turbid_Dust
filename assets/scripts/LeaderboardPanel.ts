@@ -125,9 +125,9 @@ export class LeaderboardPanel extends Component {
     }
 
     onDestroy(): void {
-        this.closeButton?.node.targetOff(this);
-        this.refreshButton?.node.targetOff(this);
-        this.maskNode?.targetOff(this);
+        if (this.closeButton?.node?.isValid) this.closeButton.node.targetOff(this);
+        if (this.refreshButton?.node?.isValid) this.refreshButton.node.targetOff(this);
+        if (this.maskNode?.isValid) this.maskNode.targetOff(this);
     }
 
     // ── 公開方法 ──────────────────────────────────────────────────────────────

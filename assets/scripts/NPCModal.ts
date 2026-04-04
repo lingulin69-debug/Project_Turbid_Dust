@@ -238,9 +238,9 @@ export class NPCModal extends Component {
     // ── 生命週期清理 ──────────────────────────────────────────────────────────
 
     onDestroy(): void {
-        this.shopContainer?.removeAllChildren();
-        this.closeButtonNode?.targetOff(this);
-        this.backdropNode?.targetOff(this);
-        this.actionButtonNode?.targetOff(this);
+        if (this.shopContainer?.isValid) this.shopContainer.removeAllChildren();
+        if (this.closeButtonNode?.isValid) this.closeButtonNode.targetOff(this);
+        if (this.backdropNode?.isValid) this.backdropNode.targetOff(this);
+        if (this.actionButtonNode?.isValid) this.actionButtonNode.targetOff(this);
     }
 }

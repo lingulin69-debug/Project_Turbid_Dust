@@ -2,13 +2,19 @@ import {
     _decorator,
     Component,
     Node,
+    Layers,
     Prefab,
+    UITransform,
+    Sprite,
+    Label,
+    Color,
     instantiate,
     JsonAsset,
     resources,
 } from 'cc';
 import { MapLandmark, LandmarkData } from './MapLandmark';
 import { DataManager } from './PTD_DataManager';
+import { getWhiteSpriteFrame } from './PTD_SpriteHelper';
 
 const { ccclass, property } = _decorator;
 
@@ -31,6 +37,7 @@ export class MapController extends Component {
 
     /** id → MapLandmark 元件 */
     private _landmarks: Map<string, MapLandmark> = new Map();
+    private _uiLayer = Layers.Enum.UI_2D;
 
     // ── 生命週期 ──────────────────────────────────────────────────────────────
 
@@ -80,20 +87,45 @@ export class MapController extends Component {
     // ── 據點生成 ──────────────────────────────────────────────────────────────
 
     private _spawnLandmarks(dataList: LandmarkData[]): void {
-        if (!this.mapRoot || !this.landmarkPrefab) {
-            console.warn('[MapController] mapRoot 或 landmarkPrefab 未設定');
+        if (!this.mapRoot) {
+            console.warn('[MapController] mapRoot 未設定');
             return;
         }
 
-        for (const data of dataList) {
-            const node = instantiate(this.landmarkPrefab);
-            node.setPosition(data.x, data.y, 0);
+        const COLS = 4;               // 每列最多 4 個
+        const SPACING_X = 200;
+        const SPACING_Y = 160;
+        const START_X = -300;
+        const START_Y = 200;
+
+        for (let i = 0; i < dataList.length; i++) {
+            const data = dataList[i];
+            let node: Node;
+
+            if (this.landmarkPrefab) {
+                node = instantiate(this.landmarkPrefab);
+                this._setUILayerRecursive(node);
+            } else {
+                // 無 Prefab 時建立色塊佔位
+                node = this._createPlaceholderLandmark(data);
+            }
+
+            // 若 JSON 沒有 x/y，自動排列成網格
+            const px = data.x ?? (START_X + (i % COLS) * SPACING_X);
+            const py = data.y ?? (START_Y - Math.floor(i / COLS) * SPACING_Y);
+            node.setPosition(px, py, 0);
             this.mapRoot.addChild(node);
 
-            const lm = node.getComponent(MapLandmark);
+            let lm = node.getComponent(MapLandmark);
             if (!lm) {
-                console.warn(`[MapController] Prefab 缺少 MapLandmark 元件（id: ${data.id}）`);
-                continue;
+                lm = node.addComponent(MapLandmark);
+            }
+
+            // 色塊模式下綁定 baseSprite / nameLabel 讓 _applyVisual 正常運作
+            if (!this.landmarkPrefab) {
+                lm.baseSprite = node.getComponent(Sprite);
+                const labelChild = node.getChildByName('Label');
+                if (labelChild) lm.nameLabel = labelChild.getComponent(Label);
             }
 
             lm.init(data);
@@ -102,12 +134,56 @@ export class MapController extends Component {
         }
     }
 
+    /**
+     * 無 Prefab 時，用程式碼建立色塊佔位據點。
+     */
+    private _createPlaceholderLandmark(data: LandmarkData): Node {
+        const node = new Node(`Landmark_${data.id}`);
+        node.layer = this._uiLayer;
+
+        // 色塊底板
+        const ut = node.addComponent(UITransform);
+        ut.setContentSize(60, 60);
+
+        const sp = node.addComponent(Sprite);
+        sp.spriteFrame = getWhiteSpriteFrame();
+        sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        // open=藍, closed=灰
+        sp.color = data.status === 'closed'
+            ? new Color(120, 120, 120, 180)
+            : new Color(70, 130, 230, 220);
+
+        // 據點名稱標籤
+        const labelNode = new Node('Label');
+        labelNode.layer = this._uiLayer;
+        const labelUt = labelNode.addComponent(UITransform);
+        labelUt.setContentSize(80, 24);
+        const lb = labelNode.addComponent(Label);
+        lb.string = data.name ?? data.id;
+        lb.fontSize = 14;
+        lb.color = new Color(255, 255, 255, 255);
+        lb.overflow = Label.Overflow.SHRINK;
+        labelNode.setPosition(0, -42, 0);
+        node.addChild(labelNode);
+
+        return node;
+    }
+
+    private _setUILayerRecursive(node: Node): void {
+        node.layer = this._uiLayer;
+        for (const child of node.children) {
+            this._setUILayerRecursive(child);
+        }
+    }
+
     // ── 據點清理 ──────────────────────────────────────────────────────────────
 
     private _clearLandmarks(): void {
         for (const lm of this._landmarks.values()) {
-            lm.node.off('landmark-clicked', this._onLandmarkClicked, this);
-            lm.node.destroy();
+            if (lm.node?.isValid) {
+                lm.node.off('landmark-clicked', this._onLandmarkClicked, this);
+                lm.node.destroy();
+            }
         }
         this._landmarks.clear();
     }
@@ -156,6 +232,12 @@ export class MapController extends Component {
     // ── 生命週期清理 ──────────────────────────────────────────────────────────
 
     onDestroy(): void {
-        this._clearLandmarks();
+        // 只解除事件，不手動 destroy（場景銷毀時會自動清理子節點）
+        for (const lm of this._landmarks.values()) {
+            if (lm.node?.isValid) {
+                lm.node.off('landmark-clicked', this._onLandmarkClicked, this);
+            }
+        }
+        this._landmarks.clear();
     }
 }

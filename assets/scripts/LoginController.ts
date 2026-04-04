@@ -103,12 +103,22 @@ export class LoginController extends Component {
 
     onLoad(): void {
         this._showLoginPanel();
+        this._registerButtonEvents();
         console.log('[LoginController] 登入場景初始化完成');
     }
 
     onDestroy(): void {
-        // EditBox / Button 事件透過 Inspector clickEvents 綁定，Cocos 自動解除
-        // 若有手動 node.on() 監聽，在此解除（目前無）
+        if (this.loginBtn?.node?.isValid) this.loginBtn.node.targetOff(this);
+        if (this.confirmResetBtn?.node?.isValid) this.confirmResetBtn.node.targetOff(this);
+    }
+
+    private _registerButtonEvents(): void {
+        if (this.loginBtn) {
+            this.loginBtn.node.on(Node.EventType.TOUCH_END, this.onLoginPressed, this);
+        }
+        if (this.confirmResetBtn) {
+            this.confirmResetBtn.node.on(Node.EventType.TOUCH_END, this.onConfirmResetPressed, this);
+        }
     }
 
     // ── 公開方法（供 Inspector Button clickEvents 呼叫） ──────────────────────

@@ -56,8 +56,8 @@ export class RelicPoemModal extends Component {
 
     onDestroy(): void {
         this.unscheduleAllCallbacks();
-        this.closeButtonNode?.targetOff(this);
-        this.backdropNode?.targetOff(this);
+        if (this.closeButtonNode?.isValid) this.closeButtonNode.targetOff(this);
+        if (this.backdropNode?.isValid) this.backdropNode.targetOff(this);
     }
 
     // ── 公開 API ──────────────────────────────────────────────────────────────

@@ -131,11 +131,11 @@ export class MusicDiscController extends Component {
     }
 
     onDestroy(): void {
-        this.toggleButton?.targetOff(this);
-        this.playPauseButton?.targetOff(this);
-        this.prevButton?.targetOff(this);
-        this.nextButton?.targetOff(this);
-        this.muteButton?.targetOff(this);
+        if (this.toggleButton?.isValid) this.toggleButton.targetOff(this);
+        if (this.playPauseButton?.isValid) this.playPauseButton.targetOff(this);
+        if (this.prevButton?.isValid) this.prevButton.targetOff(this);
+        if (this.nextButton?.isValid) this.nextButton.targetOff(this);
+        if (this.muteButton?.isValid) this.muteButton.targetOff(this);
     }
 
     // ── 展開/收合 ─────────────────────────────────────────────────────────────

@@ -302,17 +302,17 @@ export class LeaderTyrannyPanel extends Component {
     }
 
     onDestroy(): void {
-        this.closeButton?.node.targetOff(this);
-        this.taxButton?.node.targetOff(this);
-        this.curseButton?.node.targetOff(this);
-        this.lawButton?.node.targetOff(this);
-        this.bountySubmitButton?.node.targetOff(this);
-        this.bounty1Button?.node.targetOff(this);
-        this.bounty2Button?.node.targetOff(this);
-        this.curseTreasuryButton?.node.targetOff(this);
-        this.confirmCurseTreasuryBtn?.node.targetOff(this);
-        this.cancelCurseTreasuryBtn?.node.targetOff(this);
-        this.maskNode?.targetOff(this);
+        if (this.closeButton?.node?.isValid) this.closeButton.node.targetOff(this);
+        if (this.taxButton?.node?.isValid) this.taxButton.node.targetOff(this);
+        if (this.curseButton?.node?.isValid) this.curseButton.node.targetOff(this);
+        if (this.lawButton?.node?.isValid) this.lawButton.node.targetOff(this);
+        if (this.bountySubmitButton?.node?.isValid) this.bountySubmitButton.node.targetOff(this);
+        if (this.bounty1Button?.node?.isValid) this.bounty1Button.node.targetOff(this);
+        if (this.bounty2Button?.node?.isValid) this.bounty2Button.node.targetOff(this);
+        if (this.curseTreasuryButton?.node?.isValid) this.curseTreasuryButton.node.targetOff(this);
+        if (this.confirmCurseTreasuryBtn?.node?.isValid) this.confirmCurseTreasuryBtn.node.targetOff(this);
+        if (this.cancelCurseTreasuryBtn?.node?.isValid) this.cancelCurseTreasuryBtn.node.targetOff(this);
+        if (this.maskNode?.isValid) this.maskNode.targetOff(this);
     }
 
     // ── 公開方法 ──────────────────────────────────────────────────────────────

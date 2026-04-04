@@ -103,8 +103,10 @@ export class CollectionPanel extends Component {
     }
 
     onDestroy(): void {
-        this.closeButton?.targetOff(this);
-        this.tabButtons.forEach(btn => btn?.targetOff(this));
+        if (this.closeButton?.isValid) this.closeButton.targetOff(this);
+        this.tabButtons?.forEach(btn => {
+            if (btn?.isValid) btn.targetOff(this);
+        });
     }
 
     // ── 公開 API ──────────────────────────────────────────────────────────────

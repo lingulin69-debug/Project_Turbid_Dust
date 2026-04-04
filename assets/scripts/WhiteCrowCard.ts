@@ -241,8 +241,10 @@ export class WhiteCrowCard extends Component {
     // ── 生命週期清理 ──────────────────────────────────────────────────────────
 
     onDestroy(): void {
-        this.closeButtonNode?.targetOff(this);
-        this.tabButtons.forEach(btn => btn.targetOff(this));
+        if (this.closeButtonNode?.isValid) this.closeButtonNode.targetOff(this);
+        this.tabButtons?.forEach(btn => {
+            if (btn?.isValid) btn.targetOff(this);
+        });
         DataEventBus.off(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
         DataEventBus.off(DATA_EVENTS.HP_CHANGED,    this._updateHpLabel,    this);
     }

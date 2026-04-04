@@ -166,10 +166,10 @@ export class ApostatePanel extends Component {
     }
 
     onDestroy(): void {
-        this.closeButton?.targetOff(this);
-        this.optionABtn?.targetOff(this);
-        this.optionBBtn?.targetOff(this);
-        this.executeBtn?.targetOff(this);
+        if (this.closeButton?.isValid) this.closeButton.targetOff(this);
+        if (this.optionABtn?.isValid) this.optionABtn.targetOff(this);
+        if (this.optionBBtn?.isValid) this.optionBBtn.targetOff(this);
+        if (this.executeBtn?.isValid) this.executeBtn.targetOff(this);
     }
 
     // ── 公開 API ──────────────────────────────────────────────────────────────

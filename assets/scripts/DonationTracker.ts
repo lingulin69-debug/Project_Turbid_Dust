@@ -72,7 +72,7 @@ onLoad(): void {
     }
 
     onDestroy(): void {
-        this.donateButton?.targetOff(this);
+        if (this.donateButton?.isValid) this.donateButton.targetOff(this);
         DataEventBus.off(DATA_EVENTS.COINS_CHANGED, this._onCoinsChanged, this);
     }
 

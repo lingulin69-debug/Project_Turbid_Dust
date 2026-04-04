@@ -19,8 +19,8 @@ export type LandmarkType = 'town' | 'hospital' | 'church' | 'school' | 'default'
 export interface LandmarkData {
     id: string;
     name: string;
-    x: number;          // 地圖節點本地座標
-    y: number;
+    x?: number;          // 地圖節點本地座標（可選，缺少時自動排列）
+    y?: number;
     faction: FactionType | 'Common';
     status: 'open' | 'closed';
     type?: LandmarkType;

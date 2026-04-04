@@ -81,8 +81,8 @@ export class BreathingSceneController extends Component {
 
     onDestroy(): void {
         this.unscheduleAllCallbacks();
-        this.skipButton?.targetOff(this);
-        this.backdropNode?.targetOff(this);
+        if (this.skipButton?.isValid) this.skipButton.targetOff(this);
+        if (this.backdropNode?.isValid) this.backdropNode.targetOff(this);
     }
 
     update(dt: number): void {

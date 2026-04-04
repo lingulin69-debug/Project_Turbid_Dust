@@ -170,14 +170,16 @@ export class MainGameController extends Component {
     // ── 生命週期 ──────────────────────────────────────────────────────────────
 
     onLoad(): void {
+        // 不在此註冊事件 — 等待 MapSceneBuilder 綁定完插座後再初始化
+    }
+
+async start(): Promise<void> {
+        // MapSceneBuilder.onLoad() 已完成綁定，此時插座皆可用
         this._registerEvents();
         this._registerNpcEvents();
         this._registerRelicEvents();
         this._registerTransitionEvents();
         this.initNPCs();
-    }
-
-async start(): Promise<void> {
         // 🛡️ 登入守衛：防止玩家繞過登入畫面
     if (!DataManager.getPlayer()) {
         console.warn('[MainGameController] 尚未登入，重新導向登入場景');
@@ -197,15 +199,15 @@ async start(): Promise<void> {
     }
 
     onDestroy(): void {
-        this.mapController?.node.off('landmark-selected', this._onLandmarkSelected, this);
-        this.hudController?.node.off('panel-open', this._onPanelOpen, this);
-        this.hudController?.node.off('panel-close', this._onPanelClose, this);
-        this.hudController?.node.off('bell-tapped', this._onBellTapped, this);
-        this.inventoryPanel?.node.off('show-item-detail', this._onShowItemDetail, this);
-        this.itemDetailModal?.node.off('use-item', this._onUseItem, this);
-        this.npcModal?.node.off('npc-action', this._onNpcAction, this);
-        this.npcModal?.node.off('buy-item',   this._onBuyItem,   this);
-        this.whiteCrowCard?.node.off('show-relic-poem', this._onShowRelicPoem, this);
+        this.mapController?.node?.off('landmark-selected', this._onLandmarkSelected, this);
+        this.hudController?.node?.off('panel-open', this._onPanelOpen, this);
+        this.hudController?.node?.off('panel-close', this._onPanelClose, this);
+        this.hudController?.node?.off('bell-tapped', this._onBellTapped, this);
+        this.inventoryPanel?.node?.off('show-item-detail', this._onShowItemDetail, this);
+        this.itemDetailModal?.node?.off('use-item', this._onUseItem, this);
+        this.npcModal?.node?.off('npc-action', this._onNpcAction, this);
+        this.npcModal?.node?.off('buy-item',   this._onBuyItem,   this);
+        this.whiteCrowCard?.node?.off('show-relic-poem', this._onShowRelicPoem, this);
         this._unregisterNpcEvents();
         this._unregisterTransitionEvents();
         
@@ -265,7 +267,9 @@ async start(): Promise<void> {
             case 'announcement':
                 // 公告使用 WhiteCrowCard 通用面板
                 if (this.whiteCrowCard) {
+                    const faction = DataManager.getPlayer()?.faction ?? 'Pure';
                     this.whiteCrowCard.node.active = true;
+                    this.whiteCrowCard.init(faction, '公告面板', 'ANNOUNCEMENT');
                 }
                 break;
             case 'quest':
@@ -274,7 +278,9 @@ async start(): Promise<void> {
             case 'daily':
                 // 日誌使用 WhiteCrowCard 通用面板（切換 tab）
                 if (this.whiteCrowCard) {
+                    const faction = DataManager.getPlayer()?.faction ?? 'Pure';
                     this.whiteCrowCard.node.active = true;
+                    this.whiteCrowCard.init(faction, '日誌面板', 'DAILY');
                 }
                 break;
             case 'collection':
@@ -352,7 +358,9 @@ async start(): Promise<void> {
             ...this.fixedNpcNodes.filter(n => !!n),
         ];
         if (this.traffickerNode) npcNodes.push(this.traffickerNode);
-        for (const npcNode of npcNodes) npcNode.targetOff(this);
+        for (const npcNode of npcNodes) {
+            if (npcNode.isValid) npcNode.targetOff(this);
+        }
     }
 
     private _onNpcNodeTap(npcNode: Node): void {
@@ -657,8 +665,8 @@ async start(): Promise<void> {
     }
 
     private _unregisterTransitionEvents(): void {
-        this.breathingSceneCtrl?.node.targetOff(this);
-        this.chapterOpeningCtrl?.node.targetOff(this);
+        if (this.breathingSceneCtrl?.node?.isValid) this.breathingSceneCtrl.node.targetOff(this);
+        if (this.chapterOpeningCtrl?.node?.isValid) this.chapterOpeningCtrl.node.targetOff(this);
     }
 
     /**

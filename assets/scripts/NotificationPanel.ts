@@ -84,7 +84,7 @@ export class NotificationPanel extends Component {
     }
 
     onDestroy(): void {
-        this.closeButton?.targetOff(this);
+        if (this.closeButton?.isValid) this.closeButton.targetOff(this);
     }
 
     // ── 公開 API ──────────────────────────────────────────────────────────────

@@ -157,8 +157,8 @@ export class BalanceSettlementModal extends Component {
 
     onDestroy(): void {
         this.unscheduleAllCallbacks();
-        this.confirmButton?.node.targetOff(this);
-        this.maskNode?.targetOff(this);
+        if (this.confirmButton?.node?.isValid) this.confirmButton.node.targetOff(this);
+        if (this.maskNode?.isValid) this.maskNode.targetOff(this);
     }
 
     // ── 載入結算資料 ──────────────────────────────────────────────────────────

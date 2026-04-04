@@ -2,11 +2,17 @@ import {
     _decorator,
     Component,
     Node,
+    Layers,
     Prefab,
     instantiate,
+    UITransform,
+    Sprite,
+    Label,
+    Color,
 } from 'cc';
 import { ItemData } from './PTD_DataManager';
 import { ItemSlot } from './ItemSlot';
+import { getWhiteSpriteFrame } from './PTD_SpriteHelper';
 
 const { ccclass, property } = _decorator;
 
@@ -29,6 +35,8 @@ export class InventoryPanel extends Component {
     @property(Prefab)
     itemSlotPrefab: Prefab = null;
 
+    private _uiLayer = Layers.Enum.UI_2D;
+
     // ── 公開 API ──────────────────────────────────────────────────────────────
 
     /**
@@ -40,27 +48,56 @@ export class InventoryPanel extends Component {
             console.warn('[InventoryPanel] gridContainer 未綁定');
             return;
         }
-        if (!this.itemSlotPrefab) {
-            console.warn('[InventoryPanel] itemSlotPrefab 未綁定');
-            return;
-        }
 
         // 清空舊有格子（自動解除舊有監聽器）
         this.gridContainer.removeAllChildren();
 
         for (const item of items) {
-            const slotNode = instantiate(this.itemSlotPrefab);
+            let slotNode: Node;
 
-            // 資料灌入：在 addChild 前完成，確保 init 時節點已具備正確狀態
-            slotNode.getComponent(ItemSlot)?.init(item);
+            if (this.itemSlotPrefab) {
+                slotNode = instantiate(this.itemSlotPrefab);
+                this._setUILayerRecursive(slotNode);
+                slotNode.getComponent(ItemSlot)?.init(item);
+            } else {
+                // 無 Prefab 時建立色塊佔位格
+                slotNode = this._createPlaceholderSlot(item);
+            }
 
             // 排版由 GridLayout 自動處理，此處只負責掛入容器
             this.gridContainer.addChild(slotNode);
 
             // 監聽每個格子的點擊事件，向上中繼給主場景
-            // 注意：Cocos 的 node.emit() 不會自動冒泡，
-            //       因此必須在 init() 逐格綁定，而非監聽 gridContainer
             slotNode.on('item-clicked', this._onItemClicked, this);
+        }
+    }
+
+    private _createPlaceholderSlot(item: ItemData): Node {
+        const node = new Node(`Slot_${item.id}`);
+        node.layer = this._uiLayer;
+        node.addComponent(UITransform).setContentSize(72, 72);
+        const sp = node.addComponent(Sprite);
+        sp.spriteFrame = getWhiteSpriteFrame();
+        sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        sp.color = new Color(90, 80, 120, 200);
+
+        const labelNode = new Node('Label');
+        labelNode.layer = this._uiLayer;
+        node.addChild(labelNode);
+        labelNode.addComponent(UITransform).setContentSize(70, 20);
+        const lb = labelNode.addComponent(Label);
+        lb.string = item.name ?? item.id;
+        lb.fontSize = 11;
+        lb.color = new Color(255, 255, 255, 255);
+        lb.overflow = Label.Overflow.SHRINK;
+
+        return node;
+    }
+
+    private _setUILayerRecursive(node: Node): void {
+        node.layer = this._uiLayer;
+        for (const child of node.children) {
+            this._setUILayerRecursive(child);
         }
     }
 

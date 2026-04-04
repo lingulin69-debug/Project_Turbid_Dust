@@ -79,7 +79,7 @@ export class ChapterOpeningController extends Component {
     }
 
     onDestroy(): void {
-        this.continueButton?.targetOff(this);
+        if (this.continueButton?.isValid) this.continueButton.targetOff(this);
     }
 
     // ── 公開 API ──────────────────────────────────────────────────

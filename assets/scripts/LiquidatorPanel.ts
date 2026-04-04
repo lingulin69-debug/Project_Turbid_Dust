@@ -137,8 +137,8 @@ export class LiquidatorPanel extends Component {
     }
 
     onDestroy(): void {
-        this.closeButton?.targetOff(this);
-        this.scanBtn?.targetOff(this);
+        if (this.closeButton?.isValid) this.closeButton.targetOff(this);
+        if (this.scanBtn?.isValid) this.scanBtn.targetOff(this);
         this.unscheduleAllCallbacks();
     }
 

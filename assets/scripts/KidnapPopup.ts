@@ -101,7 +101,7 @@ export class KidnapPopup extends Component {
     }
 
     onDestroy(): void {
-        this.characterCardBtn?.targetOff(this);
+        if (this.characterCardBtn?.isValid) this.characterCardBtn.targetOff(this);
         this.unscheduleAllCallbacks();
     }
 

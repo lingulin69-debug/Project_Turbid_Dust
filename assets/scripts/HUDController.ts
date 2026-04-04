@@ -1,5 +1,6 @@
 import {
     _decorator,
+    Button,
     Component,
     Label,
     Node,
@@ -46,6 +47,9 @@ export class HUDController extends Component {
     @property(Node)
     bellButtonNode: Node = null;
 
+    @property(Node)
+    settingsButtonNode: Node = null;
+
     /** 鈴鐺上方未讀數字紅點節點 */
     @property(Node)
     bellBadgeNode: Node = null;
@@ -78,7 +82,8 @@ export class HUDController extends Component {
     // ── 生命週期 ──────────────────────────────────────────────────────────────
 
     onLoad(): void {
-        this._initDataDisplay();
+        this._registerDataEvents();
+        this._refreshDataDisplay();
         this._registerEvents();
     }
 
@@ -92,16 +97,38 @@ export class HUDController extends Component {
         if (this.hpLabel)     this.hpLabel.color     = th.textPrimary;
     }
 
-    private _initDataDisplay(): void {
+    private _registerDataEvents(): void {
+        DataEventBus.on(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
+        DataEventBus.on(DATA_EVENTS.HP_CHANGED,    this._updateHpLabel,    this);
+    }
+
+    private _refreshDataDisplay(): void {
         const player = DataManager.getPlayer();
         if (player) {
             if (this.ocNameLabel) this.ocNameLabel.string = player.oc_name;
             this._updateCoinsLabel(player.coins);
             this._updateHpLabel(player.hp);
         }
+    }
 
-        DataEventBus.on(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
-        DataEventBus.on(DATA_EVENTS.HP_CHANGED,    this._updateHpLabel,    this);
+    refreshRuntimeBindings(): void {
+        this._refreshDataDisplay();
+        this._registerEvents();
+    }
+
+    private _getTouchTarget(node: Node | null): Node | null {
+        if (!node) return null;
+        return node.getChildByName('TouchTarget') ?? node;
+    }
+
+    private _clearTapBindings(node: Node | null): void {
+        if (!node) return;
+
+        const touchTarget = this._getTouchTarget(node);
+        node.targetOff(this);
+        if (touchTarget && touchTarget !== node) {
+            touchTarget.targetOff(this);
+        }
     }
 
     // ── 數值更新 ──────────────────────────────────────────────────────────────
@@ -158,14 +185,44 @@ export class HUDController extends Component {
         HUDController.NAV_PANELS.forEach((panelId, index) => {
             const btn = this.navButtons[index];
             if (!btn) return;
-            btn.targetOff(this);
-            btn.on(Node.EventType.TOUCH_END, () => this._onNavButtonTap(btn, panelId), this);
+
+            const touchTarget = this._getTouchTarget(btn);
+            this._clearTapBindings(btn);
+            if (!touchTarget) return;
+
+            const touchButton = touchTarget.getComponent(Button);
+            if (touchButton) {
+                touchButton.node.on(Button.EventType.CLICK, () => this._onNavButtonTap(btn, panelId), this);
+            } else {
+                touchTarget.on(Node.EventType.TOUCH_END, () => this._onNavButtonTap(btn, panelId), this);
+            }
         });
 
         // 鈴鐺按鈕
         if (this.bellButtonNode) {
-            this.bellButtonNode.targetOff(this);
-            this.bellButtonNode.on(Node.EventType.TOUCH_END, this._onBellTap, this);
+            const bellTarget = this._getTouchTarget(this.bellButtonNode);
+            this._clearTapBindings(this.bellButtonNode);
+            if (bellTarget) {
+                const bellButton = bellTarget.getComponent(Button);
+                if (bellButton) {
+                    bellButton.node.on(Button.EventType.CLICK, this._onBellTap, this);
+                } else {
+                    bellTarget.on(Node.EventType.TOUCH_END, this._onBellTap, this);
+                }
+            }
+        }
+
+        if (this.settingsButtonNode) {
+            const settingsTarget = this._getTouchTarget(this.settingsButtonNode);
+            this._clearTapBindings(this.settingsButtonNode);
+            if (settingsTarget) {
+                const settingsButton = settingsTarget.getComponent(Button);
+                if (settingsButton) {
+                    settingsButton.node.on(Button.EventType.CLICK, () => this.togglePanel('settings'), this);
+                } else {
+                    settingsTarget.on(Node.EventType.TOUCH_END, () => this.togglePanel('settings'), this);
+                }
+            }
         }
     }
 
@@ -218,9 +275,12 @@ export class HUDController extends Component {
     // ── 生命週期清理 ──────────────────────────────────────────────────────────
 
     onDestroy(): void {
-        this.navButtons.forEach(btn => btn?.targetOff(this));
-        this.bellButtonNode?.targetOff(this);
-        this.chapterStoryBtnNode?.targetOff(this);
+        this.navButtons?.forEach(btn => {
+            if (btn?.isValid) this._clearTapBindings(btn);
+        });
+        if (this.bellButtonNode?.isValid) this._clearTapBindings(this.bellButtonNode);
+        if (this.settingsButtonNode?.isValid) this._clearTapBindings(this.settingsButtonNode);
+        if (this.chapterStoryBtnNode?.isValid) this.chapterStoryBtnNode.targetOff(this);
         DataEventBus.off(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
         DataEventBus.off(DATA_EVENTS.HP_CHANGED,    this._updateHpLabel,    this);
     }

@@ -64,8 +64,8 @@ export class ChapterStoryModal extends Component {
 
     onDestroy(): void {
         this.unscheduleAllCallbacks();
-        this.closeButton?.targetOff(this);
-        this.backdropNode?.targetOff(this);
+        if (this.closeButton?.isValid) this.closeButton.targetOff(this);
+        if (this.backdropNode?.isValid) this.backdropNode.targetOff(this);
     }
 
     // ── 公開 API ──────────────────────────────────────────────────
