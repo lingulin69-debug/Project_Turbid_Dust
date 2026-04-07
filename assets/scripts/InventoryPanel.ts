@@ -77,8 +77,8 @@ export class InventoryPanel extends Component {
         node.layer = this._uiLayer;
         node.addComponent(UITransform).setContentSize(72, 72);
         const sp = node.addComponent(Sprite);
-        sp.spriteFrame = getWhiteSpriteFrame();
         sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        sp.spriteFrame = getWhiteSpriteFrame();
         sp.color = new Color(90, 80, 120, 200);
 
         const labelNode = new Node('Label');
@@ -109,5 +109,18 @@ export class InventoryPanel extends Component {
      */
     private _onItemClicked(data: ItemData): void {
         this.node.emit('show-item-detail', data);
+    }
+
+    // ── 生命週期清理 ──────────────────────────────────────────────────────────
+
+    onDestroy(): void {
+        // 清理動態建立的格子上的事件監聽
+        if (this.gridContainer?.isValid) {
+            for (const child of this.gridContainer.children) {
+                if (child?.isValid) {
+                    child.off('item-clicked', this._onItemClicked, this);
+                }
+            }
+        }
     }
 }

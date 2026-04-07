@@ -198,6 +198,7 @@ export class WhiteCrowCard extends Component {
 
         // Tab 按鈕：自動綁定，index 對應陣列位置
         this.tabButtons.forEach((btn, index) => {
+            if (!btn) return;
             btn.targetOff(this);
             btn.on(Node.EventType.TOUCH_END, () => this.switchTab(index), this);
         });

@@ -59,7 +59,7 @@ export class HUDController extends Component {
 
     // ── Inspector：左側導航按鈕（順序對應 HUDPanelId）────────────────────────
 
-    /** 順序須對應 NAV_PANELS 陣列：announcement/quest/daily/collection/inventory/npc/settings */
+    /** 順序須對應 NAV_PANELS 陣列：announcement/quest/daily/collection/inventory/npc */
     @property([Node])
     navButtons: Node[] = [];
 
@@ -76,7 +76,6 @@ export class HUDController extends Component {
         'collection',
         'inventory',
         'npc',
-        'settings',
     ];
 
     // ── 生命週期 ──────────────────────────────────────────────────────────────
@@ -178,6 +177,11 @@ export class HUDController extends Component {
         this.node.emit('panel-close', prev);
     }
 
+    /** 外部面板關閉時重設追蹤狀態（backdrop / X 按鈕關閉用）。 */
+    resetActivePanel(): void {
+        this._activePanelId = null;
+    }
+
     // ── 事件註冊 ──────────────────────────────────────────────────────────────
 
     private _registerEvents(): void {
@@ -213,16 +217,17 @@ export class HUDController extends Component {
         }
 
         if (this.settingsButtonNode) {
-            const settingsTarget = this._getTouchTarget(this.settingsButtonNode);
+            // 齒輪按鈕：因為 Label（⚙）在 TouchTarget 上方攔截了觸控，
+            // 事件只能冒泡到 settingsButtonNode（父節點），
+            // 所以直接在父節點註冊 TOUCH_END，不走 TouchTarget 的 Button。
             this._clearTapBindings(this.settingsButtonNode);
-            if (settingsTarget) {
-                const settingsButton = settingsTarget.getComponent(Button);
-                if (settingsButton) {
-                    settingsButton.node.on(Button.EventType.CLICK, () => this.togglePanel('settings'), this);
-                } else {
-                    settingsTarget.on(Node.EventType.TOUCH_END, () => this.togglePanel('settings'), this);
-                }
-            }
+            this.settingsButtonNode.on(Node.EventType.TOUCH_END, () => {
+                console.log('[HUDController] ⚙️ 齒輪 TOUCH_END → settings');
+                this.togglePanel('settings');
+            }, this);
+            console.log('[HUDController] 齒輪按鈕已綁定 TOUCH_END on settingsButtonNode');
+        } else {
+            console.warn('[HUDController] ⚠️ settingsButtonNode 未綁定，齒輪無法使用');
         }
     }
 
@@ -237,6 +242,7 @@ export class HUDController extends Component {
     }
 
     private _onBellTap(): void {
+        if (!this.bellButtonNode) return;
         tween(this.bellButtonNode)
             .to(0.05, { scale: new Vec3(0.88, 0.88, 1) })
             .to(0.05, { scale: Vec3.ONE })

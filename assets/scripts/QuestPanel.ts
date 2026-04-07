@@ -141,12 +141,7 @@ export class QuestPanel extends Component {
         if (!this._isVisible) return;
         this._isVisible = false;
 
-        let opacity = this.node.getComponent(UIOpacity);
-        if (!opacity) opacity = this.node.addComponent(UIOpacity);
-
-        tween(opacity).to(0.15, { opacity: 0 }).call(() => {
-            this.node.active = false;
-        }).start();
+        this.node.active = false;
 
         this.node.emit('panel-closed', 'quest');
     }

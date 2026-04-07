@@ -701,3 +701,1468 @@
 
 做完後，把結果回報我。
 我再帶你進入下一階段的精準排查。
+---
+---
+
+# 第二階段：將 Runtime UI 搬到場景節點
+
+> 目標：把 `MapSceneBuilder.ts` 動態建立的所有 UI 節點，全部改成在 **Cocos 場景編輯器** 裡手動建立，讓你可以直接在 Inspector 裡調整大小、位置、顏色等。
+>
+> 為什麼要做：目前所有按鈕、面板、HUD 都是程式碼在 `onLoad()` 時自動生成的，你無法在編輯器裡看到或微調它們。搬到場景節點後，你可以直接用滑鼠拖曳調整位置、在 Inspector 改顏色改字體，不再需要改程式碼。
+
+---
+
+## 15. 開始之前：了解目前的節點結構
+
+`MapSceneBuilder.ts` 會在 `onLoad()` 時建立以下 **7 大區塊**，你要依序把它們全部搬到場景裡。
+
+```
+Canvas
+ 0. MapArea（地圖底圖）
+ 1. HUD_TopRight（右上角狀態列）
+ 2. LeftNavBar（左側導航按鈕列）
+ 3. RightToolbar（右側縮放按鈕）
+ 4. PanelLayer（所有彈窗面板的容器）
+ 5. TransitionLayer（轉場特效層）
+ 6. OverlayLayer（最頂層覆蓋）
+```
+
+你會按照 **15  16  17  18  19  20  21  22** 的順序，一個區塊一個區塊建好。
+
+---
+
+## 16. 建立 MapArea（地圖底圖）
+
+### 16-1. 在 Canvas 下建立節點
+
+1. 在 **層級管理器**（Hierarchy）中，右鍵點擊 `Canvas`
+2. 選「建立空節點」（Create Empty Node）
+3. 把新節點命名為 `MapArea`
+
+### 16-2. 設定 UITransform
+
+1. 選中 `MapArea`
+2. 在 **屬性檢查器**（Inspector）下方找到 `UITransform`（沒有的話點「新增元件」 `UITransform`）
+3. 設定：
+   - `Content Size`：**W = 1280, H = 720**
+   - `Anchor`：**X = 0.5, Y = 0.5**
+
+### 16-3. 加上 Widget（全螢幕填充）
+
+1. 點「新增元件」 搜尋 `Widget`
+2. 勾選 `Top`、`Bottom`、`Left`、`Right` 四個方向
+3. 四個值都填 **0**
+4. `Align Mode` 設為 `ON_WINDOW_RESIZE`
+
+### 16-4. 掛載 MapController 腳本
+
+1. 點「新增元件」 搜尋 `MapController`
+2. 把它加上去
+
+### 16-5. 確認
+
+- [x] 節點名稱：`MapArea`
+- [x] UITransform：1280  720
+- [x] Widget：四邊都是 0
+- [x] MapController 腳本已掛載
+
+---
+
+## 17. 建立 HUD_TopRight（右上角狀態列）
+
+### 17-1. 建立主節點
+
+1. 在 Canvas 下建立空節點，命名為 `HUD_TopRight`
+
+### 17-2. 設定 UITransform
+
+- `Content Size`：**W = 620, H = 48**
+
+### 17-3. 加上 Widget
+
+- 勾選 `Top`：**20**
+- 勾選 `Right`：**8**
+- 其他不勾
+
+### 17-4. 加上 Layout
+
+1. 點「新增元件」 `Layout`
+2. 設定：
+   - `Type`：**HORIZONTAL**
+   - `Spacing X`：**12**
+   - `Resize Mode`：**NONE**
+
+### 17-5. 掛載 HUDController 腳本
+
+1. 點「新增元件」 搜尋 `HUDController`
+2. 加上去
+
+### 17-6. 建立子節點：CoinsLabel
+
+1. 在 `HUD_TopRight` 下建立空節點，命名為 `CoinsLabel`
+2. UITransform：**W = 120, H = 40**
+3. 在 `CoinsLabel` 下建立空節點，命名為 `TouchTarget`
+4. UITransform：**W = 120, H = 40**
+5. 加上 Widget  全填充（Top/Bottom/Left/Right 都 = 0）
+6. 加上 `Sprite` 元件  Color 設為 **(71, 85, 105, 240)**
+7. 加上 `Button` 元件
+8. 加上 `Label` 元件  string = **0**, fontSize = **15**
+
+### 17-7. 建立子節點：OcNameLabel
+
+1. 在 `HUD_TopRight` 下建立空節點，命名為 `OcNameLabel`
+2. UITransform：**W = 180, H = 40**
+3. 建立 `TouchTarget` 子節點（同上步驟）
+4. UITransform：**W = 180, H = 40**
+5. Widget 全填充
+6. Sprite  Color **(71, 85, 105, 240)**
+7. Button
+8. Label  string = **未登入**, fontSize = **15**
+
+### 17-8. 建立子節點：SettingsBtn
+
+1. 在 `HUD_TopRight` 下建立空節點，命名為 `SettingsBtn`
+2. UITransform：**W = 40, H = 40**
+3. 建立 `TouchTarget` 子節點
+4. UITransform：**W = 40, H = 40**
+5. Widget 全填充
+6. Sprite  Color **(71, 85, 105, 255)**
+7. Button
+8. Label  string = **⚙**, fontSize = **18**
+
+### 17-9. 建立子節點：BellButton
+
+1. 在 `HUD_TopRight` 下建立空節點，命名為 `BellButton`
+2. UITransform：**W = 40, H = 40**
+3. 建立 `TouchTarget` 子節點
+4. UITransform：**W = 40, H = 40**
+5. Widget 全填充
+6. Sprite  Color **(71, 85, 105, 255)**
+7. Button
+8. Label  string = **🔔**, fontSize = **18**
+
+### 17-10. 建立 BellBadge（紅點徽章）
+
+1. 在 `BellButton` 下建立空節點，命名為 `BellBadge`
+2. UITransform：**W = 16, H = 16**
+3. Position：**(12, 12, 0)**
+4. **取消勾選 Active**（預設隱藏）
+5. 加 Sprite  Color **(239, 68, 68)**（紅色）
+6. 在 `BellBadge` 下建立空節點 `BadgeLabel`
+7. UITransform：**W = 16, H = 16**
+8. Label  string = **0**, fontSize = **10**, 水平/垂直都置中
+
+### 17-11. Inspector 拖綁 HUDController
+
+選中 `HUD_TopRight`（掛有 HUDController 的節點），在 Inspector 中：
+
+| 欄位 | 拖入的節點 |
+|------|-----------|
+| `Coins Label` | `CoinsLabel > TouchTarget` 上的 Label |
+| `Hp Label` | （暫時留空，之後再加 HP 節點） |
+| `Oc Name Label` | `OcNameLabel > TouchTarget` 上的 Label |
+| `Bell Button Node` | `BellButton` |
+| `Settings Button Node` | `SettingsBtn` |
+| `Bell Badge Node` | `BellBadge` |
+| `Bell Badge Label` | `BellBadge > BadgeLabel` 上的 Label |
+| `Nav Buttons` | 先不填（等 18 建好左側導航後再拖） |
+
+### 17-12. 確認清單
+
+- [x] `HUD_TopRight` 節點建好
+- [x] Widget 右上角對齊
+- [x] Layout 水平排列
+- [x] HUDController 腳本已掛
+- [x] 4 個子節點建好：CoinsLabel, OcNameLabel, SettingsBtn, BellButton
+- [x] 每個子節點都有 TouchTarget
+- [x] BellBadge 紅點建好且 Active = false
+
+---
+
+## 18. 建立 LeftNavBar（左側導航按鈕列）
+
+### 18-1. 建立主節點
+
+1. 在 Canvas 下建立空節點，命名為 `LeftNavBar`
+2. UITransform：**W = 120, H = 452**（7個按鈕  44 + 6個間距  18）
+
+### 18-2. 添加 Widget
+
+- 勾選 `Left`：**20**
+- 勾選 `Vertical Center`：**0**
+
+### 18-3. 添加 Layout
+
+- `Type`：**VERTICAL**
+- `Spacing Y`：**18**
+- `Resize Mode`：**NONE**
+
+### 18-4. 建立 7 個導航按鈕
+
+對以下每個按鈕重複相同步驟：
+
+| 順序 | 節點名稱 | 標籤文字 |
+|------|---------|---------|
+| 1 | `NavBtn_公告` | 公告 |
+| 2 | `NavBtn_任務` | 任務 |
+| 3 | `NavBtn_日誌` | 日誌 |
+| 4 | `NavBtn_圖鑑` | 圖鑑 |
+| 5 | `NavBtn_背包` | 背包 |
+| 6 | `NavBtn_NPC` | NPC |
+| 7 | `NavBtn_設定` | 設定 |
+
+每個按鈕的建立步驟（以「公告」為例）：
+
+1. 在 `LeftNavBar` 下建立空節點，命名為 `NavBtn_公告`
+2. UITransform：**W = 96, H = 44**
+3. 建立 `TouchTarget` 子節點
+4. UITransform：**W = 96, H = 44**
+5. Widget  全填充
+6. Sprite  Color **(100, 116, 139, 235)**
+7. Button
+8. BlockInputEvents
+9. Label  string = **公告**, fontSize = **17**, 水平/垂直都置中
+
+### 18-5. 建立隱藏的 ChapterStoryBtn
+
+1. 在 `LeftNavBar` 下建立空節點，命名為 `ChapterStoryBtn`
+2. UITransform：**W = 96, H = 44**
+3. **取消勾選 Active**（預設隱藏）
+4. 建立 `TouchTarget` 子節點（同上）
+5. Label  string = **劇情**, fontSize = **17**
+
+### 18-6. 回去 HUDController 補填 Nav Buttons
+
+1. 選中 `HUD_TopRight`（HUDController 節點）
+2. 在 Inspector 找到 `Nav Buttons` 陣列
+3. 設定陣列大小為 **7**
+4. 按順序拖入：
+
+| 索引 | 拖入節點 |
+|------|---------|
+| 0 | `NavBtn_公告` |
+| 1 | `NavBtn_任務` |
+| 2 | `NavBtn_日誌` |
+| 3 | `NavBtn_圖鑑` |
+| 4 | `NavBtn_背包` |
+| 5 | `NavBtn_NPC` |
+| 6 | `NavBtn_設定` |
+
+5. `Chapter Story Btn Node` 欄位拖入 `ChapterStoryBtn`
+
+### 18-7. 確認清單
+
+- [x] `LeftNavBar` 建好
+- [x] 7 個 NavBtn 順序正確
+- [x] 每個都有 TouchTarget + Sprite + Button + BlockInputEvents + Label
+- [x] ChapterStoryBtn 隱藏
+- [x] HUDController 的 Nav Buttons 陣列已填好
+
+---
+
+## 19. 建立 RightToolbar（右側縮放按鈕）
+
+### 19-1. 建立主節點
+
+1. 在 Canvas 下建立空節點，命名為 `RightToolbar`
+2. UITransform：**W = 48, H = 72**
+
+### 19-2. 添加 Widget
+
+- 勾選 `Right`：**24**
+- 勾選 `Vertical Center`：**0**
+
+### 19-3. 添加 Layout
+
+- `Type`：**VERTICAL**
+- `Spacing Y`：**4**
+
+### 19-4. 建立 ZoomInBtn
+
+1. 在 `RightToolbar` 下建立空節點，命名為 `ZoomInBtn`
+2. UITransform：**W = 32, H = 32**
+3. 建立 `TouchTarget`：W = 32, H = 32
+4. Widget 全填充
+5. Sprite  Color **(25, 12, 45, 230)**
+6. Button
+7. Label  string = **+**, fontSize = **18**
+
+### 19-5. 建立 ZoomOutBtn
+
+1. 同上步驟，命名為 `ZoomOutBtn`
+2. Label  string = **−**, fontSize = **18**
+
+### 19-6. 確認清單
+
+- [x] RightToolbar 建好
+- [x] ZoomInBtn 和 ZoomOutBtn 各有 TouchTarget
+- [x] Widget 右側居中
+
+---
+
+## 20. 建立 PanelLayer（面板容器層）
+
+這是最大的區塊。PanelLayer 包含所有彈窗面板。
+
+### 20-1. 建立主節點
+
+1. 在 Canvas 下建立空節點，命名為 `PanelLayer`
+2. UITransform：**W = 1280, H = 720**
+
+### 20-2. 通用面板結構（所有面板共用）
+
+每個面板都包含相同的「殼」結構。以下是建立一個面板的通用步驟：
+
+> **通用面板建立步驟**（以「XXXNode」為例）
+
+**步驟 A：建立面板根節點**
+1. 在 `PanelLayer` 下建立空節點，命名為 `XXXNode`
+2. UITransform：**W = 450, H = 480**
+3. 加上 Widget  勾選 `Horizontal Center` = 0, `Vertical Center` = 0
+4. **取消勾選 Active**（預設隱藏）
+
+**步驟 B：建立 Backdrop（全螢幕半透明遮罩）**
+1. 在 `XXXNode` 下建立空節點，命名為 `Backdrop`
+2. UITransform：**W = 1280, H = 720**
+3. 加上 Sprite  Color **(0, 0, 0, 150)**
+4. 加上 Button
+5. ⚠️ **不要** 加 BlockInputEvents（Backdrop 需要接收點擊來關閉面板）
+
+**步驟 C：建立 PanelBG（面板主體背景）**
+1. 在 `XXXNode` 下建立空節點，命名為 `PanelBG`（必須在 Backdrop 之後，這樣層級更高、會優先接收觸控）
+2. UITransform：**W = 520, H = 560**
+3. 加上 Sprite  Color **(19, 24, 39, 245)**
+4. 加上 **BlockInputEvents**（防止點擊穿透到 Backdrop）
+
+**步驟 D：建立 HeaderBar（標題欄背景）**
+1. 在 `PanelBG` 下建立空節點，命名為 `HeaderBar`
+2. UITransform：**W = 520, H = 56**
+3. Position：**(0, 252, 0)**
+4. Sprite  Color **(74, 85, 104, 255)**
+
+**步驟 E：建立 BodyFrame（內容區域背景）**
+1. 在 `PanelBG` 下建立空節點，命名為 `BodyFrame`
+2. UITransform：**W = 456, H = 390**
+3. Position：**(0, -18, 0)**
+4. Sprite  Color **(255, 255, 255, 28)**（極淡白色）
+
+**步驟 F：建立 TitleLabel（標題文字）**
+1. 在 `PanelBG` 下建立空節點，命名為 `TitleLabel`
+2. UITransform：**W = 280, H = 36**
+3. Position：**(0, 252, 0)**
+4. Label  string = **面板標題**, fontSize = **20**, 水平/垂直置中
+
+**步驟 G：建立 CloseButton（關閉按鈕）**
+1. 在 `PanelBG` 下建立空節點，命名為 `CloseButton`
+2. UITransform：**W = 54, H = 54**
+3. Position：**(218, 252, 0)**
+4. Button
+5. Label  string = **X**, fontSize = **34**, Color = **(248, 113, 113, 255)**（紅色）
+
+**步驟 H：建立 CloseHintLabel**
+1. 在 `PanelBG` 下建立空節點，命名為 `CloseHintLabel`
+2. UITransform：**W = 320, H = 24**
+3. Position：**(0, -214, 0)**
+4. Label  string = **點空白區域也可關閉**, fontSize = **13**, Color = **(226, 232, 240, 220)**
+
+**步驟 I：建立 BodyRoot（內容容器）**
+1. 在 `PanelBG` 下建立空節點，命名為 `BodyRoot`
+2. UITransform：**W = 430, H = 360**
+3. Position：**(0, -20, 0)**
+
+---
+
+### 20-3. 建立各面板
+
+以下列出 PanelLayer 裡需要建的所有面板。每個面板都先用 20-2 的通用步驟 A~I 建好外殼，再加上各自的內容節點。
+
+#### 面板 1：WhiteCrowCardNode（白鴉檔案）
+
+1. 用通用步驟建好，節點名 = `WhiteCrowCardNode`，TitleLabel = **白鴉檔案**
+2. 掛載 `WhiteCrowCard` 腳本（在 XXXNode 根節點上）
+3. 在 BodyRoot 下建立以下子節點：
+
+| 子節點名 | UITransform | Position | Label string | fontSize |
+|----------|-------------|----------|-------------|----------|
+| `CodeLabel` | 36028 | (0, 120, 0) | 公告 / 日誌 placeholder | 14 |
+| `CoinsLabel` | 36028 | (0, 70, 0) | 金幣：0 | 13 |
+| `HpLabel` | 36028 | (0, 40, 0) | HP：0 / 0 | 13 |
+| `RelicHintLabel` | 36028 | (0, -120, 0) | 白鴉卡片內容待補齊 | 12 |
+
+#### 面板 2：QuestPanelNode（任務面板）
+
+1. 通用步驟建好，節點名 = `QuestPanelNode`，TitleLabel = **任務面板**
+2. 掛載 `QuestPanel` 腳本
+3. 在 BodyRoot 下建立：
+
+| 子節點名 | UITransform | Position | 元件 |
+|----------|-------------|----------|------|
+| `QuestContent` | 380250 | (0, -10, 0) | Layout (VERTICAL, spacingY=8, resizeMode=CONTAINER) |
+| `QuestEmptyLabel` | 36028 | (0, 0, 0) | Label: "目前沒有可用任務", fontSize=14 |
+
+#### 面板 3：CollectionPanelNode（圖鑑面板）
+
+1. 通用步驟建好，節點名 = `CollectionPanelNode`，TitleLabel = **圖鑑面板**
+2. 掛載 `CollectionPanel` 腳本
+3. 在 BodyRoot 下建立：
+
+| 子節點名 | UITransform | Position | 元件 |
+|----------|-------------|----------|------|
+| `CountLabel` | 36028 | (0, 130, 0) | Label: "0 / 0", fontSize=12 |
+| `CollectionContent` | 380240 | (0, -10, 0) | Layout (VERTICAL, spacingY=8, resizeMode=CONTAINER) |
+| `CollectionEmptyLabel` | 36028 | (0, 0, 0) | Label: "尚無資料", fontSize=14 |
+
+#### 面板 4：SettingsPanelNode（設定面板）
+
+1. 通用步驟建好，節點名 = `SettingsPanelNode`，TitleLabel = **設定面板**
+2. 掛載 `SettingsPanel` 腳本
+3. 在 BodyRoot 下建立：
+
+| 子節點名 | UITransform | Position | 元件 |
+|----------|-------------|----------|------|
+| `BgmValueLabel` | 36028 | (0, 95, 0) | Label: "BGM：100%", fontSize=14 |
+| `SfxValueLabel` | 36028 | (0, 60, 0) | Label: "SFX：100%", fontSize=14 |
+| `LanguageTitleLabel` | 36028 | (0, 5, 0) | Label: "語言切換 V4", fontSize=15 |
+| `LanguageValueLabel` | 32038 | (0, -28, 0) | Sprite Color=(51,65,85,220) |
+| `TraditionalChineseButton` | 22042 | (0, -82, 0) | 「膠囊按鈕」結構（見下方） |
+| `SimplifiedChineseButton` | 22042 | (0, -136, 0) | 「膠囊按鈕」結構（見下方） |
+| `SettingsHintLabel` | 36028 | (0, -190, 0) | Label: "音量 slider 與進階設定 UI 待補齊", fontSize=12 |
+
+**「膠囊按鈕」結構**（TraditionalChineseButton 和 SimplifiedChineseButton 都用這個）：
+1. 建立空節點（例如 `TraditionalChineseButton`）
+2. UITransform：22042
+3. 建立 `TouchTarget` 子節點
+4. UITransform：22042，Widget 全填充
+5. Sprite  Color **(71, 85, 105, 240)**
+6. Button
+7. Label  string = **繁體中文**（或 **简体中文**），fontSize = **20**, Color = **(248, 250, 252, 255)**
+
+#### 面板 5：NotificationPanelNode（通知中心）
+
+1. 通用步驟建好，節點名 = `NotificationPanelNode`，TitleLabel = **通知中心**
+2. 掛載 `NotificationPanel` 腳本
+3. 在 BodyRoot 下建立：
+
+| 子節點名 | UITransform | Position | 元件 |
+|----------|-------------|----------|------|
+| `NotificationContent` | 380240 | (0, -10, 0) | Layout (VERTICAL, spacingY=8, resizeMode=CONTAINER) |
+| `NotificationEmptyLabel` | 36028 | (0, 0, 0) | Label: "目前沒有新通知", fontSize=14 |
+
+#### 面板 6：InventoryPanelNode（背包面板）
+
+1. 通用步驟建好，節點名 = `InventoryPanelNode`，TitleLabel = **背包**
+2. 掛載 `InventoryPanel` 腳本
+3. 在 BodyRoot 下建立：
+
+| 子節點名 | UITransform | Position | 元件 |
+|----------|-------------|----------|------|
+| `GridContainer` | 420400 | (0, -10, 0) | Layout (type=GRID, spacingX=8, spacingY=8, constraintNum=5) |
+
+#### 面板 7：NPCModalNode（NPC 互動面板）
+
+1. 通用步驟建好，節點名 = `NPCModalNode`，TitleLabel = **NPC 互動**
+2. 掛載 `NPCModal` 腳本
+3. 在 BodyRoot 下建立：
+
+| 子節點名 | UITransform | Position | 元件 |
+|----------|-------------|----------|------|
+| `DialogueLabel` | 36028 | (0, 110, 0) | Label: "請選擇互動項目", fontSize=13 |
+| `ShopContainer` | 380180 | (0, -10, 0) | Layout (VERTICAL, spacingY=8, resizeMode=CONTAINER) |
+| `ActionButton` | 18036 | (0, -125, 0) | 膠囊按鈕結構，Label = "互動", fontSize=15 |
+
+#### 面板 8：ItemDetailModalNode（道具詳情）
+
+1. 通用步驟建好，節點名 = `ItemDetailModalNode`，TitleLabel = **道具詳情**
+2. 掛載 `ItemDetailModal` 腳本
+3. 在 BodyRoot 下建立：
+
+| 子節點名 | UITransform | Position | 元件 |
+|----------|-------------|----------|------|
+| `NameLabel` | 36028 | (0, 110, 0) | Label: "道具名稱", fontSize=16 |
+| `TypeLabel` | 36028 | (0, 75, 0) | Label: "類型", fontSize=12 |
+| `DescLabel` | 36028 | (0, 25, 0) | Label: "描述內容", fontSize=12 |
+| `QuantityLabel` | 36028 | (0, -20, 0) | Label: "x0", fontSize=12 |
+| `UseButton` | 14036 | (0, -110, 0) | 膠囊按鈕結構，Label = "使用", fontSize=15 |
+
+#### 面板 9：CharacterCardNode（角色卡片）
+
+1. 在 PanelLayer 下建立空節點 `CharacterCardNode`
+2. UITransform：**450480**
+3. Widget 居中
+4. **取消勾選 Active**
+5. （內容暫時為空殼，後續再補）
+
+### 20-4. PanelLayer 確認清單
+
+- [x] PanelLayer 建好
+- [x] 9 個面板節點全部建好：WhiteCrowCardNode, QuestPanelNode, CollectionPanelNode, SettingsPanelNode, NotificationPanelNode, InventoryPanelNode, NPCModalNode, ItemDetailModalNode, CharacterCardNode
+- [x] 每個面板都有 Backdrop + PanelBG + HeaderBar + BodyFrame + TitleLabel + CloseButton + CloseHintLabel + BodyRoot
+- [x] 每個 PanelBG 都有 **BlockInputEvents**
+- [x] 每個面板的 Active = **false**
+- [x] 各面板的特有子節點建好
+
+---
+
+## 21. 建立 TransitionLayer（轉場特效層）
+
+### 21-1. 建立主節點
+
+1. 在 Canvas 下建立空節點，命名為 `TransitionLayer`
+2. UITransform：**W = 1280, H = 720**
+
+### 21-2. 建立 4 個全螢幕轉場節點
+
+每個轉場節點的建立步驟都相同（以 BreathingSceneNode 為例）：
+
+| 節點名 | 掛載腳本 |
+|--------|---------|
+| `BreathingSceneNode` | `BreathingSceneController` |
+| `ChapterOpeningNode` | `ChapterOpeningController` |
+| `ChapterStoryModalNode` | `ChapterStoryModal` |
+| `DiceResultOverlayNode` | `DiceResultOverlay` |
+
+每個的建立步驟：
+1. 在 `TransitionLayer` 下建立空節點
+2. UITransform：**W = 1280, H = 720**
+3. Widget  全填充（四邊 = 0）
+4. **取消勾選 Active**
+5. 掛載對應腳本
+
+### 21-3. 確認清單
+
+- [x] TransitionLayer 建好
+- [x] 4 個轉場節點全建好
+- [x] 都有 Widget 全螢幕
+- [x] 都 Active = false
+- [x] 都掛了對應腳本
+
+---
+
+## 22. 建立 OverlayLayer（最頂層覆蓋）
+
+### 22-1. 建立主節點
+
+1. 在 Canvas 下建立空節點，命名為 `OverlayLayer`
+2. UITransform：**W = 1280, H = 720**
+
+### 22-2. 建立覆蓋節點
+
+| 節點名 | 掛載腳本 |
+|--------|---------|
+| `BalanceSettlementNode` | `BalanceSettlementModal` |
+| `RelicPoemModalNode` | `RelicPoemModal` |
+
+每個的建立步驟：
+1. 在 `OverlayLayer` 下建立空節點
+2. UITransform：**W = 1280, H = 720**
+3. Widget  全填充（四邊 = 0）
+4. **取消勾選 Active**
+5. 掛載對應腳本
+
+### 22-3. 確認清單
+
+- [x] OverlayLayer 建好
+- [x] 2 個覆蓋節點全建好
+- [x] 都 Active = false
+
+---
+
+## 23. 調整節點層級順序
+
+節點在 Hierarchy 裡的順序決定了渲染和觸控的優先級。**越下面的節點越靠前（會蓋在上面）**。
+
+在 Canvas 下面，節點順序應該是（從上到下）：
+
+```
+Canvas
+ MapArea           最底層（地圖）
+ HUD_TopRight      在地圖上方
+ LeftNavBar        在地圖上方
+ RightToolbar      在地圖上方
+ PanelLayer        彈窗層（會蓋住 HUD 和地圖）
+ TransitionLayer   轉場層（會蓋住彈窗）
+ OverlayLayer      最頂層
+```
+
+你可以在 Hierarchy 裡用滑鼠拖曳來調整順序。
+
+---
+
+## 24. Inspector 拖綁 MainGameController
+
+選中掛有 `MainGameController` 的節點（Canvas），在 Inspector 中依序拖入：
+
+| 欄位 | 拖入的節點/元件 |
+|------|---------------|
+| `Map Controller` | `MapArea` 上的 MapController 元件 |
+| `Hud Controller` | `HUD_TopRight` 上的 HUDController 元件 |
+| `White Crow Card` | `WhiteCrowCardNode` 上的 WhiteCrowCard 元件 |
+| `Quest Panel` | `QuestPanelNode` 上的 QuestPanel 元件 |
+| `Collection Panel` | `CollectionPanelNode` 上的 CollectionPanel 元件 |
+| `Settings Panel` | `SettingsPanelNode` 上的 SettingsPanel 元件 |
+| `Notification Panel` | `NotificationPanelNode` 上的 NotificationPanel 元件 |
+| `Inventory Panel` | `InventoryPanelNode` 上的 InventoryPanel 元件 |
+| `Npc Modal` | `NPCModalNode` 上的 NPCModal 元件 |
+| `Item Detail Modal` | `ItemDetailModalNode` 上的 ItemDetailModal 元件 |
+| `Apostate Panel` | （這個面板目前不在 PanelLayer，如果沒有可以先留空） |
+| `Liquidator Panel` | （同上） |
+| `Breathing Scene` | `BreathingSceneNode` 上的 BreathingSceneController 元件 |
+| `Chapter Opening` | `ChapterOpeningNode` 上的 ChapterOpeningController 元件 |
+| `Chapter Story Modal` | `ChapterStoryModalNode` 上的 ChapterStoryModal 元件 |
+| `Dice Result Overlay` | `DiceResultOverlayNode` 上的 DiceResultOverlay 元件 |
+| `Balance Settlement Modal` | `BalanceSettlementNode` 上的 BalanceSettlementModal 元件 |
+| `Relic Poem Modal` | `RelicPoemModalNode` 上的 RelicPoemModal 元件 |
+
+---
+
+## 25. 完成後的驗證
+
+### 25-1. 場景結構擷圖
+
+完成所有節點建立後，請截圖以下幾個畫面：
+
+1. **Hierarchy 全展開圖**：Canvas 下面所有節點都展開
+2. **MainGameController 的 Inspector**：確認所有欄位都有綁定
+3. **HUDController 的 Inspector**：確認 Nav Buttons 陣列、各按鈕欄位都有值
+4. **任意一個面板節點展開圖**：確認 Backdrop + PanelBG + HeaderBar + BodyFrame + TitleLabel + CloseButton 結構正確
+
+### 25-2. Preview 測試
+
+1. 按下 Preview
+2. 確認畫面基本正常（地圖、HUD、左側按鈕可見）
+3. 點擊左側任一按鈕  面板應該打開
+4. 點擊 Backdrop  面板應該關閉
+5. 點擊 X  面板應該關閉
+6. 關閉後再點按鈕  應一次就開
+
+---
+
+## 26. 這一階段完成後接下來做什麼
+
+> ✅ 第 26 項的程式碼修改已完成（MapSceneBuilder V4 Inspector 偵測守衛）。
+> 請接續下方第 27 項，補建 HUD 和導航列的子節點。
+
+---
+
+## 27. 補建 HUD_TopRight 內部子節點
+
+> **為什麼需要這一步？**
+> 你之前建立的 `HUD_TopRight` 是空的容器節點。在舊的動態模式中，
+> `_buildHUD()` 會在 Runtime 自動建立金幣標籤、OC 名稱、鈴鐺等子元件。
+> 現在跳過動態建構後，這些子元件需要你在編輯器中手動建立。
+
+> **⚡ Layer 設定習慣（整份手冊通用）**
+> 每次建立新節點後，**立刻做這件事**：
+> 1. 選中剛建好的節點
+> 2. Inspector 面板最上方 → **Layer** 下拉 → 改為 **`UI_2D`**
+> 3. 彈窗問你「是否套用到子節點？」→ 選 **「是 / Yes / Apply to children」**
+>
+> 這樣所有子節點會一起改好。**只要在最上層的父節點做一次就好。**
+> 
+> ⚠️ 如果忘了改 Layer，預覽時節點會完全看不見（Canvas Camera 只渲染 UI_2D）。
+
+### 27-1. 目標節點結構（巢狀層級）
+
+```
+HUD_TopRight                         ← 已建立（不用再建）
+├── CoinsLabel                       ← 新建節點
+│   └── TouchTarget                  ← 新建節點
+│       └── Label                    ← 新建節點
+├── OcNameLabel                      ← 新建節點
+│   └── TouchTarget                  ← 新建節點
+│       └── Label                    ← 新建節點
+├── SettingsBtn                      ← 新建節點
+│   └── TouchTarget                  ← 新建節點
+│       └── Label                    ← 新建節點
+└── BellButton                       ← 新建節點
+    ├── TouchTarget                  ← 新建節點
+    │   └── Label                    ← 新建節點
+    └── BellBadge                    ← 新建節點
+        └── BadgeLabel               ← 新建節點
+```
+
+### 27-2. 建立 CoinsLabel 膠囊按鈕
+
+1. 在 Hierarchy 面板，**右鍵** `HUD_TopRight` → **建立空節點 (Create Empty Node)**
+2. 將新節點改名為 `CoinsLabel`
+3. **🔴 Layer 設定**：Inspector 最上方 → Layer → 改為 `UI_2D` → 彈窗選「套用到子節點」
+4. 選中 `CoinsLabel`，在 Inspector 面板：
+   - 點擊 **Add Component** → 搜尋 `UITransform` → 加入
+   - 設定 `Content Size`: W = `120`, H = `40`
+
+4. **右鍵** `CoinsLabel` → **建立空節點** → 改名為 `TouchTarget`
+5. 選中 `TouchTarget`，在 Inspector：
+   - **Add Component** → `UITransform` → W = `120`, H = `40`
+   - **Add Component** → `Widget` → 勾選 Top/Bottom/Left/Right 全部四個 → 全設為 `0`
+   - **Add Component** → `Sprite` → SizeMode 設為 `CUSTOM` → Color 設為 `(71, 85, 105, 240)`
+   - **Add Component** → `Button`（直接加就好，不用改設定）
+   - **Add Component** → `BlockInputEvents`
+
+6. **右鍵** `TouchTarget` → **建立空節點** → 改名為 `Label`
+7. 選中 `Label`：
+   - **Add Component** → `UITransform` → W = `120`, H = `40`
+   - **Add Component** → `Label` → 內容輸入 `0` → Font Size = `15`
+   - Label 的 Horizontal Align = `CENTER`, Vertical Align = `CENTER`
+   - Color = `(228, 213, 245, 255)`
+
+### 27-3. 建立 OcNameLabel 膠囊按鈕
+
+完全複製 CoinsLabel 的步驟，差異如下：
+
+| 項目 | CoinsLabel | OcNameLabel |
+|------|-----------|-------------|
+| 節點名稱 | `CoinsLabel` | `OcNameLabel` |
+| UITransform W/H | 120 × 40 | **180** × 40 |
+| TouchTarget UITransform W/H | 120 × 40 | **180** × 40 |
+| Label UITransform W/H | 120 × 40 | **180** × 40 |
+| Label 文字 | `0` | `未登入` |
+
+> 💡 **快速複製法**：右鍵 `CoinsLabel` → **Duplicate**，然後改名和調整寬度。
+> 
+> 📌 Duplicate 出來的節點會繼承父節點的 Layer 設定（`UI_2D`），**不需要再改一次**。
+
+### 27-4. 建立 SettingsBtn 圓形按鈕
+
+1. **右鍵** `HUD_TopRight` → **建立空節點** → 改名為 `SettingsBtn`
+2. **🔴 Layer**：改為 `UI_2D`，套用到子節點
+3. Inspector：**Add Component** → `UITransform` → W = `40`, H = `40`
+
+3. **右鍵** `SettingsBtn` → **建立空節點** → 改名為 `TouchTarget`
+4. Inspector：
+   - `UITransform` → W = `40`, H = `40`
+   - `Widget` → Top/Bottom/Left/Right 全勾、全設為 `0`
+   - `Sprite` → SizeMode = `CUSTOM`, Color = `(71, 85, 105, 255)`
+   - `Button`
+   - `BlockInputEvents`
+
+5. **右鍵** `TouchTarget` → **建立空節點** → 改名為 `Label`
+6. Inspector：
+   - `UITransform` → W = `40`, H = `40`
+   - `Label` → 文字 `⚙` → Font Size = `18`
+   - Horizontal = `CENTER`, Vertical = `CENTER`
+   - Color = `(228, 213, 245, 255)`
+
+### 27-5. 建立 BellButton 圓形按鈕（含紅點）
+
+1. **右鍵** `HUD_TopRight` → **建立空節點** → 改名為 `BellButton`
+2. **🔴 Layer**：改為 `UI_2D`，套用到子節點
+3. Inspector：`UITransform` → W = `40`, H = `40`
+
+3. 在 `BellButton` 下建立 `TouchTarget`（同 SettingsBtn 的 TouchTarget 步驟）
+   - Label 文字改為 `🔔`
+
+4. **右鍵** `BellButton` → **建立空節點** → 改名為 `BellBadge`
+5. Inspector：
+   - `UITransform` → W = `16`, H = `16`
+   - `Sprite` → SizeMode = `CUSTOM`, Color = `(239, 68, 68, 255)`（紅色）
+   - Position = `(12, 12, 0)`
+
+6. **右鍵** `BellBadge` → **建立空節點** → 改名為 `BadgeLabel`
+7. Inspector：
+   - `UITransform` → W = `16`, H = `16`
+   - `Label` → 文字 `0` → Font Size = `10`
+   - Color = `(255, 255, 255, 255)`
+   - Horizontal = `CENTER`, Vertical = `CENTER`
+
+8. 選中 `BellBadge` → Inspector 最上方取消勾選 **Active**（預設隱藏）
+
+### 27-6. HUD_TopRight 自身的排版元件
+
+選中 `HUD_TopRight` 節點本身，確認有以下元件：
+
+- `UITransform` → W = `620`, H = `48`
+- `Widget` → 勾選 Top = `20`, Right = `8`
+- `Layout` → Type = `HORIZONTAL`, Spacing X = `12`, Resize Mode = `NONE`
+
+### 27-7. 綁定 HUDController 的 @property
+
+選中掛有 `HUDController` 腳本的節點（即 `HUD_TopRight`），在 Inspector 拖入：
+
+| @property 欄位 | 拖入什麼 |
+|---------------|---------|
+| `coinsLabel` | `CoinsLabel` > `TouchTarget` > `Label` 節點上的 **Label 元件** |
+| `ocNameLabel` | `OcNameLabel` > `TouchTarget` > `Label` 節點上的 **Label 元件** |
+| `bellButtonNode` | `BellButton` **節點** |
+| `settingsButtonNode` | `SettingsBtn` **節點** |
+| `bellBadgeNode` | `BellBadge` **節點** |
+| `bellBadgeLabel` | `BadgeLabel` 節點上的 **Label 元件** |
+
+> ⚠️ 注意：拖「節點」和拖「元件」不同！
+> - 如果欄位型別是 `Node`，直接拖節點過去。
+> - 如果欄位型別是 `Label`，要拖節點上面 Label 元件的標題列。
+
+---
+
+## 28. 補建 LeftNavBar 內部子節點
+
+### 28-1. 目標節點結構
+
+```
+LeftNavBar                           ← 已建立
+├── NavBtn_公告                      ← 新建節點
+│   └── TouchTarget
+│       └── Label
+├── NavBtn_任務                      ← 新建節點
+│   └── TouchTarget
+│       └── Label
+├── NavBtn_日誌                      ← 新建節點
+│   └── TouchTarget
+│       └── Label
+├── NavBtn_圖鑑                      ← 新建節點
+│   └── TouchTarget
+│       └── Label
+├── NavBtn_背包                      ← 新建節點
+│   └── TouchTarget
+│       └── Label
+├── NavBtn_NPC                       ← 新建節點
+│   └── TouchTarget
+│       └── Label
+├── NavBtn_設定                      ← 新建節點
+│   └── TouchTarget
+│       └── Label
+└── ChapterStoryBtn                  ← 新建節點（預設隱藏）
+    └── TouchTarget
+        └── Label
+```
+
+### 28-2. 建立第一個導航按鈕（以 NavBtn_公告 為例）
+
+1. **右鍵** `LeftNavBar` → **建立空節點** → 改名為 `NavBtn_公告`
+2. **🔴 Layer**：改為 `UI_2D`，套用到子節點
+3. Inspector：`UITransform` → W = `96`, H = `44`
+
+3. **右鍵** `NavBtn_公告` → **建立空節點** → 改名為 `TouchTarget`
+4. Inspector：
+   - `UITransform` → W = `96`, H = `44`
+   - `Widget` → Top/Bottom/Left/Right = `0`
+   - `Sprite` → SizeMode = `CUSTOM`, Color = `(100, 116, 139, 235)`
+   - `Button`
+   - `BlockInputEvents`
+
+5. **右鍵** `TouchTarget` → **建立空節點** → 改名為 `Label`
+6. Inspector：
+   - `UITransform` → W = `96`, H = `44`
+   - `Label` → 文字 `公告` → Font Size = `17`
+   - Horizontal = `CENTER`, Vertical = `CENTER`
+   - Color = `(228, 213, 245, 255)`
+
+### 28-3. 複製建立其餘 6 個導航按鈕 + ChapterStoryBtn
+
+**右鍵** `NavBtn_公告` → **Duplicate** → 改名 + 改文字：
+
+| 節點名稱 | Label 文字 |
+|---------|-----------|
+| `NavBtn_任務` | `任務` |
+| `NavBtn_日誌` | `日誌` |
+| `NavBtn_圖鑑` | `圖鑑` |
+| `NavBtn_背包` | `背包` |
+| `NavBtn_NPC` | `NPC` |
+| `NavBtn_設定` | `設定` |
+| `ChapterStoryBtn` | `劇情` |
+
+> `ChapterStoryBtn` 建好後，取消勾選 **Active**（預設隱藏）。
+
+### 28-4. LeftNavBar 自身的排版元件
+
+選中 `LeftNavBar`，確認：
+
+- `UITransform` → W = `120`, H = `462`（= 8 按鈕 × 44 + 7 間距 × 18）
+- `Widget` → 勾選 Left = `20`, Vertical Center = `0`
+- `Layout` → Type = `VERTICAL`, Spacing Y = `18`, Resize Mode = `NONE`
+
+### 28-5. 綁定 HUDController 的 navButtons 陣列
+
+1. 選中掛有 `HUDController` 的節點
+2. 找到 `navButtons` 欄位（陣列型別）
+3. 設定 陣列長度 = `7`
+4. **按順序** 拖入以下節點：
+
+| 索引 | 節點 |
+|------|------|
+| 0 | `NavBtn_公告` |
+| 1 | `NavBtn_任務` |
+| 2 | `NavBtn_日誌` |
+| 3 | `NavBtn_圖鑑` |
+| 4 | `NavBtn_背包` |
+| 5 | `NavBtn_NPC` |
+| 6 | `NavBtn_設定` |
+
+> ⚠️ **順序絕對不能錯！** 必須對應 HUDController.NAV_PANELS 的定義順序。
+
+5. 找到 `chapterStoryBtnNode` 欄位 → 拖入 `ChapterStoryBtn` 節點
+
+---
+
+## 29. 補建 RightToolbar 子節點
+
+### 29-1. 目標結構
+
+```
+RightToolbar                         ← 已建立
+├── ZoomInBtn                        ← 新建節點
+│   └── TouchTarget
+│       └── Label
+└── ZoomOutBtn                       ← 新建節點
+    └── TouchTarget
+        └── Label
+```
+
+### 29-2. 建立步驟
+
+1. **右鍵** `RightToolbar` → **建立空節點** → 改名為 `ZoomInBtn`
+2. **🔴 Layer**：改為 `UI_2D`，套用到子節點
+3. Inspector：`UITransform` → W = `32`, H = `32`
+3. 子節點 `TouchTarget`：
+   - `UITransform` W = `32`, H = `32`
+   - `Widget` → 全 `0`
+   - `Sprite` → Color = `(25, 12, 45, 230)`
+   - `Button`
+   - `BlockInputEvents`
+4. 子節點 `Label`：
+   - `UITransform` W = `32`, H = `32`
+   - `Label` → 文字 `+` → Font Size = `18`
+   - Color = `(200, 190, 220, 255)`
+
+5. **Duplicate** `ZoomInBtn` → 改名為 `ZoomOutBtn` → Label 文字改為 `−`
+
+### 29-3. RightToolbar 排版
+
+- `UITransform` → W = `48`, H = `72`
+- `Widget` → Right = `24`, Vertical Center = `0`
+- `Layout` → Type = `VERTICAL`, Spacing Y = `4`, Resize Mode = `NONE`
+
+---
+
+## 30. 補建完成後的驗證清單
+
+在 Cocos Creator 按下 **Play** 預覽，檢查 Console：
+
+### ✅ 應該看到的
+```
+=== MapSceneBuilder V4 已載入 ===
+[MapSceneBuilder] ✅ 偵測到 Inspector 已綁定核心插座，跳過動態 UI 建構
+```
+
+### ✅ 畫面上應該看到的
+- [ ] 右上角出現「0」金幣膠囊、OC 名稱膠囊、⚙ 按鈕、🔔 按鈕
+- [ ] 左側出現 7 個導航按鈕（公告 / 任務 / 日誌 / 圖鑑 / 背包 / NPC / 設定）
+- [ ] 右側出現縮放 + / − 按鈕
+- [ ] 點擊左側「任務」按鈕，Console 印出 `[MainGameController] 開啟面板：quest`
+- [ ] 點擊「⚙」設定按鈕，設定面板出現
+
+### ❌ 如果仍然不可見，檢查以下項目
+1. 節點的 `Layer` 是否為 `UI_2D`（不是 `DEFAULT`）
+2. 節點的 `Active` 勾選是否開啟
+3. `Sprite` 的 `SpriteFrame` 是否為空白（如果是佔位色塊，可用 `getWhiteSpriteFrame()` 或自己建立一個純白 1×1 圖片）
+4. HUDController 的 @property 欄位是否全部拖綁完成
+
+---
+
+## 31. Layer 設定完整指南（編輯器解法）
+
+> **核心概念**：Cocos Creator 的 Canvas Camera 只會渲染 `UI_2D` Layer 的節點。
+> 如果一個節點的 Layer 是 `DEFAULT`（新建節點的預設值），你在**編輯器裡看得到，但預覽時完全不可見**。
+
+### 31-1. 需要改 Layer 的節點清單
+
+以下是你目前所有手動建立的節點，如果之前建立時沒有改 Layer，請現在一次性修正：
+
+| 父節點 | 需要改 Layer 的節點 | 操作 |
+|--------|-------------------|------|
+| Canvas 下 | `HUD_TopRight` | 選中 → Layer → `UI_2D` → 彈窗選「套用到子節點」 |
+| Canvas 下 | `LeftNavBar` | 同上 |
+| Canvas 下 | `RightToolbar` | 同上 |
+| Canvas 下 | `MapArea` | 同上 |
+| Canvas 下 | `PanelLayer` | 同上 |
+| Canvas 下 | `TransitionLayer` | 同上 |
+| Canvas 下 | `OverlayLayer` | 同上 |
+
+> 💡 **只需要在七個頂層節點上各做一次**，選「套用到子節點」就會連帶改好裡面所有的 CoinsLabel、TouchTarget、Label 等子節點。
+
+### 31-2. 操作步驟（圖文說明）
+
+```
+步驟 1：在 Hierarchy 選中一個頂層節點（如 HUD_TopRight）
+
+步驟 2：Inspector 面板 → 最上方第一行 → 找到「Layer」下拉選單
+         ┌──────────────────────────┐
+         │  Node: HUD_TopRight      │
+         │  Active: ☑               │
+         │  Layer: [DEFAULT  ▼]     │  ← 點這裡
+         └──────────────────────────┘
+
+步驟 3：下拉選單中選擇 「UI_2D」
+         ┌──────────────────────────┐
+         │  Layer: [UI_2D    ▼]     │  ← 改成這個
+         └──────────────────────────┘
+
+步驟 4：彈出對話框：
+         ┌──────────────────────────────────┐
+         │  Apply to child nodes?           │
+         │                                  │
+         │  [Cancel]  [No]  [Yes / 是]      │  ← 選「Yes」或「是」
+         └──────────────────────────────────┘
+```
+
+### 31-3. 新建節點的好習慣
+
+**以後每次在 Hierarchy 右鍵建立空節點後，第一件事就是：**
+
+```
+右鍵建立空節點 → 改名 → 🔴 Layer 改成 UI_2D → 然後才加 Component
+```
+
+> 這條規則已經標註在手冊第 27 ~ 29 節的每個「新建」步驟中。
+
+---
+
+## 32. Inspector @property 綁定教學（互動功能的關鍵）
+
+> **為什麼按鈕看得到卻不能點？**
+> 因為按鈕的點擊事件是由 `HUDController` 腳本的 `_registerEvents()` 在 Runtime 註冊的。
+> 這個方法會讀取 `@property` 欄位（如 `navButtons`、`bellButtonNode`），
+> 如果這些欄位是空的（沒有在 Inspector 中綁定），事件就不會被註冊。
+
+### 32-1. 前置確認：HUDController 掛在哪裡？
+
+1. 在 Hierarchy 找到 `HUD_TopRight` 節點
+2. 選中它，看 Inspector 面板
+3. 確認下方有一個 **HUDController** 腳本元件
+4. 如果沒有：**Add Component** → 搜尋 `HUDController` → 加入
+
+### 32-2. 綁定 HUD 按鈕的 @property（逐欄指引）
+
+選中 `HUD_TopRight`（掛有 HUDController 的節點），在 Inspector 找到 HUDController 腳本區塊。
+
+你會看到這些空欄位。按照以下表格，**從 Hierarchy 面板把指定的東西拖到對應欄位**：
+
+#### 🏷️ 文字標籤類（型別：Label，要拖「元件」不是「節點」）
+
+| Inspector 欄位 | 從 Hierarchy 拖什麼 | 怎麼拖元件 |
+|---------------|-------------------|-----------|
+| `coinsLabel` | `HUD_TopRight` > `CoinsLabel` > `TouchTarget` > `Label` | 見下方說明 |
+| `ocNameLabel` | `HUD_TopRight` > `OcNameLabel` > `TouchTarget` > `Label` | 見下方說明 |
+| `bellBadgeLabel` | `HUD_TopRight` > `BellButton` > `BellBadge` > `BadgeLabel` | 見下方說明 |
+
+> **怎麼拖「Label 元件」而不是「節點」？**
+> 
+> 方法 A（推薦）：
+> 1. 先在 Hierarchy 選中目標節點（如 `CoinsLabel > TouchTarget > Label`）
+> 2. 在 Inspector 中找到 `Label` 元件的**標題列**（顯示 `Label` 加一個小圖示的那行）
+> 3. 按住標題列，直接拖到 HUDController 的欄位上
+> 
+> 方法 B：
+> 1. 直接把節點拖到欄位上
+> 2. 如果欄位型別是 `Label`，Cocos 會自動找到節點上的 Label 元件
+> 3. 如果節點上沒有 Label 元件，欄位會顯示 `None`
+
+#### 🔲 節點類（型別：Node，直接拖節點）
+
+| Inspector 欄位 | 從 Hierarchy 拖什麼 |
+|---------------|-------------------|
+| `bellButtonNode` | `HUD_TopRight` > `BellButton` |
+| `settingsButtonNode` | `HUD_TopRight` > `SettingsBtn` |
+| `bellBadgeNode` | `HUD_TopRight` > `BellButton` > `BellBadge` |
+| `chapterStoryBtnNode` | `LeftNavBar` > `ChapterStoryBtn` |
+
+> 節點類很直覺：直接從 Hierarchy 拖過去就好。
+
+#### 📋 陣列類（navButtons：Node 陣列）
+
+| Inspector 欄位 | 操作 |
+|---------------|------|
+| `navButtons` | 先把陣列長度改為 `7` |
+| Element 0 | 拖入 `LeftNavBar` > `NavBtn_公告` |
+| Element 1 | 拖入 `LeftNavBar` > `NavBtn_任務` |
+| Element 2 | 拖入 `LeftNavBar` > `NavBtn_日誌` |
+| Element 3 | 拖入 `LeftNavBar` > `NavBtn_圖鑑` |
+| Element 4 | 拖入 `LeftNavBar` > `NavBtn_背包` |
+| Element 5 | 拖入 `LeftNavBar` > `NavBtn_NPC` |
+| Element 6 | 拖入 `LeftNavBar` > `NavBtn_設定` |
+
+> ⚠️ **陣列設定方式**：
+> 1. 找到 `navButtons` 欄位，旁邊會有一個數字（目前可能是 `0`）
+> 2. 把數字改成 `7`，按 Enter
+> 3. 會出現 Element 0 ~ Element 6 共七個空格
+> 4. 按順序把導航按鈕節點一個一個拖進去
+> 
+> ⚠️ **順序極重要！** 必須完全對應上表。錯位會導致點「任務」卻打開「日誌」。
+
+### 32-3. 綁定完成後的 Inspector 應該長這樣
+
+```
+HUDController (Script)
+├── coinsLabel:       [Label]     ← 顯示 CoinsLabel>TouchTarget>Label 的 Label 元件
+├── ocNameLabel:      [Label]     ← 顯示 OcNameLabel>TouchTarget>Label 的 Label 元件
+├── hpLabel:          [None]      ← 目前沒有 HP 顯示，留空即可
+├── bellButtonNode:   [Node]      ← BellButton
+├── bellBadgeNode:    [Node]      ← BellBadge
+├── bellBadgeLabel:   [Label]     ← BadgeLabel 的 Label 元件
+├── settingsButtonNode: [Node]    ← SettingsBtn
+├── navButtons:       [7]
+│   ├── Element 0:    [Node]      ← NavBtn_公告
+│   ├── Element 1:    [Node]      ← NavBtn_任務
+│   ├── Element 2:    [Node]      ← NavBtn_日誌
+│   ├── Element 3:    [Node]      ← NavBtn_圖鑑
+│   ├── Element 4:    [Node]      ← NavBtn_背包
+│   ├── Element 5:    [Node]      ← NavBtn_NPC
+│   └── Element 6:    [Node]      ← NavBtn_設定
+└── chapterStoryBtnNode: [Node]   ← ChapterStoryBtn
+```
+
+> 如果任何欄位顯示 `None` 或 `Missing`，就是沒拖好，需要重新拖。
+
+---
+
+## 33. 綁定後的互動驗證
+
+### 33-1. 預覽前檢查
+
+1. **Ctrl + S** 存檔場景
+2. 確認 Hierarchy 中 `HUD_TopRight` 的 HUDController 所有欄位都不是 `None`
+3. 確認 `LeftNavBar` 所有子節點的 Layer 是 `UI_2D`
+
+### 33-2. 預覽測試步驟
+
+按下 **Play**，依序測試以下項目：
+
+| 測試項目 | 操作 | 預期結果 |
+|---------|------|---------|
+| 導航按鈕 - 公告 | 點擊左側「公告」 | Console: `[HUDController] togglePanel: announcement`，畫面彈出公告面板 |
+| 導航按鈕 - 任務 | 點擊左側「任務」 | Console: `[HUDController] togglePanel: quest`，畫面彈出任務面板 |
+| 導航按鈕 - 背包 | 點擊左側「背包」 | Console: `[HUDController] togglePanel: inventory`，畫面彈出背包面板 |
+| 設定按鈕 | 點擊右上 ⚙ | Console: `[HUDController] togglePanel: settings`，設定面板出現 |
+| 鈴鐺按鈕 | 點擊右上 🔔 | Console: `[HUDController] togglePanel: notification`，通知面板出現 |
+| 再次點擊同按鈕 | 再點同一個按鈕 | 面板關閉（toggle 行為） |
+
+### 33-3. 如果點擊無反應，排查步驟
+
+1. **Console 有沒有 Error？**
+   - 如果有 `navButtons[x] is null` → 陣列元素沒拖好
+   - 如果有 `bellButtonNode is null` → 鈴鐺節點沒綁
+
+2. **確認 TouchTarget 有 Button 元件**
+   - 選中任何一個按鈕的 `TouchTarget` 子節點
+   - Inspector 裡應該看到 `Button` 元件
+   - 如果沒有：**Add Component** → `Button`
+
+3. **確認 TouchTarget 有 Sprite 元件**
+   - Button 元件需要一個可渲染的目標（Sprite）才能接收觸控
+   - 如果 TouchTarget 沒有 Sprite，按鈕不會響應觸控
+
+4. **確認節點尺寸大於 0**
+   - 如果 UITransform 的 W 或 H 是 0，觸控面積為零，點不到
+   - 回去檢查手冊第 27/28 節的尺寸設定
+
+5. **HUDController 是否掛在正確的節點上？**
+   - HUDController 必須掛在 `HUD_TopRight` 上
+   - 如果掛在 Canvas 或其他節點上，`_getTouchTarget()` 會找不到 TouchTarget 子節點
+
+### 33-4. 驗證成功的完整 Console 輸出範例
+
+```
+=== MapSceneBuilder V4 已載入 ===
+[MapSceneBuilder] ✅ 偵測到 Inspector 已綁定核心插座，跳過動態 UI 建構
+[MapSceneBuilder] ⚙️ 已對所有子節點遞迴套用 UI_2D layer
+[DIAG] Canvas worldPos=(640, 360) size=(1280, 720) anchor=(0.5, 0.5)
+[DIAG]   child "MapArea" active=true layer=33554432 ...
+[DIAG]   child "HUD_TopRight" active=true layer=33554432 ...
+[DIAG]   child "LeftNavBar" active=true layer=33554432 ...
+```
+
+> `layer=33554432` 就是 `UI_2D` 的數值，代表 Layer 設定正確。
+
+---
+
+## 34. 面板關閉功能修復說明
+
+> **問題**：按鈕可點、面板會開啟，但面板開啟後無法關閉。
+> 
+> **根因**：V4 Inspector 路徑跳過了面板的內部結構建構。每個面板需要：
+> - **Backdrop**（半透明遮罩，點擊後關閉面板）
+> - **PanelBG**（面板背景卡片）
+> - **CloseButton**（右上角 ✕ 按鈕）
+> - **BodyRoot**（內容區域）
+>
+> **已修復**：`MapSceneBuilder._postValidateInspectorBindings()` 現在會自動呼叫
+> `_ensurePanelShellsForInspectorPath()`，為所有缺少 Backdrop 的面板補建完整 shell。
+> 
+> **你不需要手動做任何事**，只要面板節點存在於 PanelLayer 下即可。
+
+### 34-1. 面板關閉的三種方式
+
+| 方式 | 操作 | 觸發邏輯 |
+|------|------|---------|
+| 再次點擊同一導航按鈕 | 如：已開啟任務面板，再點「任務」 | HUDController.togglePanel() |
+| 點擊面板右上角 ✕ 按鈕 | CloseButton | 各面板 hide() → emit 'panel-closed' |
+| 點擊面板外的半透明遮罩 | Backdrop | 同上 |
+
+---
+
+## 35. 系統功能完整清單與現況
+
+> 以下列出所有遊戲系統功能的完成狀態。
+> ✅ = 可運作、⚠️ = 部分完成/需補內容、❌ = 尚未開始
+
+### 35-1. 核心框架
+
+| 功能 | 狀態 | 節點/腳本 | 說明 |
+|------|------|----------|------|
+| 場景載入與初始化 | ✅ | MapSceneBuilder.ts | V4 Inspector 偵測 + fallback |
+| MVC 架構 | ✅ | MainGameController.ts | 所有事件中樞 |
+| 資料管理 | ✅ | PTD_DataManager.ts | Supabase 整合 |
+| 事件匯流排 | ✅ | DataEventBus.ts | 跨元件通訊 |
+| 音效管理 | ✅ | SoundManager.ts | 面板開關音效 |
+
+### 35-2. HUD 與導航
+
+| 功能 | 狀態 | 節點 | 說明 |
+|------|------|------|------|
+| 金幣顯示 | ✅ | CoinsLabel | 綁定 DataEventBus.COINS_CHANGED |
+| OC 名稱顯示 | ✅ | OcNameLabel | 登入後顯示 |
+| HP 顯示 | ⚠️ | 尚未建立 | HUDController 有 hpLabel @property，但手冊未包含建立步驟 |
+| 鈴鐺按鈕 + 紅點 | ✅ | BellButton + BellBadge | 呼叫 setUnreadCount() 控制 |
+| 設定按鈕 | ✅ | SettingsBtn | 開啟設定面板 |
+| 7 個導航按鈕 | ✅ | NavBtn_* | 對應 7 個面板 |
+| 劇情按鈕 | ⚠️ | ChapterStoryBtn | 節點建好但預設隱藏，觸發條件待實作 |
+| 縮放按鈕 | ⚠️ | ZoomInBtn / ZoomOutBtn | 節點建好，MapController 的縮放邏輯待綁定 |
+
+### 35-3. 面板功能
+
+| 面板 | 狀態 | 節點名稱 | 缺少什麼 |
+|------|------|---------|---------|
+| 設定面板 | ⚠️ | SettingsPanelNode | 音量 slider 待替換為真實 Slider 元件 |
+| 任務面板 | ⚠️ | QuestPanelNode | 任務資料載入 + 列表渲染待完成 |
+| 圖鑑面板 | ⚠️ | CollectionPanelNode | 圖鑑資料載入 + 格子渲染待完成 |
+| 通知面板 | ⚠️ | NotificationPanelNode | 通知列表邏輯待完成 |
+| 背包面板 | ⚠️ | InventoryPanelNode | Grid slot prefab + 道具載入待完成 |
+| NPC 互動 | ⚠️ | NPCModalNode | NPC 對話 + 商店邏輯待完成 |
+| 公告面板 | ⚠️ | WhiteCrowCardNode (tab:公告) | 公告資料來源待接入 |
+| 日誌面板 | ⚠️ | WhiteCrowCardNode (tab:日誌) | 每日日誌資料待接入 |
+| 道具詳情 | ⚠️ | ItemDetailModalNode | 使用按鈕邏輯待完成 |
+| 據點故事 | ⚠️ | LandmarkStoryModalNode | 據點資料載入待完成 |
+
+### 35-4. 地圖系統
+
+| 功能 | 狀態 | 說明 |
+|------|------|------|
+| 據點標記顯示 | ✅ | MapController 載入 landmark-chapters.json |
+| 據點點擊 | ✅ | emit 'landmark-selected' |
+| 據點故事彈窗 | ⚠️ | LandmarkStoryModal shell 建好，資料待填入 |
+| 地圖拖曳 | ❌ | MapArea 的觸控拖曳移動尚未實作 |
+| 地圖縮放 | ❌ | ZoomIn/Out 按鈕已建，但 pinch/click 縮放邏輯未綁定 |
+
+### 35-5. 戰鬥/敘事系統
+
+| 功能 | 狀態 | 說明 |
+|------|------|------|
+| 章節開場動畫 | ⚠️ | ChapterOpeningController 腳本存在，動畫資源待製作 |
+| 劇情對話 | ⚠️ | ChapterStoryModal 腳本存在，對白資料待接入 |
+| 骰子結果 | ⚠️ | DiceResultOverlay 腳本存在，擲骰邏輯待完成 |
+| 呼吸場景 | ⚠️ | BreathingSceneController 存在，機制待設計 |
+| 遺物詩篇 | ⚠️ | RelicPoemModal 存在，觸發條件待設計 |
+
+### 35-6. 陣營/對抗系統
+
+| 功能 | 狀態 | 說明 |
+|------|------|------|
+| 叛教者面板 | ⚠️ | ApostatePanel 腳本存在，內容待設計 |
+| 清算者面板 | ⚠️ | LiquidatorPanel 腳本存在，內容待設計 |
+| 綁架彈窗 | ⚠️ | KidnapPopup 腳本存在，機制待設計 |
+| 天秤結算 | ⚠️ | BalanceSettlementModal 存在，結算邏輯待完成 |
+| 排行榜 | ⚠️ | LeaderboardPanel 存在，資料來源待接入 |
+| 暴政排行 | ⚠️ | LeaderTyrannyPanel 存在，資料來源待接入 |
+
+---
+
+## 36. PanelLayer 內部節點清單（確認你已建立的）
+
+> 以下是 PanelLayer 下所有面板節點。如果你之前已經在手冊 Phase 2 建立過，
+> 請對照確認。如果有遺漏，請按照以下結構補建。
+
+### 36-1. 目標結構
+
+```
+PanelLayer                            ← 已建立
+├── SettingsPanelNode                 ← 確認已存在
+├── QuestPanelNode                    ← 確認已存在
+├── CollectionPanelNode               ← 確認已存在
+├── NotificationPanelNode             ← 確認已存在
+├── InventoryPanelNode                ← 確認已存在
+├── NPCModalNode                      ← 確認已存在
+├── WhiteCrowCardNode                 ← 確認已存在
+├── ItemDetailModalNode               ← 確認已存在
+├── LandmarkStoryModalNode            ← 可能遺漏
+├── ApostatePanelNode                 ← 可能遺漏
+├── LiquidatorPanelNode               ← 可能遺漏
+├── KidnapPopupNode                   ← 可能遺漏
+├── BalanceSettlementNode             ← 可能遺漏
+├── LeaderboardPanelNode              ← 可能遺漏
+└── LeaderTyrannyPanelNode            ← 可能遺漏
+```
+
+### 36-2. 每個面板節點的建立方式（統一步驟）
+
+**所有面板節點結構相同，只要建一個空殼，程式會自動補建內部結構。**
+
+1. **右鍵** `PanelLayer` → **建立空節點** → 改名（如 `LandmarkStoryModalNode`）
+2. **🔴 Layer**：改為 `UI_2D`
+3. **Add Component** → `UITransform` → W = `450`, H = `480`
+4. **Add Component** → `Widget` → 勾選 Horizontal Center = `0`, Vertical Center = `0`
+5. 取消勾選 **Active**（面板預設隱藏）
+6. **Add Component** → 加入對應的**腳本元件**（見下表）
+
+| 節點名稱 | 要加的腳本元件 |
+|---------|-------------|
+| `SettingsPanelNode` | `SettingsPanel` |
+| `QuestPanelNode` | `QuestPanel` |
+| `CollectionPanelNode` | `CollectionPanel` |
+| `NotificationPanelNode` | `NotificationPanel` |
+| `InventoryPanelNode` | `InventoryPanel` |
+| `NPCModalNode` | `NPCModal` |
+| `WhiteCrowCardNode` | `WhiteCrowCard` |
+| `ItemDetailModalNode` | `ItemDetailModal` |
+| `LandmarkStoryModalNode` | `LandmarkStoryModal` |
+| `ApostatePanelNode` | `ApostatePanel` |
+| `LiquidatorPanelNode` | `LiquidatorPanel` |
+| `KidnapPopupNode` | `KidnapPopup` |
+| `BalanceSettlementNode` | `BalanceSettlementModal` |
+| `LeaderboardPanelNode` | `LeaderboardPanel` |
+| `LeaderTyrannyPanelNode` | `LeaderTyrannyPanel` |
+
+> 💡 不需要手動建立 Backdrop、PanelBG、CloseButton 等子節點！
+> `MapSceneBuilder` 在 Runtime 會自動偵測並補建這些內部結構。
+
+### 36-3. 綁定 MainGameController 的 @property
+
+在掛有 `MainGameController` 腳本的節點上，把每個面板拖到對應欄位：
+
+| Inspector 欄位 | 拖入的節點（上面的腳本元件） |
+|---------------|------------------------|
+| `settingsPanel` | `SettingsPanelNode` 上的 `SettingsPanel` 元件 |
+| `questPanel` | `QuestPanelNode` 上的 `QuestPanel` 元件 |
+| `collectionPanel` | `CollectionPanelNode` 上的 `CollectionPanel` 元件 |
+| `notificationPanel` | `NotificationPanelNode` 上的 `NotificationPanel` 元件 |
+| `inventoryPanel` | `InventoryPanelNode` 上的 `InventoryPanel` 元件 |
+| `npcModal` | `NPCModalNode` 上的 `NPCModal` 元件 |
+| `whiteCrowCard` | `WhiteCrowCardNode` 上的 `WhiteCrowCard` 元件 |
+| `itemDetailModal` | `ItemDetailModalNode` 上的 `ItemDetailModal` 元件 |
+| `landmarkStoryModal` | `LandmarkStoryModalNode` 上的 `LandmarkStoryModal` 元件 |
+| `apostatePanel` | `ApostatePanelNode` 上的 `ApostatePanel` 元件 |
+| `liquidatorPanel` | `LiquidatorPanelNode` 上的 `LiquidatorPanel` 元件 |
+| `kidnapPopup` | `KidnapPopupNode` 上的 `KidnapPopup` 元件 |
+| `balanceSettlementModal` | `BalanceSettlementNode` 上的 `BalanceSettlementModal` 元件 |
+| `leaderboardPanel` | `LeaderboardPanelNode` 上的 `LeaderboardPanel` 元件 |
+| `leaderTyrannyPanel` | `LeaderTyrannyPanelNode` 上的 `LeaderTyrannyPanel` 元件 |
+
+> ⚠️ 注意：這些欄位的型別不是 Node，而是**腳本元件**。
+> 拖節點過去時，Cocos 會自動抓取節點上的對應腳本。
+> 如果抓不到（顯示 None），代表你還沒有在那個節點上 Add Component 加入對應腳本。
+
+---
+
+## 37. TransitionLayer 和 OverlayLayer 節點
+
+### 37-1. TransitionLayer 內部節點
+
+```
+TransitionLayer                       ← 已建立
+├── BreathingSceneNode               ← 確認/補建
+├── ChapterOpeningNode               ← 確認/補建
+├── ChapterStoryModalNode            ← 確認/補建
+└── DiceResultOverlayNode            ← 確認/補建
+```
+
+建立方式同第 36-2 節（空節點 + UITransform + Widget + Active 取消 + 加腳本元件）：
+
+| 節點名稱 | 要加的腳本元件 |
+|---------|-------------|
+| `BreathingSceneNode` | `BreathingSceneController` |
+| `ChapterOpeningNode` | `ChapterOpeningController` |
+| `ChapterStoryModalNode` | `ChapterStoryModal` |
+| `DiceResultOverlayNode` | `DiceResultOverlay` |
+
+### 37-2. OverlayLayer 內部節點
+
+```
+OverlayLayer                          ← 已建立
+└── RelicPoemModalNode               ← 確認/補建
+```
+
+| 節點名稱 | 要加的腳本元件 |
+|---------|-------------|
+| `RelicPoemModalNode` | `RelicPoemModal` |
+
+### 37-3. 綁定 MainGameController
+
+| Inspector 欄位 | 拖入 |
+|---------------|------|
+| `breathingSceneCtrl` | BreathingSceneNode 上的 BreathingSceneController |
+| `chapterOpeningCtrl` | ChapterOpeningNode 上的 ChapterOpeningController |
+| `chapterStoryModal` | ChapterStoryModalNode 上的 ChapterStoryModal |
+| `diceOverlay` | DiceResultOverlayNode 上的 DiceResultOverlay |
+| `relicPoemModal` | RelicPoemModalNode 上的 RelicPoemModal |
+
+---
+
+## 38. Hierarchy 節點的順序（Z-Order 規則）
+
+> **重要**：Cocos Creator 中，Hierarchy 越下面的節點越「上層」（後渲染 = 蓋住前面的）。
+> 如果 HUD 被面板遮住無法點擊，就是順序有問題。
+
+### 38-1. 正確的 Canvas 子節點順序（由上到下）
+
+```
+Canvas
+├── MapArea              ← 最底層（地圖背景 + 據點）
+├── PanelLayer           ← 面板層（開啟面板時顯示）
+├── HUD_TopRight         ← 必須在 PanelLayer 下方（Hierarchy 中更下面）
+├── LeftNavBar           ← 同上，確保不被面板遮住
+├── RightToolbar         ← 同上
+├── TransitionLayer      ← 轉場動畫（蓋住一切）
+└── OverlayLayer         ← 最頂層（遺物詩篇等全螢幕覆蓋）
+```
+
+### 38-2. 如何調整順序
+
+在 Hierarchy 面板中，**拖曳節點上下移動**即可調整渲染順序。
+- 把 `HUD_TopRight` 拖到 `PanelLayer` 的**下方（Hierarchy 中更下面的位置）**
+- 這樣 HUD 會渲染在面板上面，不會被遮住
+
+> ⚠️ 如果你的 HUD/NavBar 目前在 PanelLayer 上面（Hierarchy 中更上面的位置），
+> 請把它們往下拖，讓它們排在 PanelLayer 的後面。
+
+---
+
+## 39. 完整預覽驗證清單（更新版）
+
+### Phase 1：基本渲染
+- [ ] 登入後看到深色地圖背景
+- [ ] 地圖上有黃色據點標記
+- [ ] 右上角有金幣 / OC 名稱 / ⚙ / 🔔 按鈕
+- [ ] 左側有 7 個導航按鈕
+- [ ] 右側有 + / − 縮放按鈕
+
+### Phase 2：面板互動
+- [ ] 點左側「任務」→ 彈出任務面板（有背景、標題、✕ 按鈕）
+- [ ] 點 ✕ → 面板關閉
+- [ ] 點面板外的暗色區域 → 面板關閉
+- [ ] 再次點「任務」→ 面板再開
+- [ ] 點「任務」時已開 → 面板關閉（toggle）
+- [ ] 點 ⚙ → 設定面板出現，有「繁體中文 / 简体中文」按鈕
+- [ ] 點 🔔 → 通知面板出現
+
+### Phase 3：Console 無錯誤
+- [ ] Console 中沒有紅色 Error（黃色 Warning 目前可以忽略）
+- [ ] 顯示 `[MapSceneBuilder] ✅ 偵測到 Inspector 已綁定核心插座`
+- [ ] 顯示 `⚙️ 自動補建面板 shell` 相關訊息
+
+### 常見問題速查
+
+| 現象 | 原因 | 解法 |
+|------|------|------|
+| 按鈕看得到但不能點 | HUDController @property 未綁定 | 第 32 節 |
+| 節點編輯器看得到但預覽看不到 | Layer 是 DEFAULT | 第 31 節 |
+| 面板無法關閉 | PanelLayer 下面板節點缺少腳本元件 | 第 36 節 |
+| HUD 被面板遮住 | Hierarchy 節點順序不對 | 第 38 節 |
+| 點導航按鈕打開了錯誤的面板 | navButtons 陣列順序錯 | 第 32 節 |

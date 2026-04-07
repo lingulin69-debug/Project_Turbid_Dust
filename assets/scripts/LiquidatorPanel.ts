@@ -188,14 +188,8 @@ export class LiquidatorPanel extends Component {
         this._isVisible = false;
 
         this.unscheduleAllCallbacks();
-
-        let opacity = this.node.getComponent(UIOpacity);
-        if (!opacity) opacity = this.node.addComponent(UIOpacity);
-
-        tween(opacity).to(0.15, { opacity: 0 }).call(() => {
-            this.node.active = false;
-            this._resetState();
-        }).start();
+        this.node.active = false;
+        this._resetState();
 
         this.node.emit('panel-closed', 'liquidator');
     }

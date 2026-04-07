@@ -174,13 +174,13 @@ AnnouncementPanel、QuestPanel、DailyPanel、CollectionPanel、SettingsPanel、
 interface LandmarkData {
     id: string;      // 格式：l{章節}_{陣營}{序號}，例：l1_t01、l1_p02
     name: string;
-    x: number;       // 地圖節點本地座標
-    y: number;
+    x?: number;      // 地圖節點本地座標（可選，缺少時自動排列）
+    y?: number;
     faction: 'Turbid' | 'Pure';
     status: 'open' | 'closed';
-    occupants: number;
-    capacity: number;
-    type: string;
+    occupants?: number;
+    capacity?: number;
+    type?: string;
 }
 ```
 
@@ -728,3 +728,97 @@ interface PlayerData {
 | 檔案 | 用途 |
 |------|------|
 | `COCOS_SETUP_GUIDE.md`（在 `E:\PTD-COCOS\`）| 從零開始套用 Cocos 環境的引導手冊 |
+
+---
+
+## 修復紀錄 — Cocos 預覽階段 onDestroy 崩潰 + 場景綁定 + 色塊佔位模式
+
+### Bug 1–3：onDestroy 崩潰（23 檔、50+ 處修復）
+
+詳見 `docs/COCOS_ONDESTROY_RULES.md`。
+
+### Bug 4：登入按鈕未連線
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | 點擊登入按鈕無反應 |
+| 原因 | `LoginController.ts` 的按鈕事件依賴 Inspector `clickEvents`，但 `LoginSceneBuilder` 未設定 |
+| 修復 | 新增 `_registerButtonEvents()` 在 `onLoad()` 中程式化綁定 `loginBtn` → `onLoginPressed`、`confirmResetBtn` → `onConfirmResetPressed` |
+
+### Bug 5：mapController 未綁定（登入成功後空白）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | Console 顯示 `[MainGameController] mapController 未綁定`，畫面全黑 |
+| 原因 | `MapSceneBuilder.onLoad()` 只建立容器節點，未加入 Component 腳本也未綁定 `MainGameController` 的 `@property` 插座 |
+| 修復 | 新增 `_addComponentsAndBind()` 方法，為 20+ 節點加上對應 Component，全部綁定到 `MainGameController`；`MainGameController` 的初始化從 `onLoad()` 移至 `start()`（等 MapSceneBuilder 綁定完成） |
+
+### Bug 6：地圖空白（無 Prefab 的據點顯示）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | 登入成功後地圖區域全黑，無據點 |
+| 原因 | `MapController` 要求 `landmarkPrefab`（Prefab）才能生成據點，但 Prefab 無法程式化建立；`mapRoot` 為 null；JSON 資料缺少 x/y 座標 |
+| 修復（3 檔案） | 見下方 |
+
+**MapController.ts**：
+- 新增 `_createPlaceholderLandmark()`：無 Prefab 時建立 `UITransform(60×60)` + `Sprite`（藍色）+ `Label`（白字名稱）佔位節點
+- `_spawnLandmarks()` 改為 Prefab/色塊雙模式，自動排列成 4×N 網格
+- 色塊模式下自動綁定 `MapLandmark.baseSprite` 和 `nameLabel`
+
+**MapLandmark.ts**：`LandmarkData.x`/`y` 改為可選欄位
+
+**MapSceneBuilder.ts**：`_buildMapArea()` 新增深灰藍底色 + 設定 `mc.mapRoot = mapNode`
+
+### Bug 7：InventoryPanel gridContainer 未綁定
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | Console 黃警告 `[InventoryPanel] gridContainer 未綁定` |
+| 原因 | MapSceneBuilder 建立 InventoryPanelNode 時未建立 gridContainer 子節點 |
+| 修復 | MapSceneBuilder 新增 GridContainer 節點（`Layout.Type.GRID, constraintNum=5`）；InventoryPanel 新增 `_createPlaceholderSlot()` 色塊佔位 |
+
+### 色塊佔位模式設計原則
+
+所有需要 Prefab 或美術資源的元件，都支援「無資源時用程式碼建色塊佔位」模式：
+
+| 元件 | Prefab 名稱 | 佔位色 | 佔位尺寸 |
+|------|------------|--------|---------|
+| MapController | `landmarkPrefab` | 藍 `(70,130,230)` / 灰 `(120,120,120)` | 60×60 |
+| InventoryPanel | `itemSlotPrefab` | 紫 `(90,80,120)` | 72×72 |
+| 地圖底色 | — | 深灰藍 `(30,35,50)` | 全螢幕 |
+
+> 後續美術資源到位後，在 Inspector 拖入 Prefab / Material 即可啟用，無需再動程式碼。
+
+### 場景生命週期順序（重要）
+
+```
+所有 onLoad() → 所有 start()
+
+MapSceneBuilder.onLoad()
+  ├─ 建立節點樹（MapArea, HUD, PanelLayer, OverlayLayer 等）
+  ├─ _bindHUDSlots()        → HUDController 綁定完成
+  └─ _addComponentsAndBind() → 所有 Component 綁定完成
+
+MainGameController.start()
+  ├─ _registerEvents()       → 事件綁定（此時所有插座已可用）
+  ├─ 登入守衛檢查
+  ├─ _loadInventory()        → InventoryPanel.init()
+  └─ _initGameState()        → 載入伺服器狀態
+```
+
+### LandmarkData 介面更新
+
+```typescript
+export interface LandmarkData {
+    id: string;
+    name: string;
+    x?: number;          // 可選，缺少時自動排列
+    y?: number;
+    faction: FactionType | 'Common';
+    status: 'open' | 'closed';
+    type?: LandmarkType;
+    occupants?: number;
+    capacity?: number;
+}
+```

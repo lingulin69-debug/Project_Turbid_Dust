@@ -42,6 +42,10 @@ export class MapController extends Component {
     // ── 生命週期 ──────────────────────────────────────────────────────────────
 
     onLoad(): void {
+        // 若 Inspector 未綁定 mapRoot，自動指向自身節點（MapArea）
+        if (!this.mapRoot) {
+            this.mapRoot = this.node;
+        }
         this._loadLandmarkData();
     }
 
@@ -146,8 +150,8 @@ export class MapController extends Component {
         ut.setContentSize(60, 60);
 
         const sp = node.addComponent(Sprite);
-        sp.spriteFrame = getWhiteSpriteFrame();
         sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        sp.spriteFrame = getWhiteSpriteFrame();
         // open=藍, closed=灰
         sp.color = data.status === 'closed'
             ? new Color(120, 120, 120, 180)

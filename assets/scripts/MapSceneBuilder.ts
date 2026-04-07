@@ -133,43 +133,57 @@ export class MapSceneBuilder extends Component {
     pureMaterial: Material = null;
 
     onLoad(): void {
-        console.error('=== MapSceneBuilder V3 已載入 ===');
+        console.log('=== MapSceneBuilder V4 已載入 ===');
 
         if (!this.mainGameCtrl) {
             console.error('[MapSceneBuilder] mainGameCtrl 未綁定');
             return;
         }
 
-        // ⚠️ 必須用 this.node（Canvas），不能用 mainGameCtrl.node（GameRoot）。
-        // UI 節點必須是 Canvas 的子節點才會被 Canvas Camera 渲染。
-        const gameRoot = this.node;
+        const ctrl = this.mainGameCtrl;
+        // gameRoot = Canvas 節點（MainGameController 掛載處）。
+        // 不論 MapSceneBuilder 掛在哪裡，ctrl.node 一定是 Canvas。
+        const gameRoot = ctrl.node;
+
+        // ── Phase 0: 偵測 Inspector 是否已完成手動綁定 ──────────────────────
+        // 若核心控制器插座已在 Inspector 綁好，代表場景已由編輯器佈局完成，
+        // 跳過所有動態建構，避免重複建立節點。
+        if (ctrl.hudController && ctrl.mapController) {
+            console.log('[MapSceneBuilder] ✅ 偵測到 Inspector 已綁定核心插座，跳過動態 UI 建構');
+            this._postValidateInspectorBindings(ctrl);
+            return;
+        }
+
+        console.log('[MapSceneBuilder] 未偵測到 Inspector 綁定，啟動動態建構 (fallback)…');
+
+        // ── Phase 1: 建立缺失的 UI 節點（已存在則直接使用）──────────────────
 
         // 0. 地圖容器（MapController）
-        const mapNode = this._buildMapArea(gameRoot);
+        const mapNode = gameRoot.getChildByName('MapArea') ?? this._buildMapArea(gameRoot);
         this._setUILayerRecursive(mapNode);
 
         // 1. HUD 頂部右側
-        const hudNode = this._buildHUD(gameRoot);
+        const hudNode = gameRoot.getChildByName('HUD_TopRight') ?? this._buildHUD(gameRoot);
         this._setUILayerRecursive(hudNode);
 
         // 2. 左側導航欄
-        const leftNav = this._buildLeftNavBar(gameRoot);
+        const leftNav = gameRoot.getChildByName('LeftNavBar') ?? this._buildLeftNavBar(gameRoot);
         this._setUILayerRecursive(leftNav);
 
         // 3. 右側工具欄
-        const rightToolbar = this._buildRightToolbar(gameRoot);
+        const rightToolbar = gameRoot.getChildByName('RightToolbar') ?? this._buildRightToolbar(gameRoot);
         this._setUILayerRecursive(rightToolbar);
 
         // 4. 面板容器層
-        const panelLayer = this._buildPanelLayer(gameRoot);
+        const panelLayer = gameRoot.getChildByName('PanelLayer') ?? this._buildPanelLayer(gameRoot);
         this._setUILayerRecursive(panelLayer);
 
         // 5. 轉場覆蓋層
-        const transitionLayer = this._buildTransitionLayer(gameRoot);
+        const transitionLayer = gameRoot.getChildByName('TransitionLayer') ?? this._buildTransitionLayer(gameRoot);
         this._setUILayerRecursive(transitionLayer);
 
         // 6. 最上層覆蓋
-        const overlayLayer = this._buildOverlayLayer(gameRoot);
+        const overlayLayer = gameRoot.getChildByName('OverlayLayer') ?? this._buildOverlayLayer(gameRoot);
         this._setUILayerRecursive(overlayLayer);
 
         const topUiIndex = this.node.children.length - 3;
@@ -177,13 +191,13 @@ export class MapSceneBuilder extends Component {
         leftNav.setSiblingIndex(topUiIndex);
         rightToolbar.setSiblingIndex(topUiIndex);
 
-        // 7. 綁定 HUD 插座
+        // ── Phase 2: 綁定 HUD 插座（僅動態建構時需要）─────────────────────
         this._bindHUDSlots(hudNode, leftNav);
 
-        // 8. 為面板節點加上元件並綁定到 MainGameController
+        // ── Phase 3: 為面板加元件並綁定（僅動態建構時需要）──────────────────
         this._addComponentsAndBind(gameRoot);
 
-        console.log('[MapSceneBuilder] 場景建構完成');
+        console.log('[MapSceneBuilder] 動態場景建構完成');
     }
 
     private _setUILayerRecursive(node: Node): void {
@@ -193,13 +207,129 @@ export class MapSceneBuilder extends Component {
         }
     }
 
+    // ── Inspector 綁定後的自動補驗 ────────────────────────────────────────────
+
+    /**
+     * 當偵測到 Inspector 已完成手動綁定時，仍需檢查並自動補填常見的遺漏。
+     * 這是為了安全起見，不需要使用者手動設定每一個零件。
+     */
+    private _postValidateInspectorBindings(ctrl: MainGameController): void {
+        // 0. 遞迴設 UI_2D layer：編輯器手動建立的節點預設為 DEFAULT，
+        //    Canvas Camera 只渲染 UI_2D，不設就看不見。
+        //    注意：ctrl.node 就是 Canvas，直接遍歷其子節點。
+        for (const child of ctrl.node.children) {
+            this._setUILayerRecursive(child);
+        }
+        console.log('[MapSceneBuilder] ⚙️ 已對 Canvas 下所有子節點遞迴套用 UI_2D layer');
+
+        // 1. MapController.mapRoot：自解引用（如果 MapController 掛在 MapArea 上，mapRoot 就是自己）
+        if (ctrl.mapController && !ctrl.mapController.mapRoot) {
+            ctrl.mapController.mapRoot = ctrl.mapController.node;
+            console.log('[MapSceneBuilder] ⚙️ 自動補綁 MapController.mapRoot → 自身節點');
+        }
+
+        // 2. MapArea 背景：若無任何渲染元件，加入 Graphics 底色
+        if (ctrl.mapController) {
+            const mapNode = ctrl.mapController.node;
+            const hasSp = !!mapNode.getComponent(Sprite);
+            const hasGfx = !!mapNode.getComponent(Graphics);
+            if (!hasSp && !hasGfx) {
+                const ut = mapNode.getComponent(UITransform);
+                const w = ut?.width ?? 1280;
+                const h = ut?.height ?? 720;
+                const g = mapNode.addComponent(Graphics);
+                g.fillColor = new Color(30, 35, 50, 255);
+                g.rect(-w / 2, -h / 2, w, h);
+                g.fill();
+                console.log('[MapSceneBuilder] ⚙️ MapArea 缺少渲染元件，已自動加入 Graphics 底色');
+            }
+        }
+
+        // 3. InventoryPanel.gridContainer：自動建立 GridContainer 子節點
+        if (ctrl.inventoryPanel && !ctrl.inventoryPanel.gridContainer) {
+            const invNode = ctrl.inventoryPanel.node;
+            let grid = invNode.getChildByName('GridContainer');
+            if (!grid) {
+                grid = new Node('GridContainer');
+                invNode.addChild(grid);
+                grid.layer = Layers.Enum.UI_2D;
+                grid.addComponent(UITransform).setContentSize(420, 400);
+                const gridLayout = grid.addComponent(Layout);
+                gridLayout.type = Layout.Type.GRID;
+                gridLayout.spacingX = 8;
+                gridLayout.spacingY = 8;
+                gridLayout.startAxis = Layout.AxisDirection.HORIZONTAL;
+                gridLayout.constraintNum = 5;
+            }
+            ctrl.inventoryPanel.gridContainer = grid;
+            console.log('[MapSceneBuilder] ⚙️ 自動補建 InventoryPanel.gridContainer');
+        }
+
+        // 4. 面板內部結構（Backdrop、CloseButton、PanelBG 等）：
+        //    即使跳過動態建構，面板的 shell 仍需建構，否則面板沒有關閉按鈕和遮罩。
+        this._ensurePanelShellsForInspectorPath(ctrl);
+    }
+
+    /**
+     * 在 Inspector 路徑下，為所有已綁定的面板補建內部 shell 結構。
+     * 這是因為面板內部的 Backdrop / PanelBG / CloseButton / BodyRoot
+     * 是動態建構步驟產生的，不在使用者手動建立的範圍內。
+     */
+    private _ensurePanelShellsForInspectorPath(ctrl: MainGameController): void {
+        const canvasRoot = ctrl.node;  // Canvas
+        const panelLayer = canvasRoot.getChildByName('PanelLayer');
+        if (!panelLayer) {
+            console.warn('[MapSceneBuilder] PanelLayer 不存在，跳過面板 shell 建構');
+            return;
+        }
+
+        // 面板節點対應表：[節點名, 面板引用, 設定方法]
+        type ConfigFn = (node: Node, panel: any) => void;
+        const panelConfigs: Array<[string, Component | null, ConfigFn]> = [
+            ['SettingsPanelNode',      ctrl.settingsPanel,      (n, p) => this._configureSettingsPanelNode(n, p)],
+            ['QuestPanelNode',         ctrl.questPanel,         (n, p) => this._configureQuestPanelNode(n, p)],
+            ['CollectionPanelNode',    ctrl.collectionPanel,    (n, p) => this._configureCollectionPanelNode(n, p)],
+            ['NotificationPanelNode',  ctrl.notificationPanel,  (n, p) => this._configureNotificationPanelNode(n, p)],
+            ['InventoryPanelNode',     ctrl.inventoryPanel,     (n, p) => this._configureInventoryPanelNode(n, p)],
+            ['NPCModalNode',           ctrl.npcModal,           (n, p) => this._configureNpcModalNode(n, p)],
+            ['WhiteCrowCardNode',      ctrl.whiteCrowCard,      (n, p) => this._configureWhiteCrowCardNode(n, p)],
+            ['ItemDetailModalNode',    ctrl.itemDetailModal,    (n, p) => this._configureItemDetailModalNode(n, p)],
+        ];
+
+        for (const [nodeName, panel, configureFn] of panelConfigs) {
+            if (!panel) {
+                console.log(`[MapSceneBuilder] ⏭️ ${nodeName}：panel 未綁定，跳過`);
+                continue;
+            }
+            const node = panelLayer.getChildByName(nodeName);
+            if (!node) {
+                console.log(`[MapSceneBuilder] ⏭️ ${nodeName}：PanelLayer 中找不到此節點，跳過`);
+                continue;
+            }
+            // 永遠執行 configure（建構 shell + 綁定事件）。
+            // _ensurePanelShell 內部已對每個子節點做 if (!xxx) 防重複建立，
+            // 但事件綁定（_bindHideOnTap）必須每次 runtime 重新註冊。
+            configureFn(node, panel);
+            this._setUILayerRecursive(node);
+            console.log(`[MapSceneBuilder] ⚙️ 面板 shell 就緒：${nodeName}`);
+        }
+
+        // HUDController 事件需要在面板建構後重新註冊（binding 可能已更新）
+        if (ctrl.hudController) {
+            ctrl.hudController.refreshRuntimeBindings();
+            console.log('[MapSceneBuilder] ⚙️ 已呼叫 HUDController.refreshRuntimeBindings()');
+        }
+    }
+
     // ── 診斷 LOG（確認排版後的實際位置） ───────────────────────────────────────
     start(): void {
-        const canvasUT = this.node.getComponent(UITransform);
-        const wp = this.node.worldPosition;
+        if (!this.mainGameCtrl) return;
+        const canvas = this.mainGameCtrl.node;  // Canvas
+        const canvasUT = canvas.getComponent(UITransform);
+        const wp = canvas.worldPosition;
         console.log(`[DIAG] Canvas worldPos=(${wp.x.toFixed(0)}, ${wp.y.toFixed(0)}) size=(${canvasUT?.width}, ${canvasUT?.height}) anchor=(${canvasUT?.anchorX}, ${canvasUT?.anchorY})`);
 
-        for (const child of this.node.children) {
+        for (const child of canvas.children) {
             const ut = child.getComponent(UITransform);
             const cwp = child.worldPosition;
             const active = child.active;
@@ -207,7 +337,7 @@ export class MapSceneBuilder extends Component {
         }
 
         // 列出 MapArea 的渲染設定
-        const mapArea = this.node.getChildByName('MapArea');
+        const mapArea = canvas.getChildByName('MapArea');
         if (mapArea) {
             const sp = mapArea.getComponent(Sprite);
             const gfx = mapArea.getComponent(Graphics);
@@ -252,9 +382,9 @@ export class MapSceneBuilder extends Component {
         badge.addComponent(UITransform).setContentSize(16, 16);
         badge.setPosition(12, 12, 0);
         const badgeSprite = badge.addComponent(Sprite);
+        badgeSprite.sizeMode = Sprite.SizeMode.CUSTOM;
         badgeSprite.spriteFrame = getWhiteSpriteFrame();
         badgeSprite.color = C.badgeRed;
-        badgeSprite.sizeMode = Sprite.SizeMode.CUSTOM;
 
         const badgeLabelNode = new Node('BadgeLabel');
         badge.addChild(badgeLabelNode);
@@ -517,9 +647,9 @@ export class MapSceneBuilder extends Component {
         }
 
         const sprite = touchTarget.addComponent(Sprite);
+        sprite.sizeMode = Sprite.SizeMode.CUSTOM;
         sprite.spriteFrame = getWhiteSpriteFrame();
         sprite.color = new Color(100, 116, 139, 235);
-        sprite.sizeMode = Sprite.SizeMode.CUSTOM;
 
         touchTarget.addComponent(Button);
 
@@ -562,9 +692,9 @@ export class MapSceneBuilder extends Component {
         }
 
         const sprite = touchTarget.addComponent(Sprite);
+        sprite.sizeMode = Sprite.SizeMode.CUSTOM;
         sprite.spriteFrame = getWhiteSpriteFrame();
         sprite.color = new Color(71, 85, 105, 240);
-        sprite.sizeMode = Sprite.SizeMode.CUSTOM;
 
         touchTarget.addComponent(Button);
 
@@ -615,9 +745,9 @@ export class MapSceneBuilder extends Component {
         }
 
         const sprite = touchTarget.addComponent(Sprite);
+        sprite.sizeMode = Sprite.SizeMode.CUSTOM;
         sprite.spriteFrame = getWhiteSpriteFrame();
         sprite.color = bgColor;
-        sprite.sizeMode = Sprite.SizeMode.CUSTOM;
 
         touchTarget.addComponent(Button);
 
@@ -707,17 +837,25 @@ export class MapSceneBuilder extends Component {
     private _addComponentsAndBind(gameRoot: Node): void {
         const ctrl = this.mainGameCtrl;
 
-        // 地圖
-        const mapArea = gameRoot.getChildByName('MapArea');
-        if (mapArea) ctrl.mapController = mapArea.getComponent(MapController);
+        // 地圖（僅在 Inspector 未綁定時才動態綁定）
+        if (!ctrl.mapController) {
+            const mapArea = gameRoot.getChildByName('MapArea');
+            if (mapArea) {
+                ctrl.mapController = mapArea.getComponent(MapController);
+                if (!ctrl.mapController) console.error('[MapSceneBuilder] MapController 綁定失敗');
+            }
+        }
 
-        // 面板層內的元件
+        // 面板層內的元件（每個皆先檢查 Inspector 是否已綁定）
         const panelLayer = gameRoot.getChildByName('PanelLayer');
         if (panelLayer) {
-            ctrl.inventoryPanel    = this._ensureComp(panelLayer, 'InventoryPanelNode',    InventoryPanel)!;
+            if (!ctrl.inventoryPanel) {
+                const _inv = this._ensureComp(panelLayer, 'InventoryPanelNode', InventoryPanel);
+                if (_inv) { ctrl.inventoryPanel = _inv; } else { console.error('[MapSceneBuilder] InventoryPanel 綁定失敗'); }
+            }
 
-            // InventoryPanel 需要 gridContainer 子節點
-            if (ctrl.inventoryPanel) {
+            // InventoryPanel 需要 gridContainer 子節點（僅在尚未綁定時動態建立）
+            if (ctrl.inventoryPanel && !ctrl.inventoryPanel.gridContainer) {
                 const invNode = panelLayer.getChildByName('InventoryPanelNode');
                 if (invNode) {
                     let grid = invNode.getChildByName('GridContainer');
@@ -737,13 +875,40 @@ export class MapSceneBuilder extends Component {
                 }
             }
 
-            ctrl.itemDetailModal   = this._ensureComp(panelLayer, 'ItemDetailModalNode',   ItemDetailModal)!;
-            ctrl.npcModal          = this._ensureComp(panelLayer, 'NPCModalNode',          NPCModal)!;
-            ctrl.whiteCrowCard     = this._ensureComp(panelLayer, 'WhiteCrowCardNode',     WhiteCrowCard)!;
-            ctrl.notificationPanel = this._ensureComp(panelLayer, 'NotificationPanelNode', NotificationPanel)!;
-            ctrl.settingsPanel     = this._ensureComp(panelLayer, 'SettingsPanelNode',     SettingsPanel)!;
-            ctrl.questPanel        = this._ensureComp(panelLayer, 'QuestPanelNode',        QuestPanel)!;
-            ctrl.collectionPanel   = this._ensureComp(panelLayer, 'CollectionPanelNode',   CollectionPanel)!;
+            if (!ctrl.itemDetailModal) {
+                const _detail = this._ensureComp(panelLayer, 'ItemDetailModalNode', ItemDetailModal);
+                if (_detail) { ctrl.itemDetailModal = _detail; } else { console.error('[MapSceneBuilder] ItemDetailModal 綁定失敗'); }
+            }
+
+            if (!ctrl.npcModal) {
+                const _npc = this._ensureComp(panelLayer, 'NPCModalNode', NPCModal);
+                if (_npc) { ctrl.npcModal = _npc; } else { console.error('[MapSceneBuilder] NPCModal 綁定失敗'); }
+            }
+
+            if (!ctrl.whiteCrowCard) {
+                const _wc = this._ensureComp(panelLayer, 'WhiteCrowCardNode', WhiteCrowCard);
+                if (_wc) { ctrl.whiteCrowCard = _wc; } else { console.error('[MapSceneBuilder] WhiteCrowCard 綁定失敗'); }
+            }
+
+            if (!ctrl.notificationPanel) {
+                const _notif = this._ensureComp(panelLayer, 'NotificationPanelNode', NotificationPanel);
+                if (_notif) { ctrl.notificationPanel = _notif; } else { console.error('[MapSceneBuilder] NotificationPanel 綁定失敗'); }
+            }
+
+            if (!ctrl.settingsPanel) {
+                const _settings = this._ensureComp(panelLayer, 'SettingsPanelNode', SettingsPanel);
+                if (_settings) { ctrl.settingsPanel = _settings; } else { console.error('[MapSceneBuilder] SettingsPanel 綁定失敗'); }
+            }
+
+            if (!ctrl.questPanel) {
+                const _quest = this._ensureComp(panelLayer, 'QuestPanelNode', QuestPanel);
+                if (_quest) { ctrl.questPanel = _quest; } else { console.error('[MapSceneBuilder] QuestPanel 綁定失敗'); }
+            }
+
+            if (!ctrl.collectionPanel) {
+                const _collection = this._ensureComp(panelLayer, 'CollectionPanelNode', CollectionPanel);
+                if (_collection) { ctrl.collectionPanel = _collection; } else { console.error('[MapSceneBuilder] CollectionPanel 綁定失敗'); }
+            }
 
             const inventoryNode = panelLayer.getChildByName('InventoryPanelNode');
             if (inventoryNode && ctrl.inventoryPanel) {
@@ -786,19 +951,37 @@ export class MapSceneBuilder extends Component {
             }
         }
 
-        // 轉場層內的元件
+        // 轉場層內的元件（僅在 Inspector 未綁定時才動態綁定）
         const transLayer = gameRoot.getChildByName('TransitionLayer');
         if (transLayer) {
-            ctrl.breathingSceneCtrl  = this._ensureComp(transLayer, 'BreathingSceneNode',    BreathingSceneController)!;
-            ctrl.chapterOpeningCtrl  = this._ensureComp(transLayer, 'ChapterOpeningNode',    ChapterOpeningController)!;
-            ctrl.chapterStoryModal   = this._ensureComp(transLayer, 'ChapterStoryModalNode', ChapterStoryModal)!;
-            ctrl.diceOverlay         = this._ensureComp(transLayer, 'DiceResultOverlayNode', DiceResultOverlay)!;
+            if (!ctrl.breathingSceneCtrl) {
+                const _breathing = this._ensureComp(transLayer, 'BreathingSceneNode', BreathingSceneController);
+                if (_breathing) { ctrl.breathingSceneCtrl = _breathing; } else { console.error('[MapSceneBuilder] BreathingSceneController 綁定失敗'); }
+            }
+
+            if (!ctrl.chapterOpeningCtrl) {
+                const _opening = this._ensureComp(transLayer, 'ChapterOpeningNode', ChapterOpeningController);
+                if (_opening) { ctrl.chapterOpeningCtrl = _opening; } else { console.error('[MapSceneBuilder] ChapterOpeningController 綁定失敗'); }
+            }
+
+            if (!ctrl.chapterStoryModal) {
+                const _story = this._ensureComp(transLayer, 'ChapterStoryModalNode', ChapterStoryModal);
+                if (_story) { ctrl.chapterStoryModal = _story; } else { console.error('[MapSceneBuilder] ChapterStoryModal 綁定失敗'); }
+            }
+
+            if (!ctrl.diceOverlay) {
+                const _dice = this._ensureComp(transLayer, 'DiceResultOverlayNode', DiceResultOverlay);
+                if (_dice) { ctrl.diceOverlay = _dice; } else { console.error('[MapSceneBuilder] DiceResultOverlay 綁定失敗'); }
+            }
         }
 
-        // 覆蓋層內的元件
+        // 覆蓋層內的元件（僅在 Inspector 未綁定時才動態綁定）
         const overlayLayer = gameRoot.getChildByName('OverlayLayer');
         if (overlayLayer) {
-            ctrl.relicPoemModal = this._ensureComp(overlayLayer, 'RelicPoemModalNode', RelicPoemModal)!;
+            if (!ctrl.relicPoemModal) {
+                const _relic = this._ensureComp(overlayLayer, 'RelicPoemModalNode', RelicPoemModal);
+                if (_relic) { ctrl.relicPoemModal = _relic; } else { console.error('[MapSceneBuilder] RelicPoemModal 綁定失敗'); }
+            }
         }
 
         // 還需要建立的獨立面板節點（不在已有層中的）
@@ -865,9 +1048,9 @@ export class MapSceneBuilder extends Component {
             this._setUILayerRecursive(backdrop);
             backdrop.addComponent(UITransform).setContentSize(DESIGN_W, DESIGN_H);
             const sprite = backdrop.addComponent(Sprite);
+            sprite.sizeMode = Sprite.SizeMode.CUSTOM;
             sprite.spriteFrame = getWhiteSpriteFrame();
             sprite.color = new Color(0, 0, 0, 150);
-            sprite.sizeMode = Sprite.SizeMode.CUSTOM;
             backdrop.addComponent(Button);
         }
 
@@ -877,15 +1060,19 @@ export class MapSceneBuilder extends Component {
             node.addChild(bgNode);
             this._setUILayerRecursive(bgNode);
             bgNode.addComponent(UITransform).setContentSize(450, 480);
+            bgNode.addComponent(BlockInputEvents);
+        }
+        if (!bgNode.getComponent(BlockInputEvents)) {
+            bgNode.addComponent(BlockInputEvents);
         }
 
         let bgSprite = bgNode.getComponent(Sprite);
         if (!bgSprite) {
             bgSprite = bgNode.addComponent(Sprite);
         }
+        bgSprite.sizeMode = Sprite.SizeMode.CUSTOM;
         bgSprite.spriteFrame = getWhiteSpriteFrame();
         bgSprite.color = new Color(19, 24, 39, 245);
-        bgSprite.sizeMode = Sprite.SizeMode.CUSTOM;
 
         const bgTransform = bgNode.getComponent(UITransform);
         bgTransform?.setContentSize(520, 560);
@@ -897,8 +1084,8 @@ export class MapSceneBuilder extends Component {
             this._setUILayerRecursive(headerBar);
             headerBar.addComponent(UITransform).setContentSize(520, 56);
             const headerSprite = headerBar.addComponent(Sprite);
-            headerSprite.spriteFrame = getWhiteSpriteFrame();
             headerSprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            headerSprite.spriteFrame = getWhiteSpriteFrame();
         }
         headerBar.setPosition(0, 252, 0);
         const headerBarSprite = headerBar.getComponent(Sprite);
@@ -913,8 +1100,8 @@ export class MapSceneBuilder extends Component {
             this._setUILayerRecursive(bodyFrame);
             bodyFrame.addComponent(UITransform).setContentSize(456, 390);
             const bodySprite = bodyFrame.addComponent(Sprite);
-            bodySprite.spriteFrame = getWhiteSpriteFrame();
             bodySprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            bodySprite.spriteFrame = getWhiteSpriteFrame();
         }
         bodyFrame.setPosition(0, -18, 0);
         bodyFrame.setSiblingIndex(1);
@@ -1043,10 +1230,14 @@ export class MapSceneBuilder extends Component {
         const button = touchTarget.getComponent(Button);
         buttonNode.targetOff(this);
         touchTarget.targetOff(this);
+        const wrappedClose = () => {
+            onClose();
+        };
         if (button) {
-            button.node.on(Button.EventType.CLICK, onClose, this);
+            button.node.on(Button.EventType.CLICK, wrappedClose, this);
+        } else {
+            touchTarget.on(Node.EventType.TOUCH_END, wrappedClose, this);
         }
-        touchTarget.on(Node.EventType.TOUCH_END, onClose, this);
     }
 
     private _configureWhiteCrowCardNode(node: Node, card: WhiteCrowCard): void {
@@ -1110,8 +1301,8 @@ export class MapSceneBuilder extends Component {
         if (!languageValueSprite) {
             languageValueSprite = languageValueNode.addComponent(Sprite);
         }
-        languageValueSprite.spriteFrame = getWhiteSpriteFrame();
         languageValueSprite.sizeMode = Sprite.SizeMode.CUSTOM;
+        languageValueSprite.spriteFrame = getWhiteSpriteFrame();
         languageValueSprite.color = new Color(51, 65, 85, 220);
         const languageValueLabel = languageValueNode.getComponent(Label);
         if (languageValueLabel) {

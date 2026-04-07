@@ -230,6 +230,28 @@ async start(): Promise<void> {
         this.hudController.node.on('panel-open', this._onPanelOpen, this);
         this.hudController.node.on('panel-close', this._onPanelClose, this);
         this.hudController.node.on('bell-tapped', this._onBellTapped, this);
+
+        // 監聽面板自行關閉（backdrop / X 按鈕），同步 HUD 追蹤狀態
+        this._listenPanelClosedEvents();
+    }
+
+    /** 當面板透過 backdrop 或 X 按鈕自行關閉時，重設 HUDController._activePanelId */
+    private _listenPanelClosedEvents(): void {
+        const panels: Component[] = [
+            this.settingsPanel, this.questPanel, this.collectionPanel,
+            this.notificationPanel, this.apostatePanel, this.liquidatorPanel,
+        ];
+        for (const p of panels) {
+            if (p?.node) {
+                p.node.on('panel-closed', this._onExternalPanelClose, this);
+            }
+        }
+    }
+
+    private _onExternalPanelClose(): void {
+        if (!this._isPanelSwitching && this.hudController) {
+            this.hudController.resetActivePanel();
+        }
     }
 
     private _onLandmarkSelected(landmarkId: string): void {
@@ -257,11 +279,15 @@ async start(): Promise<void> {
         }
     }
 
+    private _isPanelSwitching = false;
+
     private _onPanelOpen(panelId: HUDPanelId): void {
         console.log(`[MainGameController] 開啟面板：${panelId}`);
 
         // 先關閉所有面板
+        this._isPanelSwitching = true;
         this._closeAllPanels();
+        this._isPanelSwitching = false;
 
         switch (panelId) {
             case 'announcement':
@@ -296,6 +322,7 @@ async start(): Promise<void> {
                 if (this.npcModal) this.npcModal.node.active = true;
                 break;
             case 'settings':
+                console.log(`[MainGameController] settings 分支：settingsPanel=${!!this.settingsPanel}`);
                 if (this.settingsPanel) this.settingsPanel.show();
                 break;
         }

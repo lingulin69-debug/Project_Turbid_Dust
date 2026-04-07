@@ -420,6 +420,58 @@ MainGameController.start()   → 檢查登入狀態
 
 ---
 
+## 九、2026 年 4 月新增修復記錄
+
+### Bug 15：MapSceneBuilder `this.node` 指向錯誤（已完成 ✅）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | 面板 shell 未建構（`PanelLayer 不存在`），UI_2D layer 未套用到正確節點 |
+| 根因 | MapSceneBuilder 掛在 Canvas 的兄弟節點上（與 Canvas 同層在 Scene root 下），`this.node` 是 MapSceneBuilder 空節點，不是 Canvas |
+| 影響範圍 | `onLoad()` 的 `gameRoot`、`_postValidateInspectorBindings()` 遍歷、`_ensurePanelShellsForInspectorPath()` 搜尋 PanelLayer、`start()` 診斷 |
+| 錯誤寫法 | `const gameRoot = this.node;` 或 `this.node.parent ?? this.node` |
+| 正確寫法 | `const gameRoot = ctrl.node;`（MainGameController 掛在 Canvas 上，`ctrl.node` 保證是 Canvas） |
+| 關鍵教訓 | **永遠不要假設 `this.node` 就是你想操作的容器。如果腳本可能掛在任何節點上，應透過已知的引用（如 `ctrl.node`）找到目標容器** |
+
+實際節點層級：
+```
+Scene Root               ← 無 UITransform
+├── Canvas               ← ctrl.node（MainGameController 在此）
+│   ├── Camera
+│   ├── MapArea
+│   ├── HUD_TopRight
+│   ├── PanelLayer       ← 需要搜尋的目標
+│   └── ...
+└── MapSceneBuilder      ← this.node（Canvas 的兄弟！）
+```
+
+### Bug 16：面板 shell 存在但事件未綁定（已完成 ✅）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | X 按鈕和 Backdrop 可見但點擊無反應，且只有 2 個面板顯示「自動補建」 |
+| 根因 | `_ensurePanelShellsForInspectorPath` 中使用 `if (!node.getChildByName('Backdrop'))` 跳過已有 Backdrop 的面板。當面板在上次 Preview 或動態建構中已保留了 Backdrop 子節點（場景快取），本次 runtime 的 `_bindHideOnTap()` 就不會執行 |
+| 錯誤寫法 | `if (!node.getChildByName('Backdrop')) { configureFn(node, panel); }` |
+| 正確寫法 | 無條件執行 `configureFn(node, panel);`。`_ensurePanelShell()` 內部已有 `if (!xxx)` 防重建節點，而事件綁定（`_bindHideOnTap`）會先 `targetOff(this)` 清除舊綁定再重新註冊 |
+| 關鍵教訓 | **「節點已存在」不等於「事件已綁定」。Cocos 場景快取保留了節點結構但不保留 runtime 事件。每次 onLoad 都必須重新綁定事件，即使 DOM 結構完整** |
+
+### Bug 17：左側導覽重複的設定按鈕（進行中 🔄）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | 左側導航第 7 個按鈕是「設定」，與右上角齒輪功能重複 |
+| 修正 | 從 `HUDController.NAV_PANELS` 陣列移除 `'settings'`（7→6 項）。使用者需在編輯器中移除 LeftNavBar 下的第 7 個按鈕節點 |
+
+### Bug 18：右上角齒輪無法開啟設定面板（偵錯中 🔍）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | 右上角齒輪按鈕點擊後設定面板不開啟 |
+| 已加入診斷 | HUDController 中齒輪綁定結果 log、MainGameController settings 分支 log |
+| 待確認 | Console 是否出現 `齒輪 CLICK → settings` 或 `⚠️ settingsButtonNode 未綁定` |
+
+---
+
 ## 八、重要 Cocos 知識點（開發過程中學到的）
 
 1. **onDestroy 中不能用 `?.` 保護已銷毀節點** — 必須用 `isValid`

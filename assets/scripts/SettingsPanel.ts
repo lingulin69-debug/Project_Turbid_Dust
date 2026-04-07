@@ -144,12 +144,7 @@ export class SettingsPanel extends Component {
         if (!this._isVisible) return;
         this._isVisible = false;
 
-        let opacity = this.node.getComponent(UIOpacity);
-        if (!opacity) opacity = this.node.addComponent(UIOpacity);
-
-        tween(opacity).to(0.15, { opacity: 0 }).call(() => {
-            this.node.active = false;
-        }).start();
+        this.node.active = false;
 
         this.node.emit('panel-closed', 'settings');
     }
@@ -193,9 +188,16 @@ export class SettingsPanel extends Component {
     }
 
     private _refreshRuntimeNodeReferences(): void {
-        this.closeButton = this._findNodeByName(this.node, 'CloseButton') ?? this.closeButton;
-        this.traditionalChineseButton = this._findNodeByName(this.node, 'TraditionalChineseButton') ?? this.traditionalChineseButton;
-        this.simplifiedChineseButton = this._findNodeByName(this.node, 'SimplifiedChineseButton') ?? this.simplifiedChineseButton;
+        // 僅在 Inspector 未綁定時才動態搜尋節點
+        if (!this.closeButton) {
+            this.closeButton = this._findNodeByName(this.node, 'CloseButton');
+        }
+        if (!this.traditionalChineseButton) {
+            this.traditionalChineseButton = this._findNodeByName(this.node, 'TraditionalChineseButton');
+        }
+        if (!this.simplifiedChineseButton) {
+            this.simplifiedChineseButton = this._findNodeByName(this.node, 'SimplifiedChineseButton');
+        }
 
         this._ensureLanguageButtonVisual(this.traditionalChineseButton, '繁體中文');
         this._ensureLanguageButtonVisual(this.simplifiedChineseButton, '简体中文');
@@ -213,8 +215,8 @@ export class SettingsPanel extends Component {
         valueTransform.setContentSize(320, 38);
 
         const valueSprite = valueNode.getComponent(Sprite) ?? valueNode.addComponent(Sprite);
-        valueSprite.spriteFrame = getWhiteSpriteFrame();
         valueSprite.sizeMode = Sprite.SizeMode.CUSTOM;
+        valueSprite.spriteFrame = getWhiteSpriteFrame();
         valueSprite.color = new Color(51, 65, 85, 220);
 
         const rootLabel = valueNode.getComponent(Label);
@@ -250,8 +252,8 @@ export class SettingsPanel extends Component {
         buttonTransform.setContentSize(220, 42);
 
         const buttonSprite = buttonNode.getComponent(Sprite) ?? buttonNode.addComponent(Sprite);
-        buttonSprite.spriteFrame = getWhiteSpriteFrame();
         buttonSprite.sizeMode = Sprite.SizeMode.CUSTOM;
+        buttonSprite.spriteFrame = getWhiteSpriteFrame();
 
         if (!buttonNode.getComponent(Button)) {
             buttonNode.addComponent(Button);
