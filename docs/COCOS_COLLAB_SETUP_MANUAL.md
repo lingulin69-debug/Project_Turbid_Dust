@@ -2195,59 +2195,35 @@ Scene Root
 └── MapSceneBuilder   ← 放在 Scene Root 下，與 Canvas 同層
 ```
 
-### 為什麼不放在 Canvas 裡面
-- MapSceneBuilder 只是一個「建構/驗證輔助器」，不是 UI 節點
-- 放在 Canvas 裡面會佔用 UI 層級空間
-- `this.node` 會變成 Canvas 的子節點，不是 Canvas 本身
-
-### 程式碼如何找到 Canvas
-```typescript
-const gameRoot = ctrl.node;  // MainGameController.node = Canvas
-```
-永遠透過 `mainGameCtrl` 引用找到 Canvas，不依賴 `this.node`。
+### 在編輯器中的操作
+1. 在 Hierarchy 中右鍵 **Scene Root**（不是 Canvas）→ **建立空節點**
+2. 改名為 `MapSceneBuilder`
+3. 掛載 `MapSceneBuilder` 腳本
+4. 確認它和 Canvas 是**同層**（兄弟節點），不是 Canvas 的子節點
 
 ---
 
-## 43. `this.node` 陷阱說明
+## 43. （程式碼原理 — 已移至 HANDOFF / CLAUDE.md）
 
-### 規則
-`this.node` = **掛載本腳本的那個節點**，不是 Canvas、不是 Scene Root。
-
-| 腳本掛在哪裡 | `this.node` 是誰 |
-|-------------|------------------|
-| Canvas | Canvas |
-| Canvas→HUD_TopRight | HUD_TopRight |
-| Scene Root→MapSceneBuilder | MapSceneBuilder 空節點 |
-
-### 危險操作
-```typescript
-// ❌ 假設 this.node 就是 Canvas
-this.node.getChildByName('PanelLayer')  // 只找 this.node 的直接子節點！
-
-// ✅ 透過已知引用找到正確的容器
-ctrl.node.getChildByName('PanelLayer')
-```
-
-### 通用教訓
-> 永遠不要假設 `this.node` 就是你想操作的容器。
-> 如果需要操作另一個節點的子樹，透過 `@property` 引用或已知的 Component 引用取得。
+> `this.node` 陷阱、面板事件綁定原理等程式碼層面的說明，
+> 請參閱 `COCOS_PREVIEW_DEBUG_HANDOFF.md` 及 `CLAUDE.md` §2a-2d。
 
 ---
 
-## 44. 面板 Shell 結構詳解
+## 44. 面板 Shell 結構（編輯器內的節點層級）
 
-每個面板節點（如 `SettingsPanelNode`）在 runtime 會被自動補建以下結構：
+每個面板節點（如 `SettingsPanelNode`）的完整結構如下：
 
 ```
 SettingsPanelNode          ← 面板根節點（在 PanelLayer 下）
 ├── Backdrop               ← 全螢幕半透明遮罩（點擊可關閉）
 │   ├── UITransform 1280×720
 │   ├── Sprite (黑色 alpha=150)
-│   └── Button             ← 用於接收點擊
+│   └── Button
 └── PanelBG                ← 面板主體背景
     ├── UITransform 520×560
     ├── Sprite (深色底)
-    ├── BlockInputEvents   ← 阻止點擊穿透到 Backdrop
+    ├── BlockInputEvents   ← 防止點擊穿透到 Backdrop
     ├── HeaderBar          ← 標題灰色橫條
     ├── TitleLabel         ← 標題文字
     ├── BodyFrame          ← 半透明內容邊框
@@ -2256,43 +2232,23 @@ SettingsPanelNode          ← 面板根節點（在 PanelLayer 下）
     └── BodyRoot           ← 面板專屬內容區域
 ```
 
-### 重要點
-- `Backdrop` 的 Button 用來偵測「點擊空白處關閉面板」
-- `PanelBG` 的 `BlockInputEvents` 阻止點擊穿透到 Backdrop（否則點面板內容也會關閉）
-- `CloseButton` 的位置是 `(218, 252, 0)`，即 PanelBG 的右上角
+### 重要
+- `Backdrop` 不加 `BlockInputEvents`（需要接收點擊來關閉面板）
+- `PanelBG` 一定要加 `BlockInputEvents`（防止穿透到 Backdrop）
+- 如果你在 Inspector 中手動建了這些子節點，V4 會跳過自動補建
 
 ---
 
-## 45. 面板事件綁定原理（每次 runtime 都要重綁）
+## 45. （程式碼原理 — 已移至 HANDOFF）
 
-### 為什麼
-Cocos 場景快取（`.scene` 檔）保留了**節點結構**，但**不保留 runtime 事件**。
-即使面板 Shell 的 Backdrop 和 CloseButton 已存在，`_bindHideOnTap` 必須在每次 `onLoad()` 重新執行。
-
-### 程式碼保護機制
-```typescript
-// _ensurePanelShell 內部：
-let backdrop = node.getChildByName('Backdrop');
-if (!backdrop) {
-    backdrop = new Node('Backdrop');  // 只在不存在時才建
-    // ...
-}
-
-// _bindHideOnTap 內部：
-buttonNode.targetOff(this);          // 先清除舊綁定
-touchTarget.targetOff(this);
-button.node.on(Button.EventType.CLICK, wrappedClose, this);  // 重新綁定
-```
-
-### 結論
-> **「節點已存在」≠「事件已綁定」**。
-> 每次場景載入都必須重新綁定所有 runtime 事件。
+> 面板事件綁定原理（每次 runtime 都要重綁）的技術細節，
+> 請參閱 `COCOS_PREVIEW_DEBUG_HANDOFF.md`。
 
 ---
 
 ## 46. Console Log 關鍵字速查
 
-Play 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
+Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 
 | 關鍵字 | 含義 | 正常/異常 |
 |--------|------|----------|
@@ -2305,47 +2261,13 @@ Play 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 | `settingsButtonNode 未綁定` | 齒輪按鈕沒拖入 Inspector | ⚠️ 需補綁 |
 | `齒輪 TOUCH_END → settings` | 齒輪點擊觸發 | ✅ 正常 |
 | `開啟面板：XXX` | MainGameController 收到面板開啟請求 | ✅ 正常 |
-| `[DIAG] Canvas` | 診斷 log，確認 Canvas 位置和大小 | ✅ 正常 |
 
 ---
 
-## 47. Cocos 事件冒泡機制
+## 47. （程式碼原理 — 已移至 HANDOFF）
 
-### 核心概念
-觸控事件（TOUCH_START / TOUCH_MOVE / TOUCH_END）從**被點擊的節點**開始，
-向**父節點**逐層冒泡，直到根節點或被 `event.propagationStopped = true` 阻止。
-
-```
-Canvas ← 最後
-├── PanelLayer ← 第三
-│   └── SettingsPanelNode ← 第二
-│       └── CloseButton ← 第一（被點擊）
-```
-
-### 不會發生的事
-- 事件**不會**傳給兄弟節點（同層的其他節點）
-- 事件**不會**偵測子節點（只向上，不向下）
-
-### 常見錯誤
-```
-ParentNode
-├── ButtonNode (有 Button 元件)
-└── LabelNode  (顯示在上方，攔截觸控)
-```
-用戶點 Label → 事件冒泡到 Parent → **跳過** ButtonNode → Button 沒反應
-
-### 正確做法
-```
-ParentNode (註冊 TOUCH_END)
-├── ButtonNode
-└── LabelNode
-```
-或：
-```
-ParentNode
-└── ButtonNode (有 Button 元件)
-    └── LabelNode (Label 是 Button 的子節點，冒泡到 Button ✅)
-```
+> 事件冒泡機制的技術原理，
+> 請參閱 `COCOS_PREVIEW_DEBUG_HANDOFF.md` §十一 Bug Pattern Framework。
 
 ---
 
@@ -2354,275 +2276,55 @@ ParentNode
 ### 用途
 阻止觸控事件穿透到**下方（Z-Order 更低）**的節點。
 
-### 典型使用場景
-- 面板主體（PanelBG）→ 防止點擊面板內容時觸發底下的 Backdrop 關閉
+### 什麼時候要加
+- 面板主體（PanelBG）→ 防止點擊面板內容時觸發 Backdrop 關閉
 - 彈窗對話框 → 防止點擊對話框時操作底下的地圖
+- 各 NavBtn / SettingsBtn 的 TouchTarget → 防止事件穿透
 
-### 注意事項
-- 不會阻止事件**向上冒泡**（子→父仍然正常）
-- 掛在節點上後，該節點的 UITransform 範圍內的所有點擊都不會穿透
-
----
-
-## 49. 面板開啟 / 關閉完整流程
-
-```
-使用者點擊 → HUDController._onNavButtonTap(btn, panelId)
-        ↓
-HUDController.togglePanel(panelId)
-        ↓
-    (已開啟同面板?) ──是── emit 'panel-close' ─→ MainGameController._onPanelClose()
-        │ 否
-        ↓
-    emit 'panel-open', panelId
-        ↓
-MainGameController._onPanelOpen(panelId)
-        ↓
-    switch(panelId) → panel.show() 或 node.active = true
-        ↓
-    面板出現（含 Backdrop）
-        ↓
-使用者點 X 或 Backdrop → 面板自己 hide() → emit 'panel-closed'
-        ↓
-MainGameController._listenPanelClosedEvents() 收到
-        ↓
-hudController.resetActivePanel()
-```
+### 什麼時候不加
+- Backdrop → 需要接收點擊來關閉面板，不能阻擋
 
 ---
 
-## 50. HUD_TopRight 子節點完整配置
+## 49–52. （程式碼原理 — 已移至 HANDOFF / CLAUDE.md）
 
-### 節點層級
-```
-HUD_TopRight                  ← Widget 右上角, Layout HORIZONTAL
-├── CoinsLabel (Node)         ← 子節點有 Label 元件
-├── OcNameLabel (Node)        ← 子節點有 Label 元件
-├── SettingsBtn               ← 齒輪按鈕
-│   ├── TouchTarget           ← Button + BlockInputEvents
-│   └── Label                 ← ⚙ 文字
-├── BellButton                ← 鈴鐺按鈕
-│   ├── TouchTarget           ← Button
-│   └── Label                 ← 🔔 文字
-└── BellBadge                 ← 未讀徽章（預設隱藏）
-    └── Label                 ← 數字
-```
-
-### Inspector 對應
-| HUDController @property | 拖入的節點 |
-|------------------------|-----------|
-| coinsLabel | CoinsLabel 裡面的 Label 元件 |
-| ocNameLabel | OcNameLabel 裡面的 Label 元件 |
-| settingsButtonNode | SettingsBtn |
-| bellButtonNode | BellButton |
-| bellBadgeNode | BellBadge |
-| bellBadgeLabel | BellBadge→Label 裡面的 Label 元件 |
+> 以下內容為程式碼層面的說明，已移至對應文件：
+> - 面板 open/close 流程圖 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
+> - HUD/LeftNavBar 配置 → 見 §27-28 的建立步驟
+> - MapSceneBuilder Auto-Fix 機制 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
 
 ---
 
-## 51. LeftNavBar 最新配置（6 個按鈕）
+## 53. 新增面板的編輯器步驟
 
-### 節點層級
-```
-LeftNavBar                    ← Widget 左側, Layout VERTICAL
-├── NavBtn_公告               ← [0] announcement
-├── NavBtn_任務               ← [1] quest
-├── NavBtn_日誌               ← [2] daily
-├── NavBtn_圖鑑               ← [3] collection
-├── NavBtn_背包               ← [4] inventory
-├── NavBtn_NPC                ← [5] npc
-└── ChapterStoryBtn           ← 獨立按鈕（不在 navButtons 陣列中）
-```
+如果未來需要新增一個面板（例如「成就面板」），在編輯器中的操作步驟：
 
-### Inspector 對應
-| HUDController @property | 拖入 |
-|------------------------|------|
-| navButtons[0] | NavBtn_公告 |
-| navButtons[1] | NavBtn_任務 |
-| navButtons[2] | NavBtn_日誌 |
-| navButtons[3] | NavBtn_圖鑑 |
-| navButtons[4] | NavBtn_背包 |
-| navButtons[5] | NavBtn_NPC |
-| chapterStoryBtnNode | ChapterStoryBtn |
-
-> ⚠️ 設定功能已移至右上角齒輪，不再出現在左側導航。
-
----
-
-## 52. MapSceneBuilder Auto-Fix 機制
-
-### 什麼時候觸發
-當 Inspector 路徑啟用時（`ctrl.hudController && ctrl.mapController` 都有值），
-`_postValidateInspectorBindings()` 自動執行以下補救：
-
-| 補救項目 | 條件 | 動作 |
-|---------|------|------|
-| UI_2D Layer | Canvas 所有子節點 | 遞迴設 `node.layer = UI_2D` |
-| MapController.mapRoot | mapRoot 為 null | 自動設為 `mapController.node` |
-| MapArea 背景 | 無 Sprite 也無 Graphics | 自動加 Graphics 深色底色 |
-| InventoryPanel.gridContainer | gridContainer 為 null | 自動建 GridContainer + Layout |
-| 面板 Shell | PanelLayer 下所有已綁定面板 | 建構 Backdrop/PanelBG/CloseButton + 綁定事件 |
-
-### 不能取代的事
-- 節點本身的創建（必須在編輯器完成）
-- @property 的拖綁（必須在 Inspector 完成）
-- 正確的節點命名（必須符合程式碼期望的名稱）
-
----
-
-## 53. 新增面板的完整步驟
-
-如果未來需要新增一個面板（例如「成就面板」），步驟如下：
-
-### 步驟 1：編輯器建立節點
+### 步驟 1：建立節點
 1. 在 PanelLayer 下新增空節點 → 命名 `AchievementPanelNode`
-2. 加入 UITransform → 1280×720
-3. 設 Layer → UI_2D
-4. 勾選 `active = false`（預設隱藏）
-5. Add Component → `AchievementPanel`（腳本需先建立）
+2. 加入 UITransform → 450×480
+3. 設 Layer → UI_2D（套用到子節點）
+4. 取消勾選 Active（預設隱藏）
+5. Add Component → `AchievementPanel`（腳本需先由程式端建立）
 
-### 步驟 2：程式碼建立腳本
-建立 `assets/scripts/AchievementPanel.ts`，基本結構：
-```typescript
-@ccclass('AchievementPanel')
-export class AchievementPanel extends Component {
-    show(): void { this.node.active = true; }
-    hide(): void { this.node.active = false; this.node.emit('panel-closed', 'achievement'); }
-}
-```
+### 步驟 2：建立面板殼
+按照 §20-2 的通用面板結構（步驟 A~I），建立 Backdrop、PanelBG、HeaderBar、TitleLabel、CloseButton、BodyRoot 等子節點。
 
-### 步驟 3：MainGameController 新增引用
-```typescript
-@property(AchievementPanel)
-achievementPanel: AchievementPanel = null;
-```
-在 `_onPanelOpen` 的 switch 中加入 `case 'achievement'`。
+### 步驟 3：Inspector 拖綁
+1. 選中掛有 `MainGameController` 的節點
+2. 找到 `achievementPanel` 欄位 → 拖入 `AchievementPanelNode`
 
-### 步驟 4：MapSceneBuilder 新增 configure
-在 `panelConfigs` 陣列中加入新條目，建立 configure 方法。
-
-### 步驟 5：Inspector 拖綁
-MainGameController → achievementPanel → 拖入 AchievementPanelNode。
-
-### 步驟 6：HUDController 新增入口（可選）
-如果需要從導航按鈕打開，在 `NAV_PANELS` 加入 `'achievement'` 並在 LeftNavBar 加按鈕。
+### 步驟 4：新增入口按鈕（可選）
+如果需要從左側導航開啟，在 `LeftNavBar` 下新增一個 NavBtn 按鈕（參照 §28）。
 
 ---
 
-## 54. 面板 show / hide / toggle 統一模式
+## 54–58. （程式碼原理 — 已移至 HANDOFF / CLAUDE.md）
 
-所有面板應遵循統一的顯示/隱藏模式：
+> 以下內容為程式碼層面的說明，已移至對應文件：
+> - 面板 show/hide/toggle 模式 → `CLAUDE.md`
+> - SoundManager / DataEventBus / 場景轉場 → `CLAUDE.md`
+> - Cocos Creator 3.8.2 常見陷阱 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
 
-```typescript
-// show：設 active + 播放進場動畫
-show(): void {
-    if (this._isVisible) return;
-    this._isVisible = true;
-    this.node.active = true;
-    SoundManager.panelOpen();
-    // 可選：淡入動畫
-    let opacity = this.node.getComponent(UIOpacity) ?? this.node.addComponent(UIOpacity);
-    opacity.opacity = 0;
-    tween(opacity).to(0.2, { opacity: 255 }).start();
-}
-
-// hide：關閉 + 發出事件通知 MainGameController
-hide(): void {
-    if (!this._isVisible) return;
-    this._isVisible = false;
-    this.node.active = false;
-    this.node.emit('panel-closed', 'panelId');
-}
-
-// toggle：供 HUDController 呼叫
-toggle(): void {
-    if (this._isVisible) this.hide();
-    else this.show();
-}
-```
-
-### 重要
-- `hide()` 必須 emit `'panel-closed'` 事件，讓 MainGameController 重置 HUD 狀態
-- `show()` 開頭要檢查 `_isVisible` 防止重複開啟
-- 不要在 `hide()` 中 destroy 節點！只做 `active = false`
-
----
-
-## 55. SoundManager 音效整合
-
-### 目前支援的音效方法
-| 方法 | 時機 |
-|------|------|
-| `SoundManager.panelOpen()` | 面板開啟時 |
-| `SoundManager.buttonClick()` | 按鈕點擊時 |
-| `SoundManager.setBgmVolume(0~1)` | 設定 BGM 音量 |
-| `SoundManager.setSfxVolume(0~1)` | 設定 SFX 音量 |
-
-### 使用方式
-```typescript
-import { SoundManager } from './SoundManager';
-
-// 在 show() 中
-SoundManager.panelOpen();
-```
-
-> 目前 SoundManager 使用 placeholder 實作，後續接入真實音效資源時只需修改 SoundManager 內部。
-
----
-
-## 56. DataEventBus 事件通道
-
-### 概念
-全域事件匯流排，用於資料層（DataManager）對 UI 層（各 Panel/Controller）廣播資料變更。
-
-### 使用方式
-```typescript
-import { DataEventBus, DATA_EVENTS } from './PTD_DataManager';
-
-// 監聽（通常在 onLoad 或 _registerDataEvents 中）
-DataEventBus.on(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
-
-// 取消（通常在 onDestroy 中）
-DataEventBus.off(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
-```
-
-### 注意
-- DataEventBus 是全域物件，**不是**節點方法，所以 `onDestroy` 中不需要 `isValid` 檢查
-- 但如果回呼中存取 `this.node` 或 `this.someLabel`，仍需檢查它們是否有效
-
----
-
-## 57. 場景轉場機制
-
-### 流程
-```
-LoginScene
-    ↓ LoginController._onLoginSuccess()
-    ↓ director.loadScene('MapTestView')
-MapTestView
-    ↓ MapSceneBuilder.onLoad() → 驗證/建構
-    ↓ MainGameController.start() → 載入資料 → 顯示 UI
-```
-
-### 重要細節
-- `director.loadScene()` 是非同步的，舊場景的所有節點會被銷毀
-- 因此 `onDestroy()` 中必須正確解綁事件（參考 `COCOS_ONDESTROY_RULES.md`）
-- 轉場前 DataManager 的資料會保留（它是單例，不隨場景銷毀）
-
----
-
-## 58. Cocos Creator 3.8.2 常見陷阱清單
-
-| 陷阱 | 說明 | 防範 |
-|------|------|------|
-| Layer 預設是 DEFAULT | 編輯器建立的節點不會被 Canvas Camera 渲染 | 全部改 UI_2D |
-| `getChildByName` 只搜直接子節點 | 不會搜孫節點 | 需遞迴搜尋時自己寫 |
-| 子節點 `onLoad` 比父節點先跑 | @property 可能還沒被 Builder 設值 | 用 `refreshRuntimeBindings()` 補救 |
-| `?.` 不保護 `isValid === false` | Cocos 銷毀節點後 `obj?.method` 仍會報錯 | 改用 `if (obj?.isValid)` |
-| Sprite 沒有 SpriteFrame 不渲染 | 程式碼 `addComponent(Sprite)` 預設沒有 spriteFrame | 使用 `getWhiteSpriteFrame()` |
-| 兄弟節點不傳遞事件 | 同層的 Label 和 Button 各自獨立 | Button 做成父節點或直接在父節點綁事件 |
-| `BlockInputEvents` 名稱有誤導 | 不是「阻止輸入」而是「阻止穿透」 | 只用在需要隔離觸控的容器上 |
-| `onDestroy` 中禁止 `destroy()` | Cocos 已自動銷毀子節點 | 只解綁事件 |
 
 ---
 
