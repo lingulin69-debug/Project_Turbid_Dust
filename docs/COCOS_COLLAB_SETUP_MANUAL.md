@@ -2160,7 +2160,41 @@ Canvas
 
 ---
 
-## 40. 左側設定按鈕已移除 — 編輯器操作
+## ★ §40 以後章節分類速查
+
+> 每個章節標題旁附有責任方標記：
+> - 🎮 = **Cocos Editor 端**（需要手動在編輯器操作）
+> - 🖥️ = **程式端**（由 TypeScript 腳本處理，不需要在編輯器動手）
+> - 📖 = **參考文件**（純閱讀，不需要操作）
+> - ➡️ HANDOFF = 已移至 `COCOS_PREVIEW_DEBUG_HANDOFF.md`
+
+| § | 標題 | 責任方 | 需要在 Editor 動手？ |
+|---|------|--------|-------------------|
+| 40 | 左側設定按鈕已移除 | 🎮 Cocos | ✅ 刪除 LeftNavBar 按鈕 |
+| 41 | (已移至 HANDOFF) | ➡️ | — |
+| 42 | MapSceneBuilder 擺放 | 🎮 Cocos | ✅ 確認節點層級 |
+| 43 | (已移至 HANDOFF) | ➡️ | — |
+| 44 | 面板 Shell 結構 | 🎮📖 Cocos 參考 | ⚠️ 對照用，不需額外操作 |
+| 45 | (已移至 HANDOFF) | ➡️ | — |
+| 46 | Console Log 速查 | 📖 參考 | — |
+| 47 | (已移至 HANDOFF) | ➡️ | — |
+| 48 | BlockInputEvents | 📖 參考 | — |
+| 49-52 | (已移至 HANDOFF) | ➡️ | — |
+| 53 | 新增面板的步驟 | 🎮 Cocos | ✅ 建節點 + 掛腳本 + 拖綁 |
+| 54-58 | (已移至 HANDOFF) | ➡️ | — |
+| 59 | Phase 6 API 準備 | 🎮+🖥️ 混合 | ✅ Server 啟動 + 確認面板拖綁 |
+| 60 | Phase 7-A 任務回報 | 🎮 外殼確認 / 🖥️ 動態內容 | ⚠️ 內部列表由程式動態建立 |
+| 61 | Phase 7-B 組隊面板 | 🎮 建外殼+靜態控件 / 🖥️ 成員列表 | ✅ 需建面板 + 按鈕 |
+| 62 | Phase 7-C NPC 商人 | 🎮 建 TabBar+容器 / 🖥️ 商品列表 | ✅ 需建 TabBar + ShopTabContainer |
+| 63 | Phase 7-D 漂流瓶 | 🎮 建外殼+WriteArea / 🖥️ 瓶列表 | ✅ 需建面板 + EditBox |
+| 64 | Phase 7-D 公報 | 🎮 建 FilterBar / 🖥️ 公報列表 | ✅ 需建面板 + FilterBar |
+| 65 | Phase 8 視覺效果 | 🎮 Cocos | ✅ 預留 FogLayer + GlitchGhost 空節點 |
+| 66 | 驗證清單 | 📖 參考 | — |
+| 67 | (已移至 HANDOFF) | ➡️ | — |
+
+---
+
+## 40. 左側設定按鈕已移除 🎮
 
 > 設定功能現在只有右上角齒輪按鈕。Bug 詳情見 HANDOFF Bug 17。
 
@@ -2180,7 +2214,7 @@ Canvas
 
 ---
 
-## 42. MapSceneBuilder 節點擺放規則
+## 42. MapSceneBuilder 節點擺放規則 🎮
 
 ### 正確位置
 ```
@@ -2210,7 +2244,7 @@ Scene Root
 
 ---
 
-## 44. 面板 Shell 結構（編輯器內的節點層級）
+## 44. 面板 Shell 結構（編輯器內的節點層級）🎮📖
 
 每個面板節點（如 `SettingsPanelNode`）的完整結構如下：
 
@@ -2246,7 +2280,7 @@ SettingsPanelNode          ← 面板根節點（在 PanelLayer 下）
 
 ---
 
-## 46. Console Log 關鍵字速查
+## 46. Console Log 關鍵字速查 📖
 
 Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 
@@ -2271,7 +2305,7 @@ Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 
 ---
 
-## 48. BlockInputEvents 元件說明
+## 48. BlockInputEvents 元件說明 📖
 
 ### 用途
 阻止觸控事件穿透到**下方（Z-Order 更低）**的節點。
@@ -2295,7 +2329,7 @@ Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 
 ---
 
-## 53. 新增面板的編輯器步驟
+## 53. 新增面板的編輯器步驟 🎮
 
 如果未來需要新增一個面板（例如「成就面板」），在編輯器中的操作步驟：
 
@@ -2328,7 +2362,7 @@ Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 
 ---
 
-## 59. 下一階段：Phase 6 — API 接通前的編輯器準備
+## 59. Phase 6 — API 接通前的編輯器準備 🎮🖥️
 
 > **背景**：目前 6 個面板使用模擬資料（Mock），接下來需要改為呼叫真實 Server API。
 > 編輯器端不需要修改節點結構，但需要確認以下項目。
@@ -2360,10 +2394,14 @@ Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 
 ---
 
-## 60. Phase 7-A — 任務回報系統（編輯器步驟）
+## 60. Phase 7-A — 任務回報系統 🎮🖥️
 
 > **涉及腳本**：`QuestPanel.ts`（修改）、`PTD_DataManager.ts`（修改）
 > **前提**：`QuestPanelNode` 已經在 §20-3 面板 2 中建好外殼。本節在其 BodyRoot 內補建回報功能節點。
+>
+> ⚠️ **責任分工**：
+> - 🎮 **Cocos 端**：確認 QuestContent、QuestEmptyLabel 存在；可選建立 ScrollView
+> - 🖥️ **程式端**：每一筆任務行（Title / Status / ReportBtn）由 `_createQuestRow()` 動態建立，**不需要在 Editor 建模板**
 
 ### 60-1. 目標節點結構
 
@@ -2376,16 +2414,17 @@ QuestPanelNode                       ← 已建立（§20-3 面板 2）
     ├── CloseButton                  ← 已建立
     ├── CloseHintLabel               ← 已建立
     └── BodyRoot                     ← 已建立
-        ├── QuestContent             ← 已建立（Layout）
-        ├── QuestEmptyLabel          ← 已建立
-        ├── QuestListScrollView      ← 🆕 新建（ScrollView 元件）
+        ├── QuestContent             ← 已建立 🎮（Layout）→ 綁到 contentContainer
+        ├── QuestEmptyLabel          ← 已建立 🎮（Label）→ 綁到 emptyLabel
+        ├── QuestListScrollView      ← 🆕 🎮 可選建（ScrollView 元件）
         │   └── view                 ← ScrollView 自動產生
-        │       └── content          ← 🆕 新建（Layout 元件）
-        └── QuestItemTemplate        ← 🆕 新建（模板，Active=false）
-            ├── QuestTitle           ← 🆕 新建（Label 元件）
-            ├── QuestStatus          ← 🆕 新建（Label 元件）
-            └── ReportBtn            ← 🆕 新建（Button 元件 + Label 子節點）
-                └── Label            ← 🆕 新建（Label 元件，string = 回報）
+        │       └── content          ← 🆕 🎮 可選建（Layout 元件）
+        └── 🖥️ 以下由程式動態建立（不需手動建）──
+            └── Quest_XXX            ← 🖥️ _createQuestRow() 動態產生
+                ├── Title            ← 🖥️ Label
+                ├── Status           ← 🖥️ Label
+                ├── Reward           ← 🖥️ Label
+                └── ReportBtn        ← 🖥️（待程式端新增回報功能後加入）
 ```
 
 ### 60-2. 建立 QuestListScrollView
@@ -2399,100 +2438,39 @@ QuestPanelNode                       ← 已建立（§20-3 面板 2）
    - ScrollView 設定：Direction = `VERTICAL`
 5. ScrollView 加好後會自動產生 `view` 子節點
 6. **右鍵** `view` → **建立空節點** → 改名為 `content`
-7. 選中 `content`：
-   - **Add Component** → `UITransform` → W = `410`, H = `320`
-   - **Add Component** → `Layout` → Type = `VERTICAL`, SpacingY = `8`, ResizeMode = `CONTAINER`
-8. 回到 `QuestListScrollView` 的 ScrollView 元件 → 拖入 `content` 到 `Content` 欄位
+7. 選中 `con🖥️ 任務項目（程式端動態建立）
 
-### 60-3. 建立 QuestItemTemplate（任務項目模板）
+> **以下由 `QuestPanel._createQuestRow()` 在 runtime 動態建立，不需要在 Editor 手動建模板。**
+> 
+> 程式端為每一筆任務建立的節點結構：
+> - `Quest_XXX`（UITransform 400×60）
+>   - `Title`（Label, fontSize=14, 任務名稱）
+>   - `Status`（Label, fontSize=11, 進行中/已完成/未解鎖）
+>   - `Reward`（Label, fontSize=11, 獎勵幣數）
+>   - `ReportBtn`（待程式端加入，Button + Label = 回報）
+>
+> ⚠️ 如果之後要改任務行的外觀、大小、字體，**請找程式端修改 `_createQuestRow()` 函數**。
 
-> 這是一個模板節點，runtime 時由程式複製產生每一筆任務。平常 **Active = false**。
-
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `QuestItemTemplate`
-2. 選中 `QuestItemTemplate`：
-   - **Add Component** → `UITransform` → W = `400`, H = `80`
-   - **Add Component** → `Sprite` → Color = `(30, 36, 50, 200)`（深色背景）
-   - **Add Component** → `Layout` → Type = `HORIZONTAL`, SpacingX = `8`, Padding = `(8, 8, 8, 8)`
-3. **⚠️ 取消勾選 Active**（Inspector 最上方的 checkbox）
-
-### 60-4. 在 QuestItemTemplate 內建立 QuestTitle（Label 元件）
-
-1. **右鍵** `QuestItemTemplate` → **建立空節點** → 改名為 `QuestTitle`
-2. 選中 `QuestTitle`：
-   - **Add Component** → `UITransform` → W = `260`, H = `24`
-   - **Add Component** → `Label` → string = `任務名稱`, fontSize = `14`
-   - Label → Horizontal Align = `LEFT`, Vertical Align = `CENTER`
-   - Color = `(228, 232, 240, 255)`（淺灰白）
-
-### 60-5. 在 QuestItemTemplate 內建立 QuestStatus（Label 元件）
-
-1. **右鍵** `QuestItemTemplate` → **建立空節點** → 改名為 `QuestStatus`
-2. 選中 `QuestStatus`：
-   - **Add Component** → `UITransform` → W = `80`, H = `24`
-   - **Add Component** → `Label` → string = `進行中`, fontSize = `12`
-   - Label → Horizontal Align = `CENTER`, Vertical Align = `CENTER`
-   - Color = `(163, 230, 53, 255)`（綠色）
-
-### 60-6. 在 QuestItemTemplate 內建立 ReportBtn（Button 元件）
-
-> 這是一個膠囊按鈕，結構遵循 §27-2 的 TouchTarget 模式。
-
-1. **右鍵** `QuestItemTemplate` → **建立空節點** → 改名為 `ReportBtn`
-2. 選中 `ReportBtn`：
-   - **Add Component** → `UITransform` → W = `80`, H = `36`
-   - **Add Component** → `Sprite` → Color = `(59, 130, 246, 240)`（藍色背景）
-   - **Add Component** → `Button`
-3. **右鍵** `ReportBtn` → **建立空節點** → 改名為 `Label`
-4. 選中 `Label`：
-   - **Add Component** → `UITransform` → W = `80`, H = `36`
-   - **Add Component** → `Label` → string = `回報`, fontSize = `14`
-   - Label → Horizontal Align = `CENTER`, Vertical Align = `CENTER`
-   - Color = `(255, 255, 255, 255)`（白色）
-
-### 60-7. Inspector 拖綁
+### 60-4. Inspector 拖綁 🎮
 
 1. 選中 `QuestPanelNode`（掛有 `QuestPanel` 腳本的節點）
-2. 等程式端新增 @property 後，在 Inspector 拖入：
+2. 在 Inspector 中確認以下欄位已拖綁：
 
-| Inspector 欄位名 | 拖入節點 | 節點類型 |
-|-----------------|---------|---------|
-| `questScrollContent` | `QuestListScrollView > view > content` | Node |
-| `questItemTemplate` | `QuestItemTemplate` | Node |
+| Inspector 欄位名 | 拖入節點 | 節點類型 | 狀態 |
+|-----------------|---------|---------|------|
+| `bgSprite` | `PanelBG` | Sprite | §20-3 已建 |
+| `titleLabel` | `TitleLabel` | Label | §20-3 已建 |
+| `closeButton` | `CloseButton` | Node | §20-3 已建 |
+| `contentContainer` | `QuestContent` | Node | §20-3 已建 |
+| `emptyLabel` | `QuestEmptyLabel` | Label | §20-3 已建 |
+| `scrollView` | `QuestListScrollView` | ScrollView | 🆕 若已建則綁 |
 
-### 60-8. 確認清單
+### 60-5. 確認清單
 
-- [ ] `QuestListScrollView` 建在 `BodyRoot` 下，有 `ScrollView` 元件
-- [ ] `content` 節點在 `view` 下，有 `Layout` (VERTICAL)
-- [ ] `QuestItemTemplate` 在 `BodyRoot` 下，**Active = false**
-- [ ] `QuestItemTemplate` 內有 `QuestTitle` (Label)、`QuestStatus` (Label)、`ReportBtn` (Button + 子 Label)
-- [ ] 所有新節點 Layer = `UI_2D`
-
----
-
-## 61. Phase 7-B — 建立組隊系統面板（編輯器步驟）
-
-> **涉及腳本**：新建 `PartyPanel.ts`（由程式端建立）
-> **新增節點**：在 `PanelLayer` 下新建 `PartyPanelNode`
-
-### 61-1. 目標節點結構
-
-```
-PanelLayer                           ← 已建立
-└── PartyPanelNode                   ← 🆕 新建（PartyPanel 腳本）
-    ├── Backdrop                     ← 🆕 新建（Sprite + Button，無 BlockInputEvents）
-    └── PanelBG                      ← 🆕 新建（Sprite + BlockInputEvents）
-        ├── HeaderBar                ← 🆕 新建（Sprite）
-        ├── TitleLabel               ← 🆕 新建（Label，string = 組隊）
-        ├── CloseButton              ← 🆕 新建（Button + Label string = X）
-        ├── CloseHintLabel           ← 🆕 新建（Label）
-        └── BodyRoot                 ← 🆕 新建
-            ├── PartyStatusLabel     ← 🆕 新建（Label 元件）
-            ├── MemberListScrollView ← 🆕 新建（ScrollView 元件）
-            │   └── view
-            │       └── content      ← 🆕 新建（Layout 元件）
-            ├── ButtonBar            ← 🆕 新建（Layout 元件，水平排列按鈕）
-            │   ├── DrawCardBtn      ← 🆕 新建（Button 元件 + 子 Label）
-            │   │   └── Label
+- [ ] `QuestContent` (Layout VERTICAL) 存在於 `BodyRoot` 下 → 已綁到 `contentContainer`
+- [ ] `QuestEmptyLabel` (Label) 存在於 `BodyRoot` 下 → 已綁到 `emptyLabel`
+- [ ] （可選）`QuestListScrollView` 若已建，綁到 `scrollView`
+- [ ] ⚠️ **不需要**建立 QuestItemTemplate — 由程式端 `_createQuestRow()` 動態建立el
             │   ├── JoinPartyBtn     ← 🆕 新建（Button 元件 + 子 Label）
             │   │   └── Label
             │   └── EndPartyBtn      ← 🆕 新建（Button 元件 + 子 Label）
@@ -2529,6 +2507,10 @@ PanelLayer                           ← 已建立
 
 1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `MemberListScrollView`
 2. `UITransform`：W = `380`, H = `180`
+>
+> ⚠️ **責任分工**：
+> - 🎮 **Cocos 端**：建面板外殼 + PartyStatusLabel + ButtonBar（3 個按鈕）→ 靜態控件
+> - 🖥️ **程式端**：成員列表內容由程式動態建立；PartyStoryScrollView 的文字由程式更新
 3. Position：`(0, 30, 0)`
 4. **Add Component** → `ScrollView` → Direction = `VERTICAL`
 5. 在自動產生的 `view` 下建立 `content` 節點：
@@ -2619,7 +2601,7 @@ PanelLayer                           ← 已建立
 
 ---
 
-## 62. Phase 7-C — NPC 商人交易 UI（編輯器步驟）
+## 62. Phase 7-C — NPC 商人交易 UI 🎮🖥️
 
 > **涉及腳本**：`NPCModal.ts`（修改）
 > **操作位置**：在已建好的 `NPCModalNode` 內部增加商店功能節點
@@ -2752,7 +2734,7 @@ NPCModalNode                         ← 已建立
 
 ---
 
-## 63. Phase 7-D — 漂流瓶系統（編輯器步驟）
+## 63. Phase 7-D — 漂流瓶系統 🎮🖥️
 
 > **涉及腳本**：新建 `DriftFragmentPanel.ts`（由程式端建立）
 > **新增節點**：在 `PanelLayer` 下新建 `DriftFragmentPanelNode`
@@ -2868,7 +2850,7 @@ PanelLayer                           ← 已建立
 
 ---
 
-## 64. Phase 7-D 續 — 公報系統（編輯器步驟）
+## 64. Phase 7-D 續 — 公報系統 🎮🖥️
 
 > **涉及腳本**：新建 `GazettePanel.ts`（由程式端建立）
 > **新增節點**：在 `PanelLayer` 下新建 `GazettePanelNode`
@@ -2984,7 +2966,7 @@ PanelLayer                           ← 已建立
 
 ---
 
-## 65. Phase 8 — 視覺效果準備（編輯器步驟）
+## 65. Phase 8 — 視覺效果準備 🎮
 
 > **前置條件**：美術素材到位後執行。
 > 在美術資源未到位前，以下只需要預留節點位置。
@@ -3029,7 +3011,7 @@ PanelLayer                           ← 已建立
 
 ---
 
-## 66. Phase 6-8 完成後的驗證清單
+## 66. Phase 6-8 完成後的驗證清單 📖
 
 ### ✅ Phase 6 驗證（API 接通）
 
