@@ -1,4 +1,4 @@
-# Cocos 協作安裝與節點銜接超詳細手冊
+﻿# Cocos 協作安裝與節點銜接超詳細手冊
 
 > 適用對象：第一次進 Cocos Creator、希望照著做就能完成基本場景整理的人。
 > 
@@ -2168,29 +2168,29 @@ Canvas
 > - 📖 = **參考文件**（純閱讀，不需要操作）
 > - ➡️ HANDOFF = 已移至 `COCOS_PREVIEW_DEBUG_HANDOFF.md`
 
-| § | 標題 | 責任方 | 需要在 Editor 動手？ |
-|---|------|--------|-------------------|
-| 40 | 左側設定按鈕已移除 | 🎮 Cocos | ✅ 刪除 LeftNavBar 按鈕 |
-| 41 | (已移至 HANDOFF) | ➡️ | — |
-| 42 | MapSceneBuilder 擺放 | 🎮 Cocos | ✅ 確認節點層級 |
-| 43 | (已移至 HANDOFF) | ➡️ | — |
-| 44 | 面板 Shell 結構 | 🎮📖 Cocos 參考 | ⚠️ 對照用，不需額外操作 |
-| 45 | (已移至 HANDOFF) | ➡️ | — |
-| 46 | Console Log 速查 | 📖 參考 | — |
-| 47 | (已移至 HANDOFF) | ➡️ | — |
-| 48 | BlockInputEvents | 📖 參考 | — |
-| 49-52 | (已移至 HANDOFF) | ➡️ | — |
-| 53 | 新增面板的步驟 | 🎮 Cocos | ✅ 建節點 + 掛腳本 + 拖綁 |
-| 54-58 | (已移至 HANDOFF) | ➡️ | — |
-| 59 | Phase 6 API 準備 | 🎮+🖥️ 混合 | ✅ Server 啟動 + 確認面板拖綁 |
-| 60 | Phase 7-A 任務回報 | 🎮 外殼確認 / 🖥️ 動態內容 | ⚠️ 內部列表由程式動態建立 |
-| 61 | Phase 7-B 組隊面板 | 🎮 建外殼+靜態控件 / 🖥️ 成員列表 | ✅ 需建面板 + 按鈕 |
-| 62 | Phase 7-C NPC 商人 | 🎮 建 TabBar+容器 / 🖥️ 商品列表 | ✅ 需建 TabBar + ShopTabContainer |
-| 63 | Phase 7-D 漂流瓶 | 🎮 建外殼+WriteArea / 🖥️ 瓶列表 | ✅ 需建面板 + EditBox |
-| 64 | Phase 7-D 公報 | 🎮 建 FilterBar / 🖥️ 公報列表 | ✅ 需建面板 + FilterBar |
-| 65 | Phase 8 視覺效果 | 🎮 Cocos | ✅ 預留 FogLayer + GlitchGhost 空節點 |
-| 66 | 驗證清單 | 📖 參考 | — |
-| 67 | (已移至 HANDOFF) | ➡️ | — |
+| § | 標題 | 你要動手嗎？ |
+|---|------|-------------|
+| 40 | 左側設定按鈕已移除 | ✅ 刪除 LeftNavBar 按鈕 |
+| 41 | (已移至 HANDOFF) | — |
+| 42 | MapSceneBuilder 擺放 | ✅ 確認節點層級 |
+| 43 | (已移至 HANDOFF) | — |
+| 44 | 面板外殼長什麼樣？ | 📖 認識就好，程式自動蓋 |
+| 45 | (已移至 HANDOFF) | — |
+| 46 | Preview 後怎麼看 Console？ | 📖 查問題用 |
+| 47 | (已移至 HANDOFF) | — |
+| 48 | BlockInputEvents 是什麼？ | 📖 認識就好 |
+| 49-52 | (已移至 HANDOFF) | — |
+| 53 | 未來新增面板怎麼做？ | ✅ 建節點 + 掛腳本 + 拖綁 |
+| 54-58 | (已移至 HANDOFF) | — |
+| 59 | 接 API 前要確認的事 | ✅ 跑 Server + Preview 驗證 |
+| 60 | 任務面板 QuestPanel | ⚠️ 確認節點在就好，列表程式建 |
+| 61 | 組隊面板 PartyPanel（新！） | ✅ 建面板 + 按鈕 + 敘事區 |
+| 62 | NPC 商人交易 NPCModal | ✅ 建 TabBar + 商店容器 |
+| 63 | 漂流瓶 DriftFragmentPanel（新！） | ✅ 建面板 + 輸入框 + 投放按鈕 |
+| 64 | 公報 GazettePanel（新！） | ✅ 建面板 + FilterBar |
+| 65 | 視覺效果準備 | ✅ 預留 2 個空節點 |
+| 66 | 整體再驗證一次 | 📖 Preview 對照清單 |
+| 67 | (已移至 HANDOFF) | — |
 
 ---
 
@@ -2244,803 +2244,588 @@ Scene Root
 
 ---
 
-## 44. 面板 Shell 結構（編輯器內的節點層級）🎮📖
+## 44. 面板的外殼長什麼樣？📖
 
-每個面板節點（如 `SettingsPanelNode`）的完整結構如下：
+> **這些全部是程式自動蓋的，你不用手動建。** 只要認識就好。
 
-```
-SettingsPanelNode          ← 面板根節點（在 PanelLayer 下）
-├── Backdrop               ← 全螢幕半透明遮罩（點擊可關閉）
-│   ├── UITransform 1280×720
-│   ├── Sprite (黑色 alpha=150)
-│   └── Button
-└── PanelBG                ← 面板主體背景
-    ├── UITransform 520×560
-    ├── Sprite (深色底)
-    ├── BlockInputEvents   ← 防止點擊穿透到 Backdrop
-    ├── HeaderBar          ← 標題灰色橫條
-    ├── TitleLabel         ← 標題文字
-    ├── BodyFrame          ← 半透明內容邊框
-    ├── CloseButton        ← 右上角 X（紅色 34px）
-    ├── CloseHintLabel     ← 「點空白區域也可關閉」提示
-    └── BodyRoot           ← 面板專屬內容區域
-```
-
-### 重要
-- `Backdrop` 不加 `BlockInputEvents`（需要接收點擊來關閉面板）
-- `PanelBG` 一定要加 `BlockInputEvents`（防止穿透到 Backdrop）
-- 如果你在 Inspector 中手動建了這些子節點，V4 會跳過自動補建
-
----
-
-## 45. （程式碼原理 — 已移至 HANDOFF）
-
-> 面板事件綁定原理（每次 runtime 都要重綁）的技術細節，
-> 請參閱 `COCOS_PREVIEW_DEBUG_HANDOFF.md`。
-
----
-
-## 46. Console Log 關鍵字速查 📖
-
-Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
-
-| 關鍵字 | 含義 | 正常/異常 |
-|--------|------|----------|
-| `V4 已載入` | MapSceneBuilder 腳本有執行 | ✅ 正常 |
-| `✅ 偵測到 Inspector` | V4 路徑啟用，跳過動態建構 | ✅ 正常 |
-| `⚙️ 面板 shell 就緒` | 面板內部結構已建構 + 事件已綁定 | ✅ 正常 |
-| `⏭️ panel 未綁定` | MainGameController 缺少該面板的 @property | ⚠️ 需補綁 |
-| `⏭️ 找不到此節點` | PanelLayer 下沒有對應名稱的節點 | ⚠️ 需建立 |
-| `PanelLayer 不存在` | Canvas 下沒有 PanelLayer | 🔴 結構錯誤 |
-| `settingsButtonNode 未綁定` | 齒輪按鈕沒拖入 Inspector | ⚠️ 需補綁 |
-| `齒輪 TOUCH_END → settings` | 齒輪點擊觸發 | ✅ 正常 |
-| `開啟面板：XXX` | MainGameController 收到面板開啟請求 | ✅ 正常 |
-
----
-
-## 47. （程式碼原理 — 已移至 HANDOFF）
-
-> 事件冒泡機制的技術原理，
-> 請參閱 `COCOS_PREVIEW_DEBUG_HANDOFF.md` §十一 Bug Pattern Framework。
-
----
-
-## 48. BlockInputEvents 元件說明 📖
-
-### 用途
-阻止觸控事件穿透到**下方（Z-Order 更低）**的節點。
-
-### 什麼時候要加
-- 面板主體（PanelBG）→ 防止點擊面板內容時觸發 Backdrop 關閉
-- 彈窗對話框 → 防止點擊對話框時操作底下的地圖
-- 各 NavBtn / SettingsBtn 的 TouchTarget → 防止事件穿透
-
-### 什麼時候不加
-- Backdrop → 需要接收點擊來關閉面板，不能阻擋
-
----
-
-## 49–52. （程式碼原理 — 已移至 HANDOFF / CLAUDE.md）
-
-> 以下內容為程式碼層面的說明，已移至對應文件：
-> - 面板 open/close 流程圖 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
-> - HUD/LeftNavBar 配置 → 見 §27-28 的建立步驟
-> - MapSceneBuilder Auto-Fix 機制 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
-
----
-
-## 53. 新增面板的編輯器步驟 🎮
-
-如果未來需要新增一個面板（例如「成就面板」），在編輯器中的操作步驟：
-
-### 步驟 1：建立節點
-1. 在 PanelLayer 下新增空節點 → 命名 `AchievementPanelNode`
-2. 加入 UITransform → 450×480
-3. 設 Layer → UI_2D（套用到子節點）
-4. 取消勾選 Active（預設隱藏）
-5. Add Component → `AchievementPanel`（腳本需先由程式端建立）
-
-### 步驟 2：建立面板殼
-按照 §20-2 的通用面板結構（步驟 A~I），建立 Backdrop、PanelBG、HeaderBar、TitleLabel、CloseButton、BodyRoot 等子節點。
-
-### 步驟 3：Inspector 拖綁
-1. 選中掛有 `MainGameController` 的節點
-2. 找到 `achievementPanel` 欄位 → 拖入 `AchievementPanelNode`
-
-### 步驟 4：新增入口按鈕（可選）
-如果需要從左側導航開啟，在 `LeftNavBar` 下新增一個 NavBtn 按鈕（參照 §28）。
-
----
-
-## 54–58. （程式碼原理 — 已移至 HANDOFF / CLAUDE.md）
-
-> 以下內容為程式碼層面的說明，已移至對應文件：
-> - 面板 show/hide/toggle 模式 → `CLAUDE.md`
-> - SoundManager / DataEventBus / 場景轉場 → `CLAUDE.md`
-> - Cocos Creator 3.8.2 常見陷阱 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
-
-
----
-
-## 59. Phase 6 — API 接通前的編輯器準備 🎮🖥️
-
-> **背景**：目前 6 個面板使用模擬資料（Mock），接下來需要改為呼叫真實 Server API。
-> 編輯器端不需要修改節點結構，但需要確認以下項目。
-
-### 59-1. 確認 Server 環境就緒
-
-1. 打開終端機，進入專案根目錄
-2. 執行 `npm run server`（啟動 `server/index.ts`）
-3. 確認 Console 出現 `Server listening on port 3001`
-4. 如果沒出現，檢查 `server/index.ts` 是否存在
-
-### 59-2. 確認 Supabase 連線（由程式端處理）
-
-> 不需要在編輯器中做任何事。這些面板改為真實 API 後，資料走向變為：
-> - 面板 → DataManager.fetchXxx() → `fetch()` 呼叫 Server → Supabase DB
-
-### 59-3. 完成後要確認的 6 個面板
-
-完成 API 接通後，回到編輯器 Preview，逐一測試：
-
-| 面板 | Preview 時的預期行為 | Console 應該看到 |
-|------|---------------------|-----------------|
-| ApostatePanel | 問卷提交後 → 不再只存 localStorage，Console 出現 API 回應 | `[DataManager] submitScreening 成功` |
-| LiquidatorPanel | 輸入名字掃描 → 結果來自 Server，不再隨機 | `[DataManager] liquidatorScan 成功` |
-| LeaderTyrannyPanel | 徵稅/詛咒/法令/懸賞/國庫 → Console 出現 API 回應 | `[DataManager] leader.tax 成功` 等 |
-| LeaderboardPanel | 開啟後 → 排行榜資料來自 DB | `[DataManager] fetchLeaderboard 成功` |
-| BalanceSettlementModal | 結算動畫 → 數值來自 Server | `[DataManager] getSettlementResult 成功` |
-| InventoryPanel | 背包 → 顯示 DB 中的道具而非 8 筆假資料 | `[DataManager] fetchInventory 成功` |
-
----
-
-## 60. Phase 7-A — 任務回報系統 🎮🖥️
-
-> **涉及腳本**：`QuestPanel.ts`（修改）、`PTD_DataManager.ts`（修改）
-> **前提**：`QuestPanelNode` 已經在 §20-3 面板 2 中建好外殼。本節在其 BodyRoot 內補建回報功能節點。
->
-> ⚠️ **責任分工**：
-> - 🎮 **Cocos 端**：確認 QuestContent、QuestEmptyLabel 存在；可選建立 ScrollView
-> - 🖥️ **程式端**：每一筆任務行（Title / Status / ReportBtn）由 `_createQuestRow()` 動態建立，**不需要在 Editor 建模板**
-
-### 60-1. 目標節點結構
+每個面板打開後，你會看到這樣的節點結構：
 
 ```
-QuestPanelNode                       ← 已建立（§20-3 面板 2）
-├── Backdrop                         ← 已建立
-└── PanelBG                          ← 已建立
-    ├── HeaderBar                    ← 已建立
-    ├── TitleLabel                   ← 已建立（string = 任務面板）
-    ├── CloseButton                  ← 已建立
-    ├── CloseHintLabel               ← 已建立
-    └── BodyRoot                     ← 已建立
-        ├── QuestContent             ← 已建立 🎮（Layout）→ 綁到 contentContainer
-        ├── QuestEmptyLabel          ← 已建立 🎮（Label）→ 綁到 emptyLabel
-        ├── QuestListScrollView      ← 🆕 🎮 可選建（ScrollView 元件）
-        │   └── view                 ← ScrollView 自動產生
-        │       └── content          ← 🆕 🎮 可選建（Layout 元件）
-        └── 🖥️ 以下由程式動態建立（不需手動建）──
-            └── Quest_XXX            ← 🖥️ _createQuestRow() 動態產生
-                ├── Title            ← 🖥️ Label
-                ├── Status           ← 🖥️ Label
-                ├── Reward           ← 🖥️ Label
-                └── ReportBtn        ← 🖥️（待程式端新增回報功能後加入）
+面板節點（例：SettingsPanelNode）
+├── Backdrop          ← 全螢幕半透明黑色遮罩，點了可以關面板
+└── PanelBG           ← 面板主體（深色背景方塊）
+    ├── HeaderBar     ← 標題灰色橫條
+    ├── TitleLabel    ← 面板標題文字
+    ├── BodyFrame     ← 半透明內容邊框
+    ├── CloseButton   ← 右上角紅色 X
+    ├── CloseHintLabel← 「點空白區域也可關閉」提示
+    └── BodyRoot      ← 面板專屬內容（裡面的東西因面板而異）
 ```
 
-### 60-2. 建立 QuestListScrollView
+### 哪些面板有自動外殼？
 
-1. 在 Hierarchy 面板，**右鍵** `BodyRoot` → **建立空節點 (Create Empty Node)**
-2. 改名為 `QuestListScrollView`
-3. **🔴 Layer 設定**：Inspector 最上方 → Layer → 改為 `UI_2D` → 彈窗選「套用到子節點」
-4. 選中 `QuestListScrollView`，在 Inspector：
-   - **Add Component** → `UITransform` → W = `410`, H = `320`
-   - **Add Component** → `ScrollView`
-   - ScrollView 設定：Direction = `VERTICAL`
-5. ScrollView 加好後會自動產生 `view` 子節點
-6. **右鍵** `view` → **建立空節點** → 改名為 `content`
-7. 選中 `con🖥️ 任務項目（程式端動態建立）
+以下 8 個面板，程式（`MapSceneBuilder`）在 Preview 時會自動蓋好外殼，**你只需建空節點 + 掛腳本**。
 
-> **以下由 `QuestPanel._createQuestRow()` 在 runtime 動態建立，不需要在 Editor 手動建模板。**
-> 
-> 程式端為每一筆任務建立的節點結構：
-> - `Quest_XXX`（UITransform 400×60）
->   - `Title`（Label, fontSize=14, 任務名稱）
->   - `Status`（Label, fontSize=11, 進行中/已完成/未解鎖）
->   - `Reward`（Label, fontSize=11, 獎勵幣數）
->   - `ReportBtn`（待程式端加入，Button + Label = 回報）
->
-> ⚠️ 如果之後要改任務行的外觀、大小、字體，**請找程式端修改 `_createQuestRow()` 函數**。
+| 面板 | 自動標題 |
+|------|---------|
+| SettingsPanelNode | 設定面板 |
+| QuestPanelNode | 任務面板 |
+| CollectionPanelNode | 圖鑑面板 |
+| NotificationPanelNode | 通知中心 |
+| InventoryPanelNode | 背包 |
+| NPCModalNode | NPC 互動 |
+| WhiteCrowCardNode | 白鴉檔案 |
+| ItemDetailModalNode | 道具詳情 |
 
-### 60-4. Inspector 拖綁 🎮
+### 其他面板呢？
 
-1. 選中 `QuestPanelNode`（掛有 `QuestPanel` 腳本的節點）
-2. 在 Inspector 中確認以下欄位已拖綁：
-
-| Inspector 欄位名 | 拖入節點 | 節點類型 | 狀態 |
-|-----------------|---------|---------|------|
-| `bgSprite` | `PanelBG` | Sprite | §20-3 已建 |
-| `titleLabel` | `TitleLabel` | Label | §20-3 已建 |
-| `closeButton` | `CloseButton` | Node | §20-3 已建 |
-| `contentContainer` | `QuestContent` | Node | §20-3 已建 |
-| `emptyLabel` | `QuestEmptyLabel` | Label | §20-3 已建 |
-| `scrollView` | `QuestListScrollView` | ScrollView | 🆕 若已建則綁 |
-
-### 60-5. 確認清單
-
-- [ ] `QuestContent` (Layout VERTICAL) 存在於 `BodyRoot` 下 → 已綁到 `contentContainer`
-- [ ] `QuestEmptyLabel` (Label) 存在於 `BodyRoot` 下 → 已綁到 `emptyLabel`
-- [ ] （可選）`QuestListScrollView` 若已建，綁到 `scrollView`
-- [ ] ⚠️ **不需要**建立 QuestItemTemplate — 由程式端 `_createQuestRow()` 動態建立el
-            │   ├── JoinPartyBtn     ← 🆕 新建（Button 元件 + 子 Label）
-            │   │   └── Label
-            │   └── EndPartyBtn      ← 🆕 新建（Button 元件 + 子 Label）
-            │       └── Label
-            └── PartyStoryScrollView ← 🆕 新建（ScrollView 元件）
-                └── view
-                    └── content      ← 🆕 新建
-                        └── StoryLabel ← 🆕 新建（Label 元件）
-```
-
-### 61-2. 建立面板外殼（步驟 A~I）
-
-按 §20-2 通用步驟逐步建立。以下標出差異：
-
-1. **右鍵** `PanelLayer` → **建立空節點** → 改名為 `PartyPanelNode`
-2. `UITransform`：W = `500`, H = `520`
-3. `Widget`：勾選 `Horizontal Center` = 0, `Vertical Center` = 0
-4. **⚠️ 取消勾選 Active**
-5. **Add Component** → `PartyPanel`（腳本需先由程式端建立，若尚未建立則先跳過此步）
-6. **🔴 Layer**：改為 `UI_2D` → 「套用到子節點」
-7. 按 §20-2 步驟 B~I 建立 Backdrop、PanelBG、HeaderBar、TitleLabel（string = **組隊**）、CloseButton、CloseHintLabel、BodyRoot
-   - Backdrop：W = `1280`, H = `720`, Sprite Color = `(0, 0, 0, 150)`, Button, **不加** BlockInputEvents
-   - PanelBG：W = `520`, H = `560`, Sprite Color = `(19, 24, 39, 245)`, **加** BlockInputEvents
-
-### 61-3. 建立 PartyStatusLabel（Label 元件）
-
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `PartyStatusLabel`
-2. `UITransform`：W = `380`, H = `30`
-3. Position：`(0, 150, 0)`
-4. **Add Component** → `Label` → string = `尚未加入隊伍`, fontSize = `15`
-5. Label → Horizontal Align = `CENTER`, Color = `(248, 250, 252, 255)`
-
-### 61-4. 建立 MemberListScrollView（ScrollView 元件）
-
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `MemberListScrollView`
-2. `UITransform`：W = `380`, H = `180`
->
-> ⚠️ **責任分工**：
-> - 🎮 **Cocos 端**：建面板外殼 + PartyStatusLabel + ButtonBar（3 個按鈕）→ 靜態控件
-> - 🖥️ **程式端**：成員列表內容由程式動態建立；PartyStoryScrollView 的文字由程式更新
-3. Position：`(0, 30, 0)`
-4. **Add Component** → `ScrollView` → Direction = `VERTICAL`
-5. 在自動產生的 `view` 下建立 `content` 節點：
-   - `UITransform`：W = `380`, H = `180`
-   - **Add Component** → `Layout` → Type = `VERTICAL`, SpacingY = `6`, ResizeMode = `CONTAINER`
-6. 回到 ScrollView 元件 → 拖入 `content` 到 `Content` 欄位
-
-### 61-5. 建立 ButtonBar（Layout 元件，水平排列按鈕）
-
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `ButtonBar`
-2. `UITransform`：W = `380`, H = `52`
-3. Position：`(0, -80, 0)`
-4. **Add Component** → `Layout` → Type = `HORIZONTAL`, SpacingX = `12`, ResizeMode = `NONE`
-
-#### 建立 DrawCardBtn（Button 元件）
-
-1. **右鍵** `ButtonBar` → **建立空節點** → 改名為 `DrawCardBtn`
-2. `UITransform`：W = `110`, H = `42`
-3. **Add Component** → `Sprite` → Color = `(168, 85, 247, 240)`（紫色）
-4. **Add Component** → `Button`
-5. **右鍵** `DrawCardBtn` → **建立空節點** → 改名為 `Label`
-6. `UITransform`：W = `110`, H = `42`
-7. **Add Component** → `Label` → string = `抽牌`, fontSize = `15`, Horizontal/Vertical = `CENTER`
-8. Color = `(255, 255, 255, 255)`
-
-#### 建立 JoinPartyBtn（Button 元件）
-
-複製 DrawCardBtn 的步驟，差異：
-- 節點名 = `JoinPartyBtn`
-- Sprite Color = `(34, 197, 94, 240)`（綠色）
-- Label string = `加入隊伍`
-
-#### 建立 EndPartyBtn（Button 元件）
-
-複製 DrawCardBtn 的步驟，差異：
-- 節點名 = `EndPartyBtn`
-- Sprite Color = `(239, 68, 68, 240)`（紅色）
-- Label string = `結束隊伍`
-- **⚠️ 取消勾選 Active**（僅隊長可見，由程式控制）
-
-### 61-6. 建立 PartyStoryScrollView（ScrollView 元件）
-
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `PartyStoryScrollView`
-2. `UITransform`：W = `380`, H = `120`
-3. Position：`(0, -170, 0)`
-4. **Add Component** → `ScrollView` → Direction = `VERTICAL`
-5. 在 `view` 下建立 `content`：
-   - `UITransform`：W = `380`, H = `120`
-   - **Add Component** → `Layout` → Type = `VERTICAL`, ResizeMode = `CONTAINER`
-6. **右鍵** `content` → **建立空節點** → 改名為 `StoryLabel`
-   - `UITransform`：W = `360`, H = `100`
-   - **Add Component** → `Label` → string = `組隊敘事將顯示在此`, fontSize = `12`, Overflow = `CLAMP`
-   - Color = `(203, 213, 225, 255)`（淺灰）
-
-### 61-7. Inspector 拖綁 MainGameController
-
-1. 選中掛有 `MainGameController` 的節點（Canvas 或 GameRoot）
-2. 等程式端新增 `partyPanel` @property 後，拖入 `PartyPanelNode`
-
-| Inspector 欄位名 | 拖入節點 | 節點類型 |
-|-----------------|---------|---------|
-| `partyPanel` | `PartyPanelNode` | PartyPanel (Component) |
-
-### 61-8. 新增組隊入口按鈕（在 LeftNavBar）
-
-> 如果決定從 LeftNavBar 開啟組隊面板：
-
-1. **右鍵** `LeftNavBar` → **建立空節點** → 改名為 `NavBtn_Party`
-2. `UITransform`：W = `40`, H = `40`
-3. **Add Component** → `Sprite` → Color = `(71, 85, 105, 240)`
-4. **Add Component** → `Button`
-5. **Add Component** → `BlockInputEvents`
-6. **右鍵** `NavBtn_Party` → **建立空節點** → 改名為 `Label`
-   - `UITransform`：W = `40`, H = `40`
-   - **Add Component** → `Label` → string = `組`, fontSize = `18`
-   - Horizontal/Vertical = `CENTER`, Color = `(248, 250, 252, 255)`
-7. 回去 `HUDController` → `navButtons` 陣列 → 將 `NavBtn_Party` 加入到正確位置
-
-### 61-9. 確認清單
-
-- [ ] `PartyPanelNode` 在 `PanelLayer` 下，**Active = false**
-- [ ] 面板外殼完整：Backdrop (Sprite+Button) / PanelBG (Sprite+BlockInputEvents) / HeaderBar / TitleLabel (組隊) / CloseButton / BodyRoot
-- [ ] `PartyStatusLabel` (Label) 在 BodyRoot 下
-- [ ] `MemberListScrollView` (ScrollView) 在 BodyRoot 下，內有 `content` (Layout)
-- [ ] `ButtonBar` (Layout HORIZONTAL) 在 BodyRoot 下，內有 3 個 Button：DrawCardBtn(紫) / JoinPartyBtn(綠) / EndPartyBtn(紅, Active=false)
-- [ ] `PartyStoryScrollView` (ScrollView) 在 BodyRoot 下
-- [ ] 所有節點 Layer = `UI_2D`
+LandmarkStoryModal、ApostatePanel、LiquidatorPanel、KidnapPopup、BalanceSettlement、LeaderboardPanel、LeaderTyrannyPanel → 目前只建空節點 + 掛腳本，**外殼不會自動蓋**。等開發到那些功能時，程式端會補上。
 
 ---
 
-## 62. Phase 7-C — NPC 商人交易 UI 🎮🖥️
+## 45. （已移至 HANDOFF）
 
-> **涉及腳本**：`NPCModal.ts`（修改）
-> **操作位置**：在已建好的 `NPCModalNode` 內部增加商店功能節點
-
-### 62-1. 目標節點結構
-
-```
-NPCModalNode                         ← 已建立
-├── Backdrop                         ← 已建立
-└── PanelBG                          ← 已建立
-    ├── HeaderBar                    ← 已建立
-    ├── TitleLabel                   ← 已建立
-    ├── CloseButton                  ← 已建立
-    ├── TabBar                       ← 🆕 新建（Layout 元件，水平排列）
-    │   ├── TabBtn_Dialog            ← 🆕 新建（Button 元件 + 子 Label）
-    │   │   └── Label
-    │   └── TabBtn_Shop              ← 🆕 新建（Button 元件 + 子 Label）
-    │       └── Label
-    └── BodyRoot                     ← 已建立
-        ├── DialogueLabel            ← 已建立
-        ├── ShopContainer            ← 已建立（或需確認）
-        ├── ActionButton             ← 已建立
-        └── ShopTabContainer         ← 🆕 新建（Active=false）
-            ├── ShopScrollView       ← 🆕 新建（ScrollView 元件）
-            │   └── view
-            │       └── content      ← 🆕 新建（Layout 元件）
-            ├── ShopItemTemplate     ← 🆕 新建（Active=false，模板用）
-            │   ├── ItemIcon         ← 🆕 新建（Sprite 元件，佔位色塊）
-            │   ├── ItemName         ← 🆕 新建（Label 元件）
-            │   ├── ItemPrice        ← 🆕 新建（Label 元件）
-            │   └── ItemBuyBtn       ← 🆕 新建（Button 元件 + 子 Label）
-            │       └── Label
-            └── BuyConfirmBtn        ← 🆕 新建（Button 元件 + 子 Label）
-                └── Label
-```
-
-### 62-2. 建立 TabBar（Layout 元件）
-
-1. **右鍵** `PanelBG` → **建立空節點** → 改名為 `TabBar`
-2. `UITransform`：W = `300`, H = `36`
-3. Position：`(0, 220, 0)`（在 HeaderBar 正下方）
-4. **Add Component** → `Layout` → Type = `HORIZONTAL`, SpacingX = `8`, ResizeMode = `NONE`
-5. **🔴 Layer**：`UI_2D`
-
-#### 建立 TabBtn_Dialog（Button 元件）
-
-1. **右鍵** `TabBar` → **建立空節點** → 改名為 `TabBtn_Dialog`
-2. `UITransform`：W = `90`, H = `30`
-3. **Add Component** → `Sprite` → Color = `(59, 130, 246, 240)`（藍色 = 選中態）
-4. **Add Component** → `Button`
-5. **右鍵** `TabBtn_Dialog` → **建立空節點** → 改名為 `Label`
-6. `UITransform`：W = `90`, H = `30`
-7. **Add Component** → `Label` → string = `對話`, fontSize = `14`, Horizontal/Vertical = `CENTER`
-8. Color = `(255, 255, 255, 255)`
-
-#### 建立 TabBtn_Shop（Button 元件）
-
-複製 TabBtn_Dialog 的步驟，差異：
-- 節點名 = `TabBtn_Shop`
-- Sprite Color = `(71, 85, 105, 240)`（灰色 = 未選中態）
-- Label string = `商店`
-
-### 62-3. 建立 ShopTabContainer
-
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `ShopTabContainer`
-2. `UITransform`：W = `430`, H = `340`
-3. **⚠️ 取消勾選 Active**（預設顯示對話頁，切換到商店時才開啟）
-
-### 62-4. 建立 ShopScrollView（ScrollView 元件）
-
-1. **右鍵** `ShopTabContainer` → **建立空節點** → 改名為 `ShopScrollView`
-2. `UITransform`：W = `410`, H = `270`
-3. Position：`(0, 15, 0)`
-4. **Add Component** → `ScrollView` → Direction = `VERTICAL`
-5. 在 `view` 下建立 `content`：
-   - `UITransform`：W = `410`, H = `270`
-   - **Add Component** → `Layout` → Type = `VERTICAL`, SpacingY = `6`, ResizeMode = `CONTAINER`
-
-### 62-5. 建立 ShopItemTemplate（模板，Active=false）
-
-1. **右鍵** `ShopTabContainer` → **建立空節點** → 改名為 `ShopItemTemplate`
-2. `UITransform`：W = `400`, H = `60`
-3. **Add Component** → `Sprite` → Color = `(30, 36, 50, 180)`
-4. **Add Component** → `Layout` → Type = `HORIZONTAL`, SpacingX = `8`, Padding = `(6, 6, 6, 6)`
-5. **⚠️ 取消勾選 Active**
-
-#### 在 ShopItemTemplate 內建立子節點
-
-| 步驟 | 節點名 | 元件 | UITransform | 設定 |
-|------|--------|------|-------------|------|
-| 1 | `ItemIcon` | Sprite | W=48, H=48 | Color = `(100, 100, 100, 255)`（灰色佔位） |
-| 2 | `ItemName` | Label | W=180, H=24 | string = `商品名稱`, fontSize = `13`, Color = `(228, 232, 240, 255)` |
-| 3 | `ItemPrice` | Label | W=80, H=24 | string = `0 幣`, fontSize = `13`, Color = `(250, 204, 21, 255)`（金色） |
-| 4 | `ItemBuyBtn` | Button + Sprite | W=70, H=30 | Sprite Color = `(34, 197, 94, 240)`（綠色） |
-| 4a | `ItemBuyBtn/Label` | Label | W=70, H=30 | string = `購買`, fontSize = `13`, Color = `(255, 255, 255, 255)` |
-
-### 62-6. 建立 BuyConfirmBtn（Button 元件）
-
-1. **右鍵** `ShopTabContainer` → **建立空節點** → 改名為 `BuyConfirmBtn`
-2. `UITransform`：W = `120`, H = `40`
-3. Position：`(0, -145, 0)`
-4. **Add Component** → `Sprite` → Color = `(59, 130, 246, 240)`
-5. **Add Component** → `Button`
-6. **右鍵** `BuyConfirmBtn` → **建立空節點** → 改名為 `Label`
-   - `UITransform`：W = `120`, H = `40`
-   - **Add Component** → `Label` → string = `確認購買`, fontSize = `14`, Horizontal/Vertical = `CENTER`
-   - Color = `(255, 255, 255, 255)`
-
-### 62-7. Inspector 拖綁
-
-等程式端在 `NPCModal` 腳本中新增 @property 後：
-
-| Inspector 欄位名 | 拖入節點 | 節點類型 |
-|-----------------|---------|---------|
-| `shopTabContainer` | `ShopTabContainer` | Node |
-| `tabBtnDialog` | `TabBtn_Dialog` | Node |
-| `tabBtnShop` | `TabBtn_Shop` | Node |
-| `shopScrollContent` | `ShopScrollView > view > content` | Node |
-| `shopItemTemplate` | `ShopItemTemplate` | Node |
-
-### 62-8. 確認清單
-
-- [ ] `TabBar` 在 `PanelBG` 下，有 `Layout` (HORIZONTAL)
-- [ ] `TabBtn_Dialog` (Button + 子 Label = 對話) 和 `TabBtn_Shop` (Button + 子 Label = 商店) 在 TabBar 下
-- [ ] `ShopTabContainer` 在 `BodyRoot` 下，**Active = false**
-- [ ] `ShopScrollView` (ScrollView) 在 ShopTabContainer 下
-- [ ] `ShopItemTemplate` 在 ShopTabContainer 下,**Active = false**，內有 ItemIcon(Sprite) / ItemName(Label) / ItemPrice(Label) / ItemBuyBtn(Button+Label)
-- [ ] `BuyConfirmBtn` (Button + 子 Label = 確認購買) 在 ShopTabContainer 下
-- [ ] 所有節點 Layer = `UI_2D`
+> 面板事件綁定原理 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
 
 ---
 
-## 63. Phase 7-D — 漂流瓶系統 🎮🖥️
+## 46. Preview 後怎麼看 Console？📖
 
-> **涉及腳本**：新建 `DriftFragmentPanel.ts`（由程式端建立）
-> **新增節點**：在 `PanelLayer` 下新建 `DriftFragmentPanelNode`
+Preview 之後，在瀏覽器按 **F12** → 切到 **Console** 分頁，搜尋以下關鍵字：
 
-### 63-1. 目標節點結構
+| 看到這個 | 代表什麼 | 正常嗎？ |
+|---------|---------|---------|
+| `V4 已載入` | MapSceneBuilder 腳本有跑 | ✅ 正常 |
+| `✅ 偵測到 Inspector` | V4 路徑啟用 | ✅ 正常 |
+| `⚙️ 面板 shell 就緒` | 面板外殼 + 事件綁定完成 | ✅ 正常 |
+| `⏭️ panel 未綁定` | MainGameController 裡某個面板沒拖綁 | ⚠️ 去補綁 |
+| `⏭️ 找不到此節點` | PanelLayer 下少了某個節點 | ⚠️ 去建立 |
+| `PanelLayer 不存在` | Canvas 下沒有 PanelLayer | 🔴 大問題 |
+| `齒輪 TOUCH_END → settings` | 齒輪按鈕有反應 | ✅ 正常 |
+| `開啟面板：XXX` | 面板開啟中 | ✅ 正常 |
 
-```
-PanelLayer                           ← 已建立
-└── DriftFragmentPanelNode           ← 🆕 新建（DriftFragmentPanel 腳本）
-    ├── Backdrop                     ← 🆕 新建（Sprite + Button）
-    └── PanelBG                      ← 🆕 新建（Sprite + BlockInputEvents）
-        ├── HeaderBar                ← 🆕 新建（Sprite）
-        ├── TitleLabel               ← 🆕 新建（Label，string = 漂流瓶）
-        ├── CloseButton              ← 🆕 新建（Button + Label）
-        ├── CloseHintLabel           ← 🆕 新建（Label）
-        └── BodyRoot                 ← 🆕 新建
-            ├── FragmentScrollView   ← 🆕 新建（ScrollView 元件）
-            │   └── view
-            │       └── content      ← 🆕 新建（Layout 元件）
-            ├── FragmentTemplate     ← 🆕 新建（Active=false）
-            │   ├── SenderLabel      ← 🆕 新建（Label 元件）
-            │   └── ContentLabel     ← 🆕 新建（Label 元件）
-            ├── WriteArea            ← 🆕 新建
-            │   ├── ContentEditBox   ← 🆕 新建（EditBox 元件）
-            │   └── SendBtn          ← 🆕 新建（Button 元件 + 子 Label）
-            │       └── Label
-            └── EmptyLabel           ← 🆕 新建（Label 元件）
-```
+---
 
-### 63-2. 建立面板外殼
+## 47. （已移至 HANDOFF）
 
-與 §61-2 相同步驟，差異：
+> 事件冒泡機制 → `COCOS_PREVIEW_DEBUG_HANDOFF.md`
+
+---
+
+## 48. BlockInputEvents 是什麼？📖
+
+### 一句話解釋
+
+它會阻止你的點擊「穿透」到下面的節點。
+
+### 什麼時候要加？
+
+- **PanelBG**（面板主體）→ 一定要加。不然點面板內容會觸發背後的 Backdrop 關閉。
+- **彈窗對話框** → 防止點內容時操作到底下的地圖
+- **NavBtn / SettingsBtn 的 TouchTarget** → 防止事件穿透
+
+### 什麼時候不加？
+
+- **Backdrop（半透明遮罩）** → 不能加！讓玩家點它來關閉面板。
+
+---
+
+## 49–52. （已移至 HANDOFF / CLAUDE.md）
+
+> 面板流程圖、HUD 配置、Auto-Fix 機制 → 見 HANDOFF 文件
+
+---
+
+## 53. 如果未來要新增一個面板，怎麼做？🎮
+
+比方說要新增一個「成就面板」：
+
+**第 1 步｜建節點**
+
+1. 右鍵 `PanelLayer` → 建空節點 → 改名 `AchievementPanelNode`
+2. Add Component → `UITransform` → W=450, H=480
+3. Layer → `UI_2D`（套用到子節點）
+4. **取消勾選 Active**（面板預設要藏起來）
+5. Add Component → `AchievementPanel`（腳本需程式端先寫好）
+
+**第 2 步｜外殼不用建**
+
+程式端會在 MapSceneBuilder 裡加入這個面板的 configure 方法。Preview 時自動蓋好 Backdrop / PanelBG / HeaderBar / CloseButton 那些。
+
+**第 3 步｜拖綁**
+
+選中 MainGameController 的節點 → 把 `AchievementPanelNode` 拖到 `achievementPanel` 欄位。
+
+**第 4 步（可選）｜加入口按鈕**
+
+如果要從左邊導航列開啟，在 `LeftNavBar` 下新增一個 NavBtn（照 §28 的做法）。
+
+---
+
+## 54–58. （已移至 HANDOFF / CLAUDE.md）
+
+> 面板 show/hide、SoundManager、場景轉場 → 見 CLAUDE.md / HANDOFF
+
+---
+
+## 59. 接 API 前要確認的事 🎮🖥️
+
+> 目前面板用的是假資料。之後程式端會改成呼叫真的 Server API。
+> **你不用改任何節點結構**，只需確認環境能跑。
+
+### 你要做的事
+
+1. 打開終端機 → 進入專案根目錄 → 跑 `npm run server`
+2. 確認看到 `Server listening on port 3001` → 代表 Server 啟動了
+3. 回到 Cocos Preview → 各面板開起來應該看到真的資料
+
+### 程式端會處理的
+
+面板改為呼叫 DataManager → fetch → Server → Supabase DB。你不用動手。
+
+### 接完 API 後怎麼驗證？
+
+| 面板 | Preview 後你應該看到什麼 | Console 應該出現 |
+|------|------------------------|-----------------|
+| InventoryPanel | 物品列表不再是固定 8 筆假資料 | `[DataManager] fetchInventory` |
+| ApostatePanel | 問卷送出後有 API 回應 | `[DataManager] submitScreening 成功` |
+| LiquidatorPanel | 掃描結果不再隨機 | `[DataManager] liquidatorScan` |
+| LeaderTyrannyPanel | 點「徵稅」有回應 | `[DataManager] leader.tax 成功` |
+| BalanceSettlementModal | 結算數值來自 Server | `[DataManager] getSettlementResult` |
+| LeaderboardPanel | 排行榜來自 DB | `[DataManager] fetchLeaderboard` |
+
+---
+
+## 60. 任務面板（QuestPanel）🎮🖥️
+
+> `QuestPanelNode` 已經在 §20-3 建好了外殼。
+
+### 誰做什麼？
+
+| 任務 | 誰負責 |
+|------|--------|
+| 確認 `QuestContent`、`QuestEmptyLabel` 存在 | 🎮 你 |
+| 可選：建立 ScrollView | 🎮 你 |
+| 每一筆任務行（標題/狀態/獎勵/回報按鈕） | 🖥️ 程式自動建 |
+
+### 你要確認的節點
+
+在 `QuestPanelNode > PanelBG > BodyRoot` 下面，應該要有：
+
+| 節點名 | 元件 | 說明 |
+|--------|------|------|
+| `QuestContent` | Layout (VERTICAL) | 任務列表容器 |
+| `QuestEmptyLabel` | Label | 沒任務時顯示「目前沒有任務」 |
+
+**如果沒有** → 右鍵 `BodyRoot` → 建空節點 → 改名 → 加元件。
+
+### 可選：建立 ScrollView
+
+如果任務列表會很長，可以加一個 ScrollView：
+
+1. 右鍵 `BodyRoot` → 建空節點 → 改名 `QuestListScrollView`
+2. Layer → `UI_2D`
+3. Add Component → `UITransform`（W=410, H=320）
+4. Add Component → `ScrollView` → Direction = VERTICAL
+5. 在自動產生的 `view` 下建 `content` 節點（加 Layout VERTICAL）
+
+### Inspector 拖綁
+
+選中 `QuestPanelNode` → Inspector 裡的 `QuestPanel` 腳本：
+
+| 欄位名 | 拖入 |
+|--------|------|
+| `contentContainer` | `QuestContent` |
+| `emptyLabel` | `QuestEmptyLabel` |
+| `scrollView` | `QuestListScrollView`（如果有的話） |
+| `bgSprite` / `titleLabel` / `closeButton` | 在 §20-3 已綁好 |
+
+### 不用建的東西
+
+每一筆任務（Quest_XXX → Title / Status / Reward / ReportBtn）是程式用 `_createQuestRow()` 自動建的。想改外觀？找程式端改那個函數。
+
+---
+
+## 61. 組隊面板（PartyPanel）— 新面板！🎮🖥️
+
+> **全新面板。目前程式端還沒有 `PartyPanel.ts`。**
+> 等程式端建好腳本後，你再照以下步驟建。
+
+### 誰做什麼？
+
+| 任務 | 誰負責 |
+|------|--------|
+| 建面板節點 + 外殼 | 🎮 你 |
+| PartyStatusLabel（狀態文字） | 🎮 你 |
+| 3 個按鈕：抽牌 / 加入隊伍 / 結束隊伍 | 🎮 你 |
+| PartyStoryScrollView（敘事區） | 🎮 你 |
+| 成員列表的內容 | 🖥️ 程式自動建 |
+
+### 第 1 步：建面板節點
+
+1. 右鍵 `PanelLayer` → 建空節點 → 改名 `PartyPanelNode`
+2. Add Component → `UITransform`（W=500, H=520）
+3. Add Component → `Widget` → Horizontal Center=0, Vertical Center=0
+4. **取消勾選 Active**
+5. Add Component → `PartyPanel`（等程式端建好腳本後再加）
+6. Layer → `UI_2D`（套用到子節點）
+
+### 第 2 步：建面板外殼
+
+照 §20-2 的通用步驟，建 Backdrop、PanelBG、HeaderBar、TitleLabel（標題寫「組隊」）、CloseButton、CloseHintLabel、BodyRoot。
+
+快速參數：
+
+- Backdrop：W=1280, H=720, 黑色 alpha=150, 加 Button, **不加** BlockInputEvents
+- PanelBG：W=520, H=560, 深色底, **加** BlockInputEvents
+
+### 第 3 步：BodyRoot 裡面的內容
+
+在 `BodyRoot` 下面建這些：
+
+#### A. PartyStatusLabel（狀態文字）
+- 建空節點 → 改名 `PartyStatusLabel`
+- UITransform：W=380, H=30, Position：(0, 150, 0)
+- Add Component → Label → string=`尚未加入隊伍`, fontSize=15, 居中, 白色
+
+#### B. MemberListScrollView（成員列表，可滾動）
+- 建空節點 → 改名 `MemberListScrollView`
+- UITransform：W=380, H=180, Position：(0, 30, 0)
+- Add Component → ScrollView → VERTICAL
+- 在 `view` 下建 `content`（加 Layout VERTICAL, SpacingY=6, ResizeMode=CONTAINER）
+- → 成員列表的內容由程式動態填入
+
+#### C. ButtonBar（3 個按鈕橫排）
+- 建空節點 → 改名 `ButtonBar`
+- UITransform：W=380, H=52, Position：(0, -80, 0)
+- Add Component → Layout → HORIZONTAL, SpacingX=12
+
+裡面放 3 個按鈕：
+
+| 按鈕名 | Label | 顏色 | Active |
+|--------|-------|------|--------|
+| `DrawCardBtn` | 抽牌 | 紫色 (168,85,247) | ✅ |
+| `JoinPartyBtn` | 加入隊伍 | 綠色 (34,197,94) | ✅ |
+| `EndPartyBtn` | 結束隊伍 | 紅色 (239,68,68) | ❌ 取消勾選 |
+
+每個按鈕的建法一樣：
+1. 右鍵 `ButtonBar` → 建空節點 → 改名
+2. UITransform：W=110, H=42
+3. Add Component → Sprite（設上面的顏色）
+4. Add Component → Button
+5. 在裡面建子節點 `Label`（UITransform 同大小, Label fontSize=15, 居中白色）
+
+#### D. PartyStoryScrollView（敘事區域）
+- 建空節點 → 改名 `PartyStoryScrollView`
+- UITransform：W=380, H=120, Position：(0, -170, 0)
+- Add Component → ScrollView → VERTICAL
+- 在 `view > content` 下建 `StoryLabel`（Label, fontSize=12, 淺灰色, string=`組隊敘事將顯示在此`）
+
+### 第 4 步：拖綁
+
+等程式端在 MainGameController 加了 `partyPanel` 欄位後 → 把 `PartyPanelNode` 拖進去。
+
+### 第 5 步（可選）：加入口按鈕
+
+如果要從 LeftNavBar 開啟：在 LeftNavBar 下新增 `NavBtn_Party`（照 §28 的做法，按鈕文字寫「組」）。
+
+### 確認清單
+
+- [ ] `PartyPanelNode` 在 PanelLayer 下，Active=false
+- [ ] 外殼完整（Backdrop / PanelBG / HeaderBar / TitleLabel=組隊 / CloseButton / BodyRoot）
+- [ ] `PartyStatusLabel`（Label）在 BodyRoot 下
+- [ ] `MemberListScrollView`（ScrollView）在 BodyRoot 下
+- [ ] `ButtonBar` 有 DrawCardBtn(紫) / JoinPartyBtn(綠) / EndPartyBtn(紅,隱藏)
+- [ ] `PartyStoryScrollView`（ScrollView）在 BodyRoot 下
+- [ ] 全部 Layer = UI_2D
+
+---
+
+## 62. NPC 商人交易（NPCModal）🎮🖥️
+
+> `NPCModalNode` 已經在 §20-3 建好外殼。這裡是在它裡面加商店功能。
+
+### 誰做什麼？
+
+| 任務 | 誰負責 |
+|------|--------|
+| TabBar（對話/商店切換按鈕） | 🎮 你 |
+| ShopTabContainer + ShopScrollView + BuyConfirmBtn | 🎮 你 |
+| 商品列表項目 | 🖥️ 程式用 Prefab 動態生成 |
+
+### 你要建的東西
+
+#### A. TabBar（切換按鈕，放在 PanelBG 下）
+
+注意：是在 `PanelBG` 下面，不是 BodyRoot。
+
+1. 建空節點 → 改名 `TabBar`
+2. UITransform：W=300, H=36, Position：(0, 220, 0)
+3. Add Component → Layout → HORIZONTAL, SpacingX=8
+
+裡面放 2 個按鈕：
+
+| 按鈕名 | Label | 顏色 |
+|--------|-------|------|
+| `TabBtn_Dialog` | 對話 | 藍色 (59,130,246)，預設選中 |
+| `TabBtn_Shop` | 商店 | 灰色 (71,85,105) |
+
+建法和前面的按鈕一樣（Sprite + Button + 子 Label）。
+
+#### B. ShopTabContainer（商店容器，放在 BodyRoot 下）
+
+1. 建空節點 → 改名 `ShopTabContainer`
+2. UITransform：W=430, H=340
+3. **取消勾選 Active**（預設顯示對話頁，切到商店時才開）
+
+#### C. ShopScrollView（放在 ShopTabContainer 下）
+
+1. 建空節點 → 改名 `ShopScrollView`
+2. UITransform：W=410, H=270, Position：(0, 15, 0)
+3. Add Component → ScrollView → VERTICAL
+4. 在 `view` 下建 `content`（Layout VERTICAL, SpacingY=6, ResizeMode=CONTAINER）
+
+#### D. BuyConfirmBtn（放在 ShopTabContainer 下）
+
+1. 建空節點 → 改名 `BuyConfirmBtn`
+2. UITransform：W=120, H=40, Position：(0, -145, 0)
+3. Add Component → Sprite → 藍色 (59,130,246)
+4. Add Component → Button
+5. 裡面建 `Label`（string=確認購買, fontSize=14, 居中白色）
+
+### 不用建的東西
+
+商品列表項目 → 程式用 Prefab 或 `new Node()` 動態建。你不需要手動做。
+
+### Inspector 拖綁
+
+等程式端在 NPCModal 腳本裡加好 @property 後：
+
+| 欄位名 | 拖入 |
+|--------|------|
+| `shopTabContainer` | `ShopTabContainer` |
+| `tabBtnDialog` | `TabBtn_Dialog` |
+| `tabBtnShop` | `TabBtn_Shop` |
+| `shopScrollContent` | `ShopScrollView > view > content` |
+
+### 確認清單
+
+- [ ] `TabBar` 在 PanelBG 下，有 TabBtn_Dialog(藍) 和 TabBtn_Shop(灰)
+- [ ] `ShopTabContainer` 在 BodyRoot 下，Active=false
+- [ ] `ShopScrollView`（ScrollView）在 ShopTabContainer 下
+- [ ] `BuyConfirmBtn`（Button）在 ShopTabContainer 下
+- [ ] 商品列表不用建 → 程式會處理
+- [ ] 全部 Layer = UI_2D
+
+---
+
+## 63. 漂流瓶系統（DriftFragmentPanel）— 新面板！🎮🖥️
+
+> **全新面板。等程式端建好 `DriftFragmentPanel.ts` 後再操作。**
+
+### 誰做什麼？
+
+| 任務 | 誰負責 |
+|------|--------|
+| 建面板節點 + 外殼 | 🎮 你 |
+| FragmentScrollView（列表容器） | 🎮 你 |
+| WriteArea（輸入框 + 投放按鈕） | 🎮 你 |
+| EmptyLabel | 🎮 你 |
+| 漂流瓶列表項目 | 🖥️ 程式自動建 |
+
+### 第 1 步：建面板節點
+
+跟 §61 一樣的做法，差異：
 - 節點名 = `DriftFragmentPanelNode`
-- `UITransform`：W = `420`, H = `460`
-- TitleLabel string = **漂流瓶**
+- UITransform：W=420, H=460
+- 掛腳本 = `DriftFragmentPanel`
 
-### 63-3. 建立 FragmentScrollView（ScrollView 元件）
+### 第 2 步：建面板外殼
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `FragmentScrollView`
-2. `UITransform`：W = `380`, H = `220`
-3. Position：`(0, 30, 0)`
-4. **Add Component** → `ScrollView` → Direction = `VERTICAL`
-5. 在 `view` 下建立 `content`：
-   - `UITransform`：W = `380`, H = `220`
-   - **Add Component** → `Layout` → Type = `VERTICAL`, SpacingY = `6`, ResizeMode = `CONTAINER`
+跟 §61 一樣，TitleLabel 標題寫「漂流瓶」。
 
-### 63-4. 建立 FragmentTemplate（模板，Active=false）
+### 第 3 步：BodyRoot 裡面的內容
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `FragmentTemplate`
-2. `UITransform`：W = `370`, H = `56`
-3. **Add Component** → `Sprite` → Color = `(30, 36, 50, 180)`
-4. **⚠️ 取消勾選 Active**
+#### A. FragmentScrollView（漂流瓶列表）
+- 建空節點 → 改名 `FragmentScrollView`
+- UITransform：W=380, H=220, Position：(0, 30, 0)
+- Add Component → ScrollView → VERTICAL
+- 在 `view > content` 加 Layout VERTICAL
+- → 列表內容由程式動態填入
 
-#### FragmentTemplate 子節點
+#### B. WriteArea（撰寫區）
+- 建空節點 → 改名 `WriteArea`
+- UITransform：W=380, H=100, Position：(0, -120, 0)
 
-| 步驟 | 節點名 | 元件 | UITransform | 設定 |
-|------|--------|------|-------------|------|
-| 1 | `SenderLabel` | Label | W=100, H=20 | string = `寄件者`, fontSize = `11`, Position = `(-120, 14, 0)`, Color = `(163, 230, 53, 255)` |
-| 2 | `ContentLabel` | Label | W=340, H=30 | string = `瓶中信內容`, fontSize = `12`, Position = `(0, -8, 0)`, Color = `(203, 213, 225, 255)` |
+裡面放 2 個東西：
 
-### 63-5. 建立 WriteArea（撰寫區）
+| 節點名 | 元件 | 設定 |
+|--------|------|------|
+| `ContentEditBox` | EditBox | W=280, H=70, Position:(-40,0,0), Placeholder=`寫下你的漂流瓶訊息...`, MaxLength=100 |
+| `SendBtn` | Button+Sprite | W=80, H=36, Position:(155,0,0), 藍色, 子 Label=`投放` |
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `WriteArea`
-2. `UITransform`：W = `380`, H = `100`
-3. Position：`(0, -120, 0)`
+#### C. EmptyLabel
+- 建空節點 → 改名 `EmptyLabel`
+- UITransform：W=360, H=28, Position：(0, 30, 0)
+- Label → string=`目前沒有漂流瓶`, fontSize=14, 居中, 灰色
 
-#### 建立 ContentEditBox（EditBox 元件）
+### 不用建的東西
 
-1. **右鍵** `WriteArea` → **建立空節點** → 改名為 `ContentEditBox`
-2. `UITransform`：W = `280`, H = `70`
-3. Position：`(-40, 0, 0)`
-4. **Add Component** → `EditBox`
-   - Input Mode = `ANY`
-   - Max Length = `100`
-   - Placeholder = `寫下你的漂流瓶訊息...`
-   - Font Size = `13`
+每一筆漂流瓶（Fragment_XXX → SenderLabel / ContentLabel）由程式動態建。想改外觀？找程式端。
 
-#### 建立 SendBtn（Button 元件）
+### Inspector 拖綁
 
-1. **右鍵** `WriteArea` → **建立空節點** → 改名為 `SendBtn`
-2. `UITransform`：W = `80`, H = `36`
-3. Position：`(155, 0, 0)`
-4. **Add Component** → `Sprite` → Color = `(59, 130, 246, 240)`
-5. **Add Component** → `Button`
-6. **右鍵** `SendBtn` → **建立空節點** → 改名為 `Label`
-   - `UITransform`：W = `80`, H = `36`
-   - **Add Component** → `Label` → string = `投放`, fontSize = `14`, Horizontal/Vertical = `CENTER`
-   - Color = `(255, 255, 255, 255)`
+MainGameController → `driftFragmentPanel` → 拖入 `DriftFragmentPanelNode`
 
-### 63-6. 建立 EmptyLabel（Label 元件）
+### 確認清單
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `EmptyLabel`
-2. `UITransform`：W = `360`, H = `28`
-3. Position：`(0, 30, 0)`
-4. **Add Component** → `Label` → string = `目前沒有漂流瓶`, fontSize = `14`
-5. Horizontal Align = `CENTER`, Color = `(148, 163, 184, 255)`
-
-### 63-7. Inspector 拖綁 MainGameController
-
-| Inspector 欄位名 | 拖入節點 | 節點類型 |
-|-----------------|---------|---------|
-| `driftFragmentPanel` | `DriftFragmentPanelNode` | DriftFragmentPanel (Component) |
-
-### 63-8. 確認清單
-
-- [ ] `DriftFragmentPanelNode` 在 `PanelLayer` 下，**Active = false**
-- [ ] 面板外殼完整（Backdrop / PanelBG / HeaderBar / TitleLabel = 漂流瓶 / CloseButton / BodyRoot）
-- [ ] `FragmentScrollView` (ScrollView) 在 BodyRoot 下
-- [ ] `FragmentTemplate` (Active=false) 內有 SenderLabel(Label) + ContentLabel(Label)
-- [ ] `WriteArea` 內有 ContentEditBox(EditBox) + SendBtn(Button+Label)
-- [ ] `EmptyLabel` (Label) 在 BodyRoot 下
-- [ ] 所有節點 Layer = `UI_2D`
+- [ ] `DriftFragmentPanelNode` 在 PanelLayer 下，Active=false
+- [ ] 外殼完整（Backdrop / PanelBG / HeaderBar / TitleLabel=漂流瓶 / CloseButton / BodyRoot）
+- [ ] `FragmentScrollView`（ScrollView）在 BodyRoot 下
+- [ ] `WriteArea` 有 ContentEditBox(EditBox) + SendBtn(Button)
+- [ ] `EmptyLabel`（Label）在 BodyRoot 下
+- [ ] 漂流瓶項目不用建 → 程式會處理
+- [ ] 全部 Layer = UI_2D
 
 ---
 
-## 64. Phase 7-D 續 — 公報系統 🎮🖥️
+## 64. 公報系統（GazettePanel）— 新面板！🎮🖥️
 
-> **涉及腳本**：新建 `GazettePanel.ts`（由程式端建立）
-> **新增節點**：在 `PanelLayer` 下新建 `GazettePanelNode`
+> **全新面板。等程式端建好 `GazettePanel.ts` 後再操作。**
 
-### 64-1. 目標節點結構
+### 誰做什麼？
 
-```
-PanelLayer                           ← 已建立
-└── GazettePanelNode                 ← 🆕 新建（GazettePanel 腳本）
-    ├── Backdrop                     ← 🆕 新建（Sprite + Button）
-    └── PanelBG                      ← 🆕 新建（Sprite + BlockInputEvents）
-        ├── HeaderBar                ← 🆕 新建（Sprite）
-        ├── TitleLabel               ← 🆕 新建（Label，string = 公報）
-        ├── CloseButton              ← 🆕 新建（Button + Label）
-        ├── CloseHintLabel           ← 🆕 新建（Label）
-        └── BodyRoot                 ← 🆕 新建
-            ├── FilterBar            ← 🆕 新建（Layout 元件，水平排列）
-            │   ├── FilterBtn_All    ← 🆕 新建（Button 元件 + 子 Label）
-            │   ├── FilterBtn_Mission← 🆕 新建（Button 元件 + 子 Label）
-            │   ├── FilterBtn_System ← 🆕 新建（Button 元件 + 子 Label）
-            │   └── FilterBtn_Leader ← 🆕 新建（Button 元件 + 子 Label）
-            ├── GazetteScrollView    ← 🆕 新建（ScrollView 元件）
-            │   └── view
-            │       └── content      ← 🆕 新建（Layout 元件）
-            ├── GazetteEntryTemplate ← 🆕 新建（Active=false）
-            │   ├── EntryType        ← 🆕 新建（Label 元件）
-            │   ├── EntryContent     ← 🆕 新建（Label 元件）
-            │   └── EntryTime        ← 🆕 新建（Label 元件）
-            └── GazetteEmptyLabel    ← 🆕 新建（Label 元件）
-```
+| 任務 | 誰負責 |
+|------|--------|
+| 建面板節點 + 外殼 | 🎮 你 |
+| FilterBar（4 個篩選按鈕） | 🎮 你 |
+| GazetteScrollView（列表容器） | 🎮 你 |
+| GazetteEmptyLabel | 🎮 你 |
+| 公報列表項目 | 🖥️ 程式自動建 |
 
-### 64-2. 建立面板外殼
+### 第 1 步：建面板節點
 
-與 §61-2 相同步驟，差異：
+跟 §61 一樣，差異：
 - 節點名 = `GazettePanelNode`
-- `UITransform`：W = `480`, H = `520`
-- TitleLabel string = **公報**
+- UITransform：W=480, H=520
+- 掛腳本 = `GazettePanel`
 
-### 64-3. 建立 FilterBar（Layout 元件）
+### 第 2 步：建面板外殼
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `FilterBar`
-2. `UITransform`：W = `400`, H = `32`
-3. Position：`(0, 150, 0)`
-4. **Add Component** → `Layout` → Type = `HORIZONTAL`, SpacingX = `6`, ResizeMode = `NONE`
+跟 §61 一樣，TitleLabel 標題寫「公報」。
 
-#### 建立 4 個 FilterBtn（Button 元件）
+### 第 3 步：BodyRoot 裡面的內容
 
-對每個按鈕重複以下步驟（只改名字和 Label 文字）：
+#### A. FilterBar（篩選按鈕列）
+- 建空節點 → 改名 `FilterBar`
+- UITransform：W=400, H=32, Position：(0, 150, 0)
+- Add Component → Layout → HORIZONTAL, SpacingX=6
 
-1. **右鍵** `FilterBar` → **建立空節點** → 改名為 `FilterBtn_All`
-2. `UITransform`：W = `60`, H = `28`
-3. **Add Component** → `Sprite` → Color = `(59, 130, 246, 240)`（選中態用藍色，其餘灰色）
-4. **Add Component** → `Button`
-5. **右鍵** → **建立空節點** → 改名為 `Label`
-   - `UITransform`：W = `60`, H = `28`
-   - **Add Component** → `Label` → string = `全部`, fontSize = `12`, Horizontal/Vertical = `CENTER`
-   - Color = `(255, 255, 255, 255)`
+裡面放 4 個按鈕（每個 W=60, H=28）：
 
-| 按鈕名 | Label string | Sprite 初始 Color |
-|--------|-------------|------------------|
-| `FilterBtn_All` | 全部 | `(59, 130, 246, 240)` 藍色（預設選中） |
-| `FilterBtn_Mission` | 任務 | `(71, 85, 105, 240)` 灰色 |
-| `FilterBtn_System` | 系統 | `(71, 85, 105, 240)` 灰色 |
-| `FilterBtn_Leader` | 領袖 | `(71, 85, 105, 240)` 灰色 |
+| 按鈕名 | Label | 顏色 |
+|--------|-------|------|
+| `FilterBtn_All` | 全部 | 藍色 (59,130,246)，預設選中 |
+| `FilterBtn_Mission` | 任務 | 灰色 (71,85,105) |
+| `FilterBtn_System` | 系統 | 灰色 |
+| `FilterBtn_Leader` | 領袖 | 灰色 |
 
-### 64-4. 建立 GazetteScrollView（ScrollView 元件）
+#### B. GazetteScrollView（公報列表）
+- 建空節點 → 改名 `GazetteScrollView`
+- UITransform：W=420, H=320, Position：(0, -25, 0)
+- Add Component → ScrollView → VERTICAL
+- 在 `view > content` 加 Layout VERTICAL
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `GazetteScrollView`
-2. `UITransform`：W = `420`, H = `320`
-3. Position：`(0, -25, 0)`
-4. **Add Component** → `ScrollView` → Direction = `VERTICAL`
-5. 在 `view` 下建立 `content`：
-   - `UITransform`：W = `420`, H = `320`
-   - **Add Component** → `Layout` → Type = `VERTICAL`, SpacingY = `6`, ResizeMode = `CONTAINER`
+#### C. GazetteEmptyLabel
+- 建空節點 → 改名 `GazetteEmptyLabel`
+- UITransform：W=360, H=28
+- Label → string=`目前沒有公報`, fontSize=14, 居中, 灰色
 
-### 64-5. 建立 GazetteEntryTemplate（模板，Active=false）
+### 不用建的東西
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `GazetteEntryTemplate`
-2. `UITransform`：W = `400`, H = `76`
-3. **Add Component** → `Sprite` → Color = `(30, 36, 50, 180)`
-4. **⚠️ 取消勾選 Active**
+公報項目（GazetteEntry → EntryType / EntryContent / EntryTime）由程式動態建。
 
-#### GazetteEntryTemplate 子節點
+### Inspector 拖綁
 
-| 步驟 | 節點名 | 元件 | UITransform | Position | 設定 |
-|------|--------|------|-------------|----------|------|
-| 1 | `EntryType` | Label | W=60, H=20 | (-160, 22, 0) | string = `系統`, fontSize = `11`, Color = `(250, 204, 21, 255)` 金色 |
-| 2 | `EntryContent` | Label | W=340, H=40 | (10, 0, 0) | string = `公報內容`, fontSize = `12`, Overflow = `CLAMP`, Color = `(228, 232, 240, 255)` |
-| 3 | `EntryTime` | Label | W=100, H=18 | (145, 22, 0) | string = `00:00`, fontSize = `10`, Horizontal = `RIGHT`, Color = `(148, 163, 184, 255)` |
+MainGameController → `gazettePanel` → 拖入 `GazettePanelNode`
 
-### 64-6. 建立 GazetteEmptyLabel（Label 元件）
+### 確認清單
 
-1. **右鍵** `BodyRoot` → **建立空節點** → 改名為 `GazetteEmptyLabel`
-2. `UITransform`：W = `360`, H = `28`
-3. Position：`(0, 0, 0)`
-4. **Add Component** → `Label` → string = `目前沒有公報`, fontSize = `14`
-5. Horizontal = `CENTER`, Color = `(148, 163, 184, 255)`
-
-### 64-7. Inspector 拖綁 MainGameController
-
-| Inspector 欄位名 | 拖入節點 | 節點類型 |
-|-----------------|---------|---------|
-| `gazettePanel` | `GazettePanelNode` | GazettePanel (Component) |
-
-### 64-8. 確認清單
-
-- [ ] `GazettePanelNode` 在 `PanelLayer` 下，**Active = false**
-- [ ] `FilterBar` (Layout HORIZONTAL) 在 BodyRoot 下，內有 4 個 Button：All(藍) / Mission(灰) / System(灰) / Leader(灰)
-- [ ] `GazetteScrollView` (ScrollView) 在 BodyRoot 下
-- [ ] `GazetteEntryTemplate` (Active=false) 內有 EntryType(Label) / EntryContent(Label) / EntryTime(Label)
-- [ ] `GazetteEmptyLabel` (Label) 在 BodyRoot 下
-- [ ] 所有節點 Layer = `UI_2D`
+- [ ] `GazettePanelNode` 在 PanelLayer 下，Active=false
+- [ ] 外殼完整
+- [ ] `FilterBar` 有 4 個按鈕（全部/任務/系統/領袖）
+- [ ] `GazetteScrollView`（ScrollView）在 BodyRoot 下
+- [ ] `GazetteEmptyLabel`（Label）在 BodyRoot 下
+- [ ] 公報項目不用建 → 程式會處理
+- [ ] 全部 Layer = UI_2D
 
 ---
 
-## 65. Phase 8 — 視覺效果準備 🎮
+## 65. 視覺效果準備 🎮
 
-> **前置條件**：美術素材到位後執行。
-> 在美術資源未到位前，以下只需要預留節點位置。
+> 等美術素材到手後再做。現在只要預留節點位置。
 
-### 65-1. 預留霧氣層節點
+### 你要做的：預留 2 個節點
 
-1. **右鍵** `OverlayLayer` → **建立空節點** → 改名為 `FogLayerNode`
-2. `UITransform`：W = `1280`, H = `720`
-3. **Add Component** → `Widget` → 勾選 Top = `0`, Bottom = `0`, Left = `0`, Right = `0`（stretch all）
-4. **⚠️ 取消勾選 Active**
-5. **🔴 Layer**：`UI_2D`
-6. ⚠️ **不掛 Sprite**（等美術提供 Shader Material 後才加 Sprite + `customMaterial`）
+#### A. FogLayerNode（霧氣層）
+- 右鍵 `OverlayLayer` → 建空節點 → 改名 `FogLayerNode`
+- UITransform：W=1280, H=720
+- Widget → 勾 Top=0, Bottom=0, Left=0, Right=0（全拉伸）
+- **取消勾選 Active**
+- Layer → `UI_2D`
+- **不要加 Sprite**（等美術提供素材後再加）
 
-### 65-2. 預留幽靈效果節點
+#### B. GlitchGhostNode（失真幽靈）
+- 右鍵 `OverlayLayer` → 建空節點 → 改名 `GlitchGhostNode`
+- UITransform：W=200, H=200
+- **取消勾選 Active**
+- Layer → `UI_2D`
 
-1. **右鍵** `OverlayLayer` → **建立空節點** → 改名為 `GlitchGhostNode`
-2. `UITransform`：W = `256`, H = `256`
-3. **⚠️ 取消勾選 Active**
-4. **🔴 Layer**：`UI_2D`
-5. 後續由程式動態控制位置和顯示
+### Material 接口確認
 
-### 65-3. Material 接口確認
+點任意面板節點 → Inspector → 面板腳本裡應該有 `Turbid Material` 和 `Pure Material` 兩個空欄位。目前空著是正確的，等美術給 `.mtl` 檔後拖進去就行。
 
-> 所有面板腳本都已預留 `turbidMaterial` / `pureMaterial` @property（見 CLAUDE.md §3）。
+### 不用管的東西
 
-確認方式：
-1. 在 Hierarchy 選中任一面板節點（例如 `WhiteCrowCardNode`）
-2. 在 Inspector 查看 `WhiteCrowCard` 腳本組件
-3. 應該看到 `Turbid Material` 和 `Pure Material` 兩個空欄位（類型 = Material）
-4. 欄位存在但為空 = 正確（等美術提供 `.mtl` 後拖入）
+面板動畫（淡入淡出、縮放）→ 程式用 `tween()` 做的，你不用設定。
 
-### 65-4. 面板動畫（不需要編輯器操作）
+### 確認清單
 
-> 面板開關動畫（淡入淡出、縮放）完全由程式端用 `tween()` 實現。
-> 編輯器端不需要做任何配置。
-
-### 65-5. 確認清單
-
-- [ ] `FogLayerNode` 在 `OverlayLayer` 下，**Active = false**，Widget stretch all，無 Sprite
-- [ ] `GlitchGhostNode` 在 `OverlayLayer` 下，**Active = false**
-- [ ] 任一面板腳本 Inspector 中有 `Turbid Material` / `Pure Material` 空欄位
+- [ ] `FogLayerNode` 在 OverlayLayer 下，Active=false，Widget stretch all
+- [ ] `GlitchGhostNode` 在 OverlayLayer 下，Active=false
+- [ ] 面板腳本有 Turbid/Pure Material 空欄位
 
 ---
 
-## 66. Phase 6-8 完成後的驗證清單 📖
+## 66. Phase 6-8 做完後，整體再驗證一次 📖
 
-### ✅ Phase 6 驗證（API 接通）
+> Server 要先跑著：`npm run server`
 
-> 以下測試需要 Local Server 啟動：`npm run server`
+### Phase 6 驗證（API 接通）
 
-1. Preview → 點導航按鈕開 InventoryPanel → Console 應出現 `[DataManager] fetchInventory` + 物品列表 ≠ 固定 8 筆
-2. Preview → 開 ApostatePanel → 完成問卷 → Console 出現 `[DataManager] submitScreening 成功`
-3. Preview → 開 LiquidatorPanel → 輸入名稱掃描 → Console 出現 `[DataManager] liquidatorScan` + 結果不再是 random
-4. Preview → 開 LeaderTyrannyPanel → 點「徵稅」→ Console 出現 `[DataManager] leader.tax 成功`
-5. Preview → 觸發結算 → Console 出現 `[DataManager] getSettlementResult` + 數值來自 Server
-6. Preview → 開 LeaderboardPanel → Console 出現 `[DataManager] fetchLeaderboard` + 排行來自 DB
+1. Preview → 開 InventoryPanel → 物品不再是 8 筆固定假資料
+2. Preview → ApostatePanel → 送出問卷 → Console 有 `submitScreening 成功`
+3. Preview → LiquidatorPanel → 掃描 → Console 有 `liquidatorScan`
+4. Preview → LeaderTyrannyPanel → 點「徵稅」→ Console 有 `leader.tax 成功`
+5. Preview → BalanceSettlementModal → Console 有 `getSettlementResult`
+6. Preview → LeaderboardPanel → Console 有 `fetchLeaderboard`
 
-### ✅ Phase 7 驗證（新系統）
+### Phase 7 驗證（新系統）
 
-1. Preview → QuestPanel → 任務列表中每一筆有「回報」按鈕 → 點擊 → Console 出現回報結果
-2. Preview → 開 PartyPanel（從 LeftNavBar 或 NPC）→ 看到 PartyStatusLabel + 3 個按鈕 + 敘事區
-3. Preview → NPC 商人 → 點 TabBtn_Shop → ShopTabContainer 顯示商品列表
-4. Preview → 開 DriftFragmentPanel → 看到漂流瓶列表 + 撰寫區 + 投放按鈕
-5. Preview → 開 GazettePanel → 看到 FilterBar 4 個按鈕 + 公報列表
+1. Preview → QuestPanel → 任務列表有回報按鈕
+2. Preview → PartyPanel → 看到狀態文字 + 3 個按鈕 + 敘事區
+3. Preview → NPC 商人 → 點「商店」Tab → 看到商品列表
+4. Preview → DriftFragmentPanel → 看到漂流瓶列表 + 撰寫區
+5. Preview → GazettePanel → FilterBar + 公報列表
 
-### ✅ Phase 8 驗證（視覺效果）
+### Phase 8 驗證（視覺效果）
 
-1. Hierarchy 中 `OverlayLayer` 下有 `FogLayerNode` 和 `GlitchGhostNode`（Active=false）
-2. 任意面板 Inspector 中 `turbidMaterial` / `pureMaterial` 欄位存在
-3. 拖入 Material 後 Preview → 面板外觀變更為陣營主題色
+1. OverlayLayer 下有 FogLayerNode 和 GlitchGhostNode（都 Active=false）
+2. 面板 Inspector 有 Turbid/Pure Material 空欄位
+3. 拖入 Material → Preview → 面板外觀變化
 
 ---
 
 ## 67. （已移至 HANDOFF 文件）
 
-> Bug Pattern Framework 已移至 `COCOS_PREVIEW_DEBUG_HANDOFF.md` §十一。
-> 包含 5 種模式（A-E）、偵錯 SOP、Bug 關聯圖。
+> Bug Pattern Framework → `COCOS_PREVIEW_DEBUG_HANDOFF.md` §十一
