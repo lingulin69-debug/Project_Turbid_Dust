@@ -2328,31 +2328,339 @@ Preview 後在瀏覽器 F12 → Console 搜尋以下關鍵字確認狀態：
 
 ---
 
-## 59. 下一階段開發路線圖
+## 59. 下一階段：Phase 6 — API 接通前的編輯器準備
 
-### 短期（當前 Sprint）
-- [x] 齒輪開啟設定面板（Bug 18-21 已修復 ✅）
-- [ ] 設定面板語言切換視覺狀態同步
-- [ ] Backdrop 點擊關閉所有面板（Bug 14 收尾）
-- [ ] 右上角 HUD 排版調整
+> **背景**：目前 6 個面板使用模擬資料（Mock），接下來需要改為呼叫真實 Server API。
+> 編輯器端不需要修改節點結構，但需要確認以下項目。
 
-### 中期
-- [ ] 各面板填入真實資料（API 串接）
-- [ ] NPC 互動介面
-- [ ] 地圖地標 Prefab 替換（取代 placeholder 色塊）
-- [ ] 轉場動畫（FadeBlack / ChapterTransition）
-- [ ] 章節故事模態框整合
+### 59-1. 確認 Server 環境就緒
 
-### 長期
-- [ ] Material 視覺效果（濁息/淨塵主題）
-- [ ] Shader uniform 動態控制（裂紋、黑霧、粒子）
-- [ ] 手機版響應式調整
-- [ ] 音效資源整合
-- [ ] 多語言系統完整串接
+1. 打開終端機，進入專案根目錄
+2. 執行 `npm run server`（啟動 `server/index.ts`）
+3. 確認 Console 出現 `Server listening on port 3001`
+4. 如果沒出現，檢查 `server/index.ts` 是否存在
+
+### 59-2. 確認 Supabase 連線（由程式端處理）
+
+> 不需要在編輯器中做任何事。這些面板改為真實 API 後，資料走向變為：
+> - 面板 → DataManager.fetchXxx() → `fetch()` 呼叫 Server → Supabase DB
+
+### 59-3. 完成後要確認的 6 個面板
+
+完成 API 接通後，回到編輯器 Preview，逐一測試：
+
+| 面板 | Preview 時的預期行為 | Console 應該看到 |
+|------|---------------------|-----------------|
+| ApostatePanel | 問卷提交後 → 不再只存 localStorage，Console 出現 API 回應 | `[DataManager] submitScreening 成功` |
+| LiquidatorPanel | 輸入名字掃描 → 結果來自 Server，不再隨機 | `[DataManager] liquidatorScan 成功` |
+| LeaderTyrannyPanel | 徵稅/詛咒/法令/懸賞/國庫 → Console 出現 API 回應 | `[DataManager] leader.tax 成功` 等 |
+| LeaderboardPanel | 開啟後 → 排行榜資料來自 DB | `[DataManager] fetchLeaderboard 成功` |
+| BalanceSettlementModal | 結算動畫 → 數值來自 Server | `[DataManager] getSettlementResult 成功` |
+| InventoryPanel | 背包 → 顯示 DB 中的道具而非 8 筆假資料 | `[DataManager] fetchInventory 成功` |
 
 ---
 
-## 60. （已移至 HANDOFF 文件）
+## 60. 下一階段：Phase 7-A — 建立任務回報系統（編輯器步驟）
+
+> **涉及腳本**：`QuestPanel.ts`（修改）、`PTD_DataManager.ts`（修改）
+> **新增節點**：無需新增節點，修改 QuestPanel 內部子節點
+
+### 60-1. 確認 QuestPanel 的現有結構
+
+1. 打開 MapTestView 場景
+2. 在 Hierarchy 展開 `PanelLayer > QuestPanelNode > PanelBG > BodyRoot`
+3. 確認 BodyRoot 下有 ScrollView 或 Layout（用來放任務列表）
+4. 如果沒有 ScrollView，需先建立：
+
+**建立任務列表 ScrollView**：
+1. 在 `BodyRoot` 下建立空節點 → 命名 `QuestListScrollView`
+2. Add Component → ScrollView
+3. UITransform：**W = 410, H = 320**
+4. 在 `QuestListScrollView` 下建立 `content` 節點 → 加上 Layout（Vertical, spacing = 8）
+
+### 60-2. 建立任務項目模板（QuestItem）
+
+> 每一筆任務在列表中的顯示單元。
+
+1. 在 `BodyRoot` 下建立空節點 → 命名 `QuestItemTemplate`
+2. UITransform：**W = 400, H = 80**
+3. **取消勾選 Active**（這是模板，runtime 時由程式複製）
+4. 在 `QuestItemTemplate` 下建立子節點：
+
+| 子節點名 | 元件 | 大小 | 說明 |
+|----------|------|------|------|
+| `QuestTitle` | Label | W=260, H=24 | 任務名稱 |
+| `QuestStatus` | Label | W=80, H=24 | 狀態（進行中/已回報/已鎖定） |
+| `ReportBtn` | Button + Label | W=80, H=36 | 「回報」按鈕（string = 回報） |
+
+5. `ReportBtn` 預設 Active = true，程式會根據任務狀態決定是否顯示
+
+### 60-3. Inspector 拖綁
+
+1. 選中 `QuestPanelNode`（掛有 QuestPanel 腳本的節點）
+2. 如果程式端新增了以下 @property，在 Inspector 中拖入：
+   - `questScrollContent` → `QuestListScrollView/content`
+   - `questItemTemplate` → `QuestItemTemplate`
+
+---
+
+## 61. 下一階段：Phase 7-B — 建立組隊系統面板（編輯器步驟）
+
+> **涉及腳本**：新建 `PartyPanel.ts`
+> **新增節點**：PanelLayer 下新增 PartyPanelNode
+
+### 61-1. 建立 PartyPanelNode
+
+按照 §20-2 的通用面板步驟 A~I 建立外殼：
+
+1. 在 `PanelLayer` 下建立空節點 → 命名 `PartyPanelNode`
+2. UITransform：**W = 500, H = 520**
+3. Widget  `Horizontal Center` = 0, `Vertical Center` = 0
+4. **取消勾選 Active**
+5. Add Component → `PartyPanel`（腳本需先由程式端建立）
+6. 建立 Backdrop、PanelBG、HeaderBar、TitleLabel（string = 組隊）、CloseButton、BodyRoot
+
+### 61-2. 建立 PartyPanel 內部節點
+
+在 `BodyRoot` 下建立：
+
+| 子節點名 | 元件 | 大小 | 說明 |
+|----------|------|------|------|
+| `PartyStatusLabel` | Label | W=380, H=30 | 隊伍狀態（未組隊/已加入/隊長） |
+| `MemberListLayout` | Layout (Vertical) | W=380, H=200 | 成員列表容器 |
+| `DrawCardBtn` | Button + Label | W=160, H=46 | 「抽牌」按鈕 |
+| `JoinPartyBtn` | Button + Label | W=160, H=46 | 「加入隊伍」按鈕 |
+| `EndPartyBtn` | Button + Label | W=160, H=46 | 「結束隊伍」按鈕（僅隊長可見） |
+| `PartyStoryArea` | ScrollView | W=380, H=150 | 組隊敘事顯示區 |
+
+### 61-3. Inspector 拖綁 MainGameController
+
+1. 選中掛有 `MainGameController` 的節點
+2. 找到 `partyPanel` 欄位（程式端新增後出現）→ 拖入 `PartyPanelNode`
+
+### 61-4. 新增組隊入口按鈕
+
+> 從地圖上特定地標觸發，或在 LeftNavBar 新增按鈕。
+
+**方案 A：在 LeftNavBar 新增按鈕**
+1. 在 `LeftNavBar` 下建立空節點 → 命名 `NavBtn_Party`
+2. UITransform：**W = 40, H = 40**
+3. Button + Label（string = 🎴 或 組, fontSize = 18）
+4. 回去 `HUDController` 的 `navButtons` 陣列，正確對應新按鈕
+
+**方案 B：從地圖地標觸發**
+- 不需要新增 LeftNavBar 按鈕
+- 組隊入口在 NPC 互動中觸發（由程式端處理路由）
+
+---
+
+## 62. 下一階段：Phase 7-C — NPC 商人交易 UI（編輯器步驟）
+
+> **涉及腳本**：`NPCModal.ts`（修改）、新建 `MerchantShopView.ts`
+> **新增節點**：在 NPCModalNode 內增加商店 Tab/頁面
+
+### 62-1. 確認 NPCModal 現有結構
+
+1. 展開 `PanelLayer > NPCModalNode > PanelBG > BodyRoot`
+2. 目前 BodyRoot 應該有對話相關的節點
+
+### 62-2. 建立商店頁面容器
+
+1. 在 `BodyRoot` 下建立空節點 → 命名 `ShopTabContainer`
+2. UITransform：**W = 430, H = 360**
+3. **取消勾選 Active**（預設顯示對話頁，商店頁切換時才顯示）
+
+### 62-3. 建立 Tab 切換按鈕
+
+1. 在 `PanelBG` 下（HeaderBar 附近）建立空節點 → 命名 `TabBar`
+2. UITransform：**W = 300, H = 36**
+3. Position：**(0, 220, 0)**（HeaderBar 下方）
+4. Layout（Horizontal, spacing = 8）
+5. 在 `TabBar` 下建立 2 個按鈕：
+
+| 按鈕名 | Label | 說明 |
+|--------|-------|------|
+| `TabBtn_Dialog` | 對話 | 切換到對話頁 |
+| `TabBtn_Shop` | 商店 | 切換到商店頁 |
+
+### 62-4. 建立商店內容節點
+
+在 `ShopTabContainer` 下建立：
+
+| 子節點名 | 元件 | 大小 | 說明 |
+|----------|------|------|------|
+| `ShopScrollView` | ScrollView | W=410, H=280 | 商品列表 |
+| `ShopItemTemplate` | Layout (Horizontal) | W=400, H=60 | 商品模板（Active=false） |
+| `BuyConfirmBtn` | Button + Label | W=120, H=40 | 購買確認按鈕 |
+
+`ShopItemTemplate` 子節點：
+| 子節點名 | 元件 | 大小 | 說明 |
+|----------|------|------|------|
+| `ItemName` | Label | W=180, H=24 | 商品名稱 |
+| `ItemPrice` | Label | W=80, H=24 | 價格 |
+| `ItemBuyBtn` | Button + Label | W=80, H=32 | 「購買」 |
+
+### 62-5. Inspector 拖綁
+
+NPCModal 腳本如果新增了以下 @property：
+- `shopTabContainer` → `ShopTabContainer`
+- `tabBtnDialog` → `TabBtn_Dialog`
+- `tabBtnShop` → `TabBtn_Shop`
+- `shopScrollContent` → `ShopScrollView/content`
+- `shopItemTemplate` → `ShopItemTemplate`
+
+---
+
+## 63. 下一階段：Phase 7-D — 漂流瓶系統（編輯器步驟）
+
+> **涉及腳本**：新建 `DriftFragmentPanel.ts`
+> **新增節點**：PanelLayer 下新增 DriftFragmentPanelNode
+
+### 63-1. 建立 DriftFragmentPanelNode
+
+按照 §20-2 的通用面板步驟 A~I 建立外殼：
+
+1. 在 `PanelLayer` 下建立空節點 → 命名 `DriftFragmentPanelNode`
+2. UITransform：**W = 420, H = 460**
+3. Widget  `Horizontal Center` = 0, `Vertical Center` = 0
+4. **取消勾選 Active**
+5. Add Component → `DriftFragmentPanel`
+6. 建立 Backdrop、PanelBG、HeaderBar、TitleLabel（string = 漂流瓶）、CloseButton、BodyRoot
+
+### 63-2. 建立內部節點
+
+在 `BodyRoot` 下建立：
+
+| 子節點名 | 元件 | 大小 | 說明 |
+|----------|------|------|------|
+| `FragmentListScrollView` | ScrollView | W=380, H=240 | 漂流瓶列表 |
+| `FragmentTemplate` | Layout (Horizontal) | W=370, H=50 | 單筆模板（Active=false） |
+| `WriteArea` | Node | W=380, H=120 | 撰寫區容器 |
+| `ContentEditBox` | EditBox | W=300, H=80 | 輸入漂流瓶內容 |
+| `SendBtn` | Button + Label | W=80, H=36 | 「投放」按鈕 |
+
+### 63-3. 地圖圖釘（選配）
+
+> 漂流瓶可以在地圖上以圖釘的方式顯示。
+
+1. 如果需要地圖圖釘，在 `MapLayer > LandmarkContainer` 下建立模板節點 `DriftPinTemplate`
+2. UITransform：**W = 24, H = 24**
+3. Sprite  瓶子圖標（暫用色塊佔位）
+4. **取消勾選 Active**（由程式動態生成）
+
+### 63-4. Inspector 拖綁 MainGameController
+
+1. 選中掛有 `MainGameController` 的節點
+2. `driftFragmentPanel` → `DriftFragmentPanelNode`
+
+---
+
+## 64. 下一階段：Phase 7-D 續 — 公報系統（編輯器步驟）
+
+> **涉及腳本**：新建 `GazettePanel.ts`
+> **新增節點**：PanelLayer 下新增 GazettePanelNode
+
+### 64-1. 建立 GazettePanelNode
+
+1. 在 `PanelLayer` 下建立空節點 → 命名 `GazettePanelNode`
+2. UITransform：**W = 480, H = 520**
+3. Widget  `Horizontal Center` = 0, `Vertical Center` = 0
+4. **取消勾選 Active**
+5. Add Component → `GazettePanel`
+6. 按 §20-2 步驟 A~I 建立外殼，TitleLabel string = **公報**
+
+### 64-2. 建立內部節點
+
+在 `BodyRoot` 下建立：
+
+| 子節點名 | 元件 | 大小 | 說明 |
+|----------|------|------|------|
+| `FilterBar` | Layout (Horizontal) | W=400, H=32 | 分類篩選列 |
+| `FilterBtn_All` | Button + Label | W=60, H=28 | 「全部」 |
+| `FilterBtn_Mission` | Button + Label | W=60, H=28 | 「任務」 |
+| `FilterBtn_System` | Button + Label | W=60, H=28 | 「系統」 |
+| `FilterBtn_Leader` | Button + Label | W=60, H=28 | 「領袖」 |
+| `GazetteScrollView` | ScrollView | W=420, H=360 | 公報列表 |
+| `GazetteEntryTemplate` | Node | W=400, H=80 | 單筆公報模板（Active=false） |
+
+`GazetteEntryTemplate` 子節點：
+| 子節點名 | 元件 | 大小 | 說明 |
+|----------|------|------|------|
+| `EntryType` | Label | W=60, H=20 | 類型標籤 |
+| `EntryContent` | Label | W=320, H=50 | 內容 |
+| `EntryTime` | Label | W=100, H=18 | 時間 |
+
+### 64-3. Inspector 拖綁
+
+- `MainGameController` → `gazettePanel` → `GazettePanelNode`
+- 新增入口：LeftNavBar 下新增 `NavBtn_Gazette` 或在 通知面板中增加「公報」頁籤
+
+---
+
+## 65. 下一階段：Phase 8 — 視覺效果準備（編輯器步驟）
+
+> **前置條件**：美術素材到位後執行。
+> 在美術資源未到位前，以下只需要預留節點位置。
+
+### 65-1. 預留霧氣層節點
+
+1. 在 `OverlayLayer` 下建立空節點 → 命名 `FogLayerNode`
+2. UITransform：**W = 1280, H = 720**
+3. Widget  stretch all（上下左右都勾選 = 0）
+4. **取消勾選 Active**
+5. 不掛任何 Sprite（等美術提供 Shader Material 後，加上 Sprite + customMaterial）
+
+### 65-2. 預留幽靈效果節點
+
+1. 在 `OverlayLayer` 下建立空節點 → 命名 `GlitchGhostNode`
+2. UITransform：**W = 256, H = 256**
+3. **取消勾選 Active**
+4. 後續由程式動態移動位置
+
+### 65-3. Material 接口確認
+
+> 所有面板腳本都已預留 `turbidMaterial` / `pureMaterial` @property。
+> 美術到位後，在 Inspector 中把 `.mtl` 拖入對應欄位即可。
+
+確認方式：
+1. 隨便選一個面板節點（如 `WhiteCrowCardNode`）
+2. 看 Inspector 中 `WhiteCrowCard` 腳本
+3. 應該看到 `Turbid Material` 和 `Pure Material` 兩個空欄位 → 欄位存在即正確
+
+### 65-4. 面板動畫（不需要編輯器操作）
+
+> 面板開關動畫（淡入淡出、縮放）完全由程式端用 `tween()` 實現。
+> 編輯器端不需要做任何配置。
+
+---
+
+## 66. Phase 6-8 完成後的驗證清單
+
+### ✅ Phase 6 驗證（API 接通）
+
+1. Preview 打開 ApostatePanel → 完成問卷 → Console 出現 `submitScreening 成功`（非 localStorage）
+2. Preview 打開 LiquidatorPanel → 掃描 → Console 出現 `liquidatorScan` API 回應
+3. Preview 打開 LeaderTyrannyPanel → 點「徵稅」→ Console 出現 `leader.tax 成功`
+4. Preview 打開 InventoryPanel → 道具列表 ≠ 固定 8 筆 → 資料來自 DB
+5. 排行榜 / 結算面板 → 資料來自 Server
+
+### ✅ Phase 7 驗證（新系統）
+
+1. LeftNavBar 或 NPC → 開啟 PartyPanel → 能看到隊伍狀態、抽牌/加入按鈕
+2. NPC 商人 → Tab 切換到商店 → 能看到商品列表
+3. QuestPanel → 每個任務有「回報」按鈕 → 點擊 → Console 出現回報結果
+4. 漂流瓶面板 → 能投放 + 看到其他人的漂流瓶
+5. 公報面板 → 能看到篩選按鈕和公報項目列表
+
+### ✅ Phase 8 驗證（視覺效果）
+
+1. FogLayerNode 存在於 OverlayLayer（Active=false）
+2. 面板腳本 Inspector 中 `turbidMaterial` / `pureMaterial` 欄位可接受 .mtl 拖入
+3. 拖入 Material 後 Preview → 面板套用陣營主題色
+
+---
+
+## 67. （已移至 HANDOFF 文件）
 
 > Bug Pattern Framework 已移至 `COCOS_PREVIEW_DEBUG_HANDOFF.md` §十一。
 > 包含 5 種模式（A-E）、偵錯 SOP、Bug 關聯圖。
