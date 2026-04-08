@@ -68,6 +68,28 @@ applyFactionMaterial(faction: 'Turbid' | 'Pure') {
 - 事件綁定後，必須在 `onDestroy()` 中使用 `targetOff()` 確實解除綁定，禁止造成 Memory Leak。
 - 必須使用型別安全的 `getComponent(ClassName)`，禁止使用字串 `getComponent('ClassName')`。
 
+### 2a. 節點引用鐵律（Bug 15, 20 教訓）
+- **禁止假設 `this.node` 是目標容器。** MapSceneBuilder 掛在 Scene Root，`this.node` 不是 Canvas。永遠用 `ctrl.node`（MainGameController 掛在 Canvas 上）。
+- **禁止用 `getChildByName()` 查找關鍵節點。** 它只搜尋直接子節點，階層一變就找不到。優先使用 `@property` Inspector 綁定的引用（如 `panel.node`）。
+
+### 2b. 事件綁定鐵律（Bug 16, 18, 19 教訓）
+- **每次 runtime 都要重新綁定事件。** Cocos 場景快取保留節點結構但**不保留**事件監聽器。`onLoad` 或 `refreshRuntimeBindings` 必須無條件執行 `_registerEvents()`。
+- **一個觸控互動 = 只綁一個 handler。** 禁止在同一觸控路徑上的多個節點（如父節點 + 子節點）都註冊相同 handler。這會造成 `togglePanel` 被呼叫兩次 → 開了又立刻關。
+- **注意 `BlockInputEvents`。** 它會阻斷事件繼續冒泡到父節點。如果子節點有 `BlockInputEvents`，handler 必須直接註冊在該子節點上，不能依賴父節點收冒泡。
+
+### 2c. 偵錯先行原則（Bug 18 三層疊加教訓）
+- **修 bug 前先加診斷 log，不要直接猜。** 最少確認：
+  1. handler 的 console.log 出現了嗎？出現幾次？
+  2. 面板 `children.length > 0`？`size > 0`？
+  3. `parent.active = true`？`position` 在畫面範圍內？
+- **修改事件邏輯前，必須確認實際節點階層。** 請截圖 Inspector 樹狀結構。不要依賴記憶或假設。
+
+### 2d. 文件分類原則
+- **手冊**（MANUAL）= 操作指引、建節點、Inspector 拖綁、設定教學
+- **交接文件**（HANDOFF）= Bug 記錄、修復根因、偵錯經驗、模式歸納
+- 新增內容先問：「教人怎麼做？」→ MANUAL。「記錄出了什麼問題？」→ HANDOFF。
+- 手冊只往後追加新章節，不回頭修改或插入舊章節。
+
 ## 3. 誠實驗證原則 (No Fake Validation)
 - 不得捏造自動化測試的結果。
 - 只要修改或新增功能邏輯，請提供「Cocos 編輯器內的具體手動驗證步驟」，包含：
