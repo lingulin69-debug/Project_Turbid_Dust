@@ -1874,20 +1874,11 @@ HUDController (Script)
 
 ---
 
-## 34. 面板關閉功能修復說明
+## 34. 面板關閉方式總覽
 
-> **問題**：按鈕可點、面板會開啟，但面板開啟後無法關閉。
-> 
-> **根因**：V4 Inspector 路徑跳過了面板的內部結構建構。每個面板需要：
-> - **Backdrop**（半透明遮罩，點擊後關閉面板）
-> - **PanelBG**（面板背景卡片）
-> - **CloseButton**（右上角 ✕ 按鈕）
-> - **BodyRoot**（內容區域）
->
-> **已修復**：`MapSceneBuilder._postValidateInspectorBindings()` 現在會自動呼叫
-> `_ensurePanelShellsForInspectorPath()`，為所有缺少 Backdrop 的面板補建完整 shell。
-> 
-> **你不需要手動做任何事**，只要面板節點存在於 PanelLayer 下即可。
+> 面板 shell（Backdrop / PanelBG / CloseButton / BodyRoot）由 MapSceneBuilder 自動建構，
+> 你不需要手動做任何事，只要面板節點存在於 PanelLayer 下即可。
+> Bug 修復詳情見 HANDOFF 文件 Bug 16。
 
 ### 34-1. 面板關閉的三種方式
 
@@ -2169,16 +2160,9 @@ Canvas
 
 ---
 
-## 40. 左側設定按鈕已移除
+## 40. 左側設定按鈕已移除 — 編輯器操作
 
-### 變更原因
-右上角齒輪（⚙）與左側導航第 7 個按鈕功能重複，移除左側的設定按鈕。
-
-### 程式碼變更
-`HUDController.ts` → `NAV_PANELS` 從 7 項改為 6 項，移除了 `'settings'`：
-```
-announcement / quest / daily / collection / inventory / npc
-```
+> 設定功能現在只有右上角齒輪按鈕。Bug 詳情見 HANDOFF Bug 17。
 
 ### 編輯器內需要做的
 1. 選中 `LeftNavBar`
@@ -2189,32 +2173,10 @@ announcement / quest / daily / collection / inventory / npc
 
 ---
 
-## 41. 齒輪按鈕的事件修復原理
+## 41. （已移至 HANDOFF 文件）
 
-### 問題精要
-右上角齒輪按鈕有兩個子節點：
-
-```
-SettingsBtn (40×40)
-├── TouchTarget (40×40) → 有 Button + BlockInputEvents
-└── Label (40×40)       → 有 ⚙ 文字（顯示在最上層）
-```
-
-當你點擊 ⚙ 時，觸控事件先打到 **Label**（最上層），然後冒泡到 **SettingsBtn**（父節點）。
-**不會**傳到 TouchTarget（兄弟節點），所以 TouchTarget 上的 Button 永遠收不到點擊。
-
-### 修正方式
-程式碼改為直接在 `settingsButtonNode`（SettingsBtn）上註冊 `TOUCH_END` 事件：
-```typescript
-this.settingsButtonNode.on(Node.EventType.TOUCH_END, () => {
-    this.togglePanel('settings');
-}, this);
-```
-
-### 通用教訓
-> **Cocos 事件只會從子→父冒泡，不會在兄弟之間傳遞。**
-> 如果 Button 和顯示元素（Label/Sprite）是兄弟關係，Button 可能永遠收不到事件。
-> 解法：讓 Label 成為 TouchTarget 的子節點，或直接在父節點註冊 TOUCH_END。
+> 齒輪按鈕修復原理已移至 `COCOS_PREVIEW_DEBUG_HANDOFF.md` Bug 18-21。
+> 事件冒泡機制的通用說明見 §47。
 
 ---
 
@@ -2688,68 +2650,7 @@ MapTestView
 
 ---
 
-## 60. Bug Pattern Framework — 系統性偵錯邏輯
+## 60. （已移至 HANDOFF 文件）
 
-> 歸納自 Bug 15-21 的偵錯經驗，作為後續排查的思考框架。
-
-### 模式 A：節點引用失效
-| 症狀 | 找不到節點 / 操作了錯誤的容器 |
-|------|------|
-| 例子 | Bug 15（`this.node` 不是 Canvas）、Bug 20（`getChildByName` 找不到） |
-| 排查 | `console.log(node.name, node.parent?.name)` |
-| 修正 | 使用 Inspector 綁定引用（`ctrl.node`, `panel.node`）代替硬編碼路徑 |
-
-### 模式 B：事件消失（點擊無反應）
-| 症狀 | 節點可見但觸控無回應 |
-|------|------|
-| B1 | 場景快取保留節點但不保留事件 → 每次 runtime 重新綁定（Bug 16） |
-| B2 | BlockInputEvents 阻斷冒泡 → handler 在錯誤層級（Bug 18） |
-| B3 | 多層 bug 疊加 → 單獨修一層不夠（Bug 18 三層疊加） |
-| 排查 | handler 的 console.log 是否出現？BlockInputEvents 在哪？ |
-
-### 模式 C：事件重複（toggle 互抵消）
-| 症狀 | 一次點擊觸發多次 / 開了又關 |
-|------|------|
-| 例子 | Bug 19（Label + TouchTarget 各觸發一次） |
-| 排查 | Console log 重複次數；`_registerEvents` 被呼叫幾次 |
-| 修正 | 只在一個節點綁定；`event.propagationStopped = true` |
-
-### 模式 D：面板無內容
-| 症狀 | `show()` 執行但視覺上空白 |
-|------|------|
-| 例子 | Bug 18-Layer2（children=0，shell 未建構） |
-| 排查 | `show()` 中印出 `children.length, size, position` |
-| 修正 | 確保 `configureFn` 實際執行（檢查節點查找邏輯） |
-
-### 模式 E：階層假設錯誤
-| 症狀 | 基於節點關係的邏輯不按預期 |
-|------|------|
-| 例子 | Bug 21（Label 不是 TouchTarget 的兄弟，而是子節點） |
-| 排查 | 截圖 Inspector 階層樹 |
-| 修正 | 先確認實際階層，再寫事件邏輯 |
-
-### 偵錯 SOP
-```
-1. 事件是否觸發？ → handler console.log 出現？出現幾次？
-2. 面板有內容嗎？ → children.length > 0？size > 0？
-3. 面板可見嗎？   → parent.active？position 在畫面內？opacity > 0？
-4. 節點階層對嗎？ → 截圖 Inspector，不要憑記憶假設
-```
-
-### Bug 關聯圖
-```
-Bug 15 (this.node 錯誤)
-  ↓ 同類問題
-Bug 20 (getChildByName 失敗)
-  → 共同教訓：不要假設節點路徑，用 Inspector 引用
-
-Bug 16 (事件未重綁)
-  ↓ 延伸場景
-Bug 18 (BlockInputEvents 阻斷冒泡)
-  → 共同教訓：節點存在 ≠ 事件存在
-
-Bug 19 (雙重觸發)
-  ↓ 反面教訓
-Bug 21 (階層假設錯誤)
-  → 共同教訓：修 bug 前必須先確認實際結構
-```
+> Bug Pattern Framework 已移至 `COCOS_PREVIEW_DEBUG_HANDOFF.md` §十一。
+> 包含 5 種模式（A-E）、偵錯 SOP、Bug 關聯圖。
