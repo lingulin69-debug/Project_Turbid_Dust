@@ -217,15 +217,29 @@ export class HUDController extends Component {
         }
 
         if (this.settingsButtonNode) {
-            // 齒輪按鈕：因為 Label（⚙）在 TouchTarget 上方攔截了觸控，
-            // 事件只能冒泡到 settingsButtonNode（父節點），
-            // 所以直接在父節點註冊 TOUCH_END，不走 TouchTarget 的 Button。
-            this._clearTapBindings(this.settingsButtonNode);
-            this.settingsButtonNode.on(Node.EventType.TOUCH_END, () => {
+            // 清除父節點與所有子節點上的既有事件
+            this.settingsButtonNode.targetOff(this);
+            for (const child of this.settingsButtonNode.children) {
+                child.targetOff(this);
+            }
+
+            const gearHandler = () => {
                 console.log('[HUDController] ⚙️ 齒輪 TOUCH_END → settings');
                 this.togglePanel('settings');
-            }, this);
-            console.log('[HUDController] 齒輪按鈕已綁定 TOUCH_END on settingsButtonNode');
+            };
+
+            // 只在最後一個子節點（渲染最上層）註冊 TOUCH_END
+            // 避免 Label 和 TouchTarget 各觸發一次導致 toggle 抵消
+            const children = this.settingsButtonNode.children;
+            if (children.length > 0) {
+                const topChild = children[children.length - 1];
+                topChild.on(Node.EventType.TOUCH_END, gearHandler, this);
+                console.log(`[HUDController] 齒輪按鈕已綁定 TOUCH_END on topChild: ${topChild.name}`);
+            } else {
+                // 無子節點，退回到自身
+                this.settingsButtonNode.on(Node.EventType.TOUCH_END, gearHandler, this);
+                console.log('[HUDController] 齒輪按鈕已綁定 TOUCH_END on settingsButtonNode (no children)');
+            }
         } else {
             console.warn('[HUDController] ⚠️ settingsButtonNode 未綁定，齒輪無法使用');
         }
@@ -285,7 +299,12 @@ export class HUDController extends Component {
             if (btn?.isValid) this._clearTapBindings(btn);
         });
         if (this.bellButtonNode?.isValid) this._clearTapBindings(this.bellButtonNode);
-        if (this.settingsButtonNode?.isValid) this._clearTapBindings(this.settingsButtonNode);
+        if (this.settingsButtonNode?.isValid) {
+            this.settingsButtonNode.targetOff(this);
+            for (const child of this.settingsButtonNode.children) {
+                child.targetOff(this);
+            }
+        }
         if (this.chapterStoryBtnNode?.isValid) this.chapterStoryBtnNode.targetOff(this);
         DataEventBus.off(DATA_EVENTS.COINS_CHANGED, this._updateCoinsLabel, this);
         DataEventBus.off(DATA_EVENTS.HP_CHANGED,    this._updateHpLabel,    this);

@@ -128,7 +128,13 @@ export class SettingsPanel extends Component {
     }
 
     show(): void {
-        if (this._isVisible) return;
+        const ut = this.node.getComponent(UITransform);
+        const pos = this.node.position;
+        console.log(`[SettingsPanel] show() called: _isVisible=${this._isVisible}, active=${this.node.active}, parent=${this.node.parent?.name}(active=${this.node.parent?.active}), pos=(${pos.x.toFixed(0)},${pos.y.toFixed(0)}), size=${ut ? `${ut.width}x${ut.height}` : 'NO_UT'}, children=${this.node.children.length}`);
+        if (this._isVisible) {
+            console.warn('[SettingsPanel] ⚠️ show() 被 _isVisible=true 跳過！');
+            return;
+        }
         this._isVisible = true;
 
         this.node.active = true;
@@ -138,6 +144,7 @@ export class SettingsPanel extends Component {
         if (!opacity) opacity = this.node.addComponent(UIOpacity);
         opacity.opacity = 0;
         tween(opacity).to(0.2, { opacity: 255 }).start();
+        console.log(`[SettingsPanel] show() 完成: opacity tween 0→255, bgSprite=${!!this.bgSprite}, titleLabel=${!!this.titleLabel}, closeBtn=${!!this.closeButton}`);
     }
 
     hide(): void {

@@ -301,17 +301,24 @@ export class MapSceneBuilder extends Component {
                 console.log(`[MapSceneBuilder] ⏭️ ${nodeName}：panel 未綁定，跳過`);
                 continue;
             }
-            const node = panelLayer.getChildByName(nodeName);
+            // 優先使用 panel 自身的 node（Inspector 已綁定的實際節點），
+            // 退而求其次用名稱在 PanelLayer 中查找。
+            // 這樣即使節點名稱與預設不同也能正常建構 shell。
+            let node = panel.node?.isValid ? panel.node : null;
             if (!node) {
-                console.log(`[MapSceneBuilder] ⏭️ ${nodeName}：PanelLayer 中找不到此節點，跳過`);
+                node = panelLayer.getChildByName(nodeName);
+            }
+            if (!node) {
+                console.log(`[MapSceneBuilder] ⏭️ ${nodeName}：panel.node 無效且 PanelLayer 中找不到此節點，跳過`);
                 continue;
             }
+            console.log(`[MapSceneBuilder] 🔍 ${nodeName}：使用節點 "${node.name}"（children=${node.children.length}）`);
             // 永遠執行 configure（建構 shell + 綁定事件）。
             // _ensurePanelShell 內部已對每個子節點做 if (!xxx) 防重複建立，
             // 但事件綁定（_bindHideOnTap）必須每次 runtime 重新註冊。
             configureFn(node, panel);
             this._setUILayerRecursive(node);
-            console.log(`[MapSceneBuilder] ⚙️ 面板 shell 就緒：${nodeName}`);
+            console.log(`[MapSceneBuilder] ⚙️ 面板 shell 就緒：${nodeName}（children=${node.children.length}）`);
         }
 
         // HUDController 事件需要在面板建構後重新註冊（binding 可能已更新）

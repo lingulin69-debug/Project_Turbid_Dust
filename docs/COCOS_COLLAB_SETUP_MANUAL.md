@@ -2667,7 +2667,7 @@ MapTestView
 ## 59. 下一階段開發路線圖
 
 ### 短期（當前 Sprint）
-- [ ] 齒輪開啟設定面板（Bug 18 驗證）
+- [x] 齒輪開啟設定面板（Bug 18-21 已修復 ✅）
 - [ ] 設定面板語言切換視覺狀態同步
 - [ ] Backdrop 點擊關閉所有面板（Bug 14 收尾）
 - [ ] 右上角 HUD 排版調整
@@ -2685,3 +2685,71 @@ MapTestView
 - [ ] 手機版響應式調整
 - [ ] 音效資源整合
 - [ ] 多語言系統完整串接
+
+---
+
+## 60. Bug Pattern Framework — 系統性偵錯邏輯
+
+> 歸納自 Bug 15-21 的偵錯經驗，作為後續排查的思考框架。
+
+### 模式 A：節點引用失效
+| 症狀 | 找不到節點 / 操作了錯誤的容器 |
+|------|------|
+| 例子 | Bug 15（`this.node` 不是 Canvas）、Bug 20（`getChildByName` 找不到） |
+| 排查 | `console.log(node.name, node.parent?.name)` |
+| 修正 | 使用 Inspector 綁定引用（`ctrl.node`, `panel.node`）代替硬編碼路徑 |
+
+### 模式 B：事件消失（點擊無反應）
+| 症狀 | 節點可見但觸控無回應 |
+|------|------|
+| B1 | 場景快取保留節點但不保留事件 → 每次 runtime 重新綁定（Bug 16） |
+| B2 | BlockInputEvents 阻斷冒泡 → handler 在錯誤層級（Bug 18） |
+| B3 | 多層 bug 疊加 → 單獨修一層不夠（Bug 18 三層疊加） |
+| 排查 | handler 的 console.log 是否出現？BlockInputEvents 在哪？ |
+
+### 模式 C：事件重複（toggle 互抵消）
+| 症狀 | 一次點擊觸發多次 / 開了又關 |
+|------|------|
+| 例子 | Bug 19（Label + TouchTarget 各觸發一次） |
+| 排查 | Console log 重複次數；`_registerEvents` 被呼叫幾次 |
+| 修正 | 只在一個節點綁定；`event.propagationStopped = true` |
+
+### 模式 D：面板無內容
+| 症狀 | `show()` 執行但視覺上空白 |
+|------|------|
+| 例子 | Bug 18-Layer2（children=0，shell 未建構） |
+| 排查 | `show()` 中印出 `children.length, size, position` |
+| 修正 | 確保 `configureFn` 實際執行（檢查節點查找邏輯） |
+
+### 模式 E：階層假設錯誤
+| 症狀 | 基於節點關係的邏輯不按預期 |
+|------|------|
+| 例子 | Bug 21（Label 不是 TouchTarget 的兄弟，而是子節點） |
+| 排查 | 截圖 Inspector 階層樹 |
+| 修正 | 先確認實際階層，再寫事件邏輯 |
+
+### 偵錯 SOP
+```
+1. 事件是否觸發？ → handler console.log 出現？出現幾次？
+2. 面板有內容嗎？ → children.length > 0？size > 0？
+3. 面板可見嗎？   → parent.active？position 在畫面內？opacity > 0？
+4. 節點階層對嗎？ → 截圖 Inspector，不要憑記憶假設
+```
+
+### Bug 關聯圖
+```
+Bug 15 (this.node 錯誤)
+  ↓ 同類問題
+Bug 20 (getChildByName 失敗)
+  → 共同教訓：不要假設節點路徑，用 Inspector 引用
+
+Bug 16 (事件未重綁)
+  ↓ 延伸場景
+Bug 18 (BlockInputEvents 阻斷冒泡)
+  → 共同教訓：節點存在 ≠ 事件存在
+
+Bug 19 (雙重觸發)
+  ↓ 反面教訓
+Bug 21 (階層假設錯誤)
+  → 共同教訓：修 bug 前必須先確認實際結構
+```

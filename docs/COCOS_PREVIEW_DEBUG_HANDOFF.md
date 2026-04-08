@@ -462,13 +462,101 @@ Scene Root               ← 無 UITransform
 | 現象 | 左側導航第 7 個按鈕是「設定」，與右上角齒輪功能重複 |
 | 修正 | 從 `HUDController.NAV_PANELS` 陣列移除 `'settings'`（7→6 項）。使用者需在編輯器中移除 LeftNavBar 下的第 7 個按鈕節點 |
 
-### Bug 18：右上角齒輪無法開啟設定面板（偵錯中 🔍）
+### Bug 18：右上角齒輪「事件觸發但面板不顯示」（已完成 ✅）
 
 | 項目 | 說明 |
 |------|------|
-| 現象 | 右上角齒輪按鈕點擊後設定面板不開啟 |
-| 已加入診斷 | HUDController 中齒輪綁定結果 log、MainGameController settings 分支 log |
-| 待確認 | Console 是否出現 `齒輪 CLICK → settings` 或 `⚠️ settingsButtonNode 未綁定` |
+| 現象 | 齒輪點擊後 Console 有 `齒輪 TOUCH_END → settings` + `settingsPanel=true`，但面板不出現 |
+| 根因（層次 1 — 雙重觸發）| 在 SettingsBtn 的**所有子節點**上註冊 TOUCH_END → Label 和 TouchTarget 各觸發一次 → `togglePanel` 被呼叫兩次 → 開了又立刻關 |
+| 根因（層次 2 — 空面板）| SettingsPanel 節點 `children=0`。`_ensurePanelShellsForInspectorPath` 用 `panelLayer.getChildByName()` 查找節點失敗（可能不是 PanelLayer 的直接子節點），shell 從未建構 |
+| 根因（層次 3 — 階層誤判）| SettingsBtn 實際結構是 `SettingsBtn > TouchTarget > Label`（Label 在 TouchTarget **內部**），非先前假設的兄弟關係 |
+| 修正 1 | HUDController：只在**最後一個子節點**（渲染最上層）註冊 TOUCH_END，避免雙重 toggle |
+| 修正 2 | MapSceneBuilder：改用 `panel.node`（Inspector 綁定的實際節點引用）取代 `getChildByName()` 名稱查找 |
+| 關鍵教訓 | **三層 bug 疊加**：事件重複 + 內容缺失 + 階層假設錯誤。單獨修任何一層都無法解決問題，必須系統性排查 |
+
+### Bug 19：事件雙重觸發（togglePanel 互抵消）（已完成 ✅）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | 點擊一個按鈕，Console 顯示同一 handler 執行了 2 次 |
+| 根因 | 在同一觸控路徑上的多個節點（如父 + 子，或所有子節點）都註冊了相同 handler |
+| 觸控路徑 | Touch 擊中 Label → bubbles 到 TouchTarget → bubbles 到 SettingsBtn。如果 Label 和 TouchTarget 都綁了 handler，各自觸發一次 |
+| 修正 | 只在一個節點上註冊。選擇 `children[children.length - 1]`（渲染最頂層）|
+| 防範規則 | **一個互動動作 = 只綁一個 handler。** 如需多節點接收同一觸控，使用 `event.propagationStopped = true` 防止重複 |
+
+### Bug 20：`getChildByName` 查找面板節點失敗（已完成 ✅）
+
+| 項目 | 說明 |
+|------|------|
+| 現象 | `panelLayer.getChildByName('SettingsPanelNode')` 返回 null，即使節點存在 |
+| 根因 | `getChildByName` 只搜尋**直接子節點**。若目標節點不是 PanelLayer 的直接子節點（嵌套更深），就找不到 |
+| 修正 | 改用 `panel.node`（Inspector 已綁定的直接引用），不再依賴名稱字串查找 |
+| 防範規則 | **優先使用 Inspector 綁定的引用（`@property` → `component.node`），避免 `getChildByName` 的層級假設** |
+| 與 Bug 15 關聯 | Bug 15 是 `this.node` 指向錯誤節點，Bug 20 是 `getChildByName` 假設了錯誤的父子關係。核心問題相同：**硬編碼的節點路徑假設容易在階層變動時失效** |
+
+### Bug 21：節點階層假設錯誤（SettingsBtn 結構）（已完成 ✅）
+
+| 項目 | 說明 |
+|------|------|
+| 假設 | SettingsBtn 有兩個並列子節點：Label（⚙）和 TouchTarget |
+| 實際 | Label 是 TouchTarget 的**子節點**，不是兄弟：`SettingsBtn > TouchTarget > Label` |
+| 影響 | 先前的 "兄弟節點擋觸控" 分析完全錯誤。觸控從 Label 冒泡到 TouchTarget → BlockInputEvents 阻斷進一步冒泡 → 事件不到達 SettingsBtn |
+| 防範規則 | **修改事件邏輯前，必須先用截圖確認實際節點階層。不要依賴記憶或假設** |
+
+---
+
+## 十一、系統性邏輯模式（Bug Pattern Framework）
+
+> 這些模式歸納自 Bug 15-21 的偵錯經驗，可作為後續排查的思考框架。
+
+### 模式 A：節點引用失效（Bug 15, 20）
+```
+症狀：找不到節點 / 操作了錯誤的容器
+根因：this.node 不是目標容器 / getChildByName 層級假設錯誤
+排查：console.log 印出 node.name, node.parent?.name
+修正：使用 Inspector 綁定的引用（ctrl.node, panel.node）代替硬編碼路徑
+```
+
+### 模式 B：事件消失（Bug 16, 18-Layer3）
+```
+症狀：節點可見但點擊無反應
+根因：
+  B1：場景快取保留節點但不保留事件 → 需每次 runtime 重新綁定
+  B2：BlockInputEvents 阻斷冒泡 → handler 在錯誤層級
+  B3：Button 元件搶先消費事件 → handler 未註冊在正確事件類型上
+排查：console.log 確認 handler 是否執行；確認 BlockInputEvents 位置
+修正：在實際接收觸控的節點上直接註冊；每次 runtime 重綁
+```
+
+### 模式 C：事件重複（Bug 19）
+```
+症狀：一次點擊觸發多次 handler / toggle 狀態互抵消
+根因：同一觸控路徑上多個節點都註冊了 handler
+排查：console.log 的重複次數；檢查 registerEvents 被呼叫幾次
+修正：只在一個節點上綁定；使用 event.propagationStopped
+```
+
+### 模式 D：面板無內容（Bug 18-Layer2, 11）
+```
+症狀：show() 執行、node.active=true，但視覺上什麼都沒有
+根因：面板節點 children=0，shell（Backdrop/PanelBG/BodyRoot）從未建構
+排查：show() 中印出 children.length, size, position
+修正：確保 configureFn 實際執行（檢查節點查找邏輯）
+```
+
+### 模式 E：階層假設錯誤（Bug 21）
+```
+症狀：基於節點關係的邏輯不按預期工作
+根因：對節點父子/兄弟關係的假設與實際不符
+排查：截圖 Inspector 階層樹；印出 node.children.map(c => c.name)
+修正：先確認實際階層，再寫事件邏輯
+```
+
+### 偵錯優先順序 SOP
+1. **先確認事件是否觸發**：handler 的 console.log 是否出現？出現幾次？
+2. **再確認面板是否有內容**：children.length > 0？size > 0？
+3. **再確認面板是否可見**：parent.active? position 在畫面內？opacity > 0？
+4. **最後確認節點階層**：截圖 Inspector 樹狀結構，不要憑記憶
 
 ---
 
