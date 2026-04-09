@@ -2500,7 +2500,13 @@ PanelLayer（面板層）
 
 ## 61. PartyPanelNode（組隊面板）— 新面板
 
-> 這是全新的面板，程式還沒建好。等程式端寫好 `PartyPanel.ts` 之後，你再照下面的步驟建完整結構。
+> 這個面板的程式端**已經建好**：`PartyPanel.ts` 與 `MainGameController.partyPanel` 都已存在。
+>
+> 你現在可以直接照下面步驟建節點與拖綁。
+>
+> ⚠️ 但要先記住兩件事：
+> 1. 目前 `PartyPanel.ts` 的資料來源還是 Mock。
+> 2. 目前程式端只有 `closeButton` 插座，**沒有 backdrop 插座**，所以這一節請先以「右上角 X 能關閉」為主驗證，不要把 backdrop 關閉當成必過條件。
 
 ### 61-1. Hierarchy（層級結構）
 
@@ -2549,7 +2555,9 @@ PanelLayer（面板層）
 
 ### 61-3. 建立 Backdrop（背景遮罩）
 
-這是一層半透明黑色遮罩，點了它可以關閉面板。
+這是一層半透明黑色遮罩，先做出視覺結構與命中區。
+
+⚠️ 目前 `PartyPanel.ts` 沒有 `Backdrop` 插座，所以這一版先不要把它當成已接好的關閉功能。
 
 1. **右鍵點擊** `PartyPanelNode` → **Create** → **Empty Node** → 改名 `Backdrop`
 2. Inspector 設定：
@@ -2597,7 +2605,7 @@ PanelLayer（面板層）
 1. **右鍵** `PanelBG` → **Create** → **2D Object** → **Label** → 改名 `CloseHintLabel`
 2. **UITransform** → ContentSize：W = `320`，H = `24`
 3. **Position**：X = `0`，Y = `-214`，Z = `0` ← 在面板底部
-4. **Label 元件**：String = `點空白區域也可關閉`，FontSize = `13`
+4. **Label 元件**：String = `目前請按右上角 X 關閉`，FontSize = `13`
 
 ---
 
@@ -2672,25 +2680,53 @@ PanelLayer（面板層）
 
 ---
 
-### 61-8. 可選：在 LeftNavBar（左側導覽列）加入口按鈕
+### 61-8. 先不要自行加固定左欄入口
 
-如果你想從左邊的快捷列打開這個面板：
+目前 `HUDController` 的固定左欄 `NAV_PANELS` 只有 6 顆：
 
-1. 在 Node Tree 找到 `LeftNavBar` → **右鍵** → **Create** → **Empty Node** → 改名 `NavBtn_Party`
-2. **UITransform** → ContentSize：W = `40`，H = `40`
-3. **Add Component** → `Sprite` → Color = `(71, 85, 105, 240)` ← 深灰
-4. **Add Component** → `Button`
-5. **Add Component** → `BlockInputEvents`
-6. 裡面建一個 Label：String = `組`，FontSize = `18`，HorizontalAlign = `CENTER`，Color = `(248, 250, 252, 255)`
+1. `announcement`
+2. `quest`
+3. `daily`
+4. `collection`
+5. `inventory`
+6. `npc`
+
+也就是說，`party` 雖然已經有程式路由型別，但**不是既有左欄固定按鈕**。
+
+這一節先不要自行往 `LeftNavBar` 加固定入口，避免之後和既有陣列順序打架。
 
 ---
 
 ### 61-9. Inspector（屬性檢查器）拖綁
 
-等程式端在 MainGameController（主控制器）腳本加好 `partyPanel` 欄位後：
+先拖 `PartyPanel` 腳本本體，再拖 `MainGameController`。
+
+#### A. PartyPanel 腳本本體
+
+點選 `PartyPanelNode` → Inspector → 找到 **PartyPanel 腳本元件**，依序拖入：
+
+| 欄位名稱 | 拖入什麼 |
+|---|---|
+| `bgSprite` | `PanelBG` 上的 `Sprite` 元件 |
+| `titleLabel` | `TitleLabel` 上的 `Label` 元件 |
+| `closeButton` | `CloseButton` 節點 |
+| `partyStatusLabel` | `PartyStatusLabel` 上的 `Label` 元件 |
+| `memberListScrollView` | `MemberListScrollView` 上的 `ScrollView` 元件 |
+| `memberContent` | `MemberListScrollView > view > content` 節點 |
+| `drawCardBtn` | `DrawCardBtn` 節點 |
+| `joinPartyBtn` | `JoinPartyBtn` 節點 |
+| `endPartyBtn` | `EndPartyBtn` 節點 |
+| `partyStoryScrollView` | `PartyStoryScrollView` 上的 `ScrollView` 元件 |
+| `storyLabel` | `PartyStoryScrollView > view > content > StoryLabel` 上的 `Label` 元件 |
+
+> ⚠️ `memberContent` 要拖最深層的 `content`，不是拖整個 `MemberListScrollView`。
+
+#### B. MainGameController
+
+`MainGameController` 的 `partyPanel` 欄位已經存在，不用再等程式端補欄位。
 
 1. 點選 Canvas（畫布）節點 → Inspector 找到 **MainGameController 腳本**
-2. 找到 `partyPanel` 欄位 → 把 `PartyPanelNode` 從 Node Tree 拖進去
+2. 找到 `partyPanel` 欄位 → 把 `PartyPanelNode` 上的 `PartyPanel` 元件拖進去
 
 ---
 
@@ -2702,7 +2738,7 @@ PanelLayer（面板層）
 - [ ] `HeaderBar`：尺寸 520×56，位置 (0, 252, 0)，灰色
 - [ ] `TitleLabel`：文字 =「組隊」，位置 (0, 252, 0)
 - [ ] `CloseButton`：尺寸 54×54，位置 (218, 252, 0)，紅色 X
-- [ ] `CloseHintLabel`：文字 =「點空白區域也可關閉」，位置 (0, -214, 0)
+- [ ] `CloseHintLabel`：文字 =「目前請按右上角 X 關閉」，位置 (0, -214, 0)
 - [ ] `BodyRoot`：尺寸 430×360，位置 (0, -20, 0)
 - [ ] `PartyStatusLabel`：文字 =「尚未加入隊伍」，位置 (0, 150, 0)
 - [ ] `MemberListScrollView`：ScrollView 垂直捲動，尺寸 380×180，位置 (0, 30, 0)
@@ -2713,8 +2749,11 @@ PanelLayer（面板層）
 - [ ] `EndPartyBtn`：紅色，文字 =「結束隊伍」，**Active = 關閉**
 - [ ] `PartyStoryScrollView`：ScrollView 垂直捲動，尺寸 380×120，位置 (0, -170, 0)
 - [ ] 裡面有 `StoryLabel`，文字 =「組隊敘事將顯示在此」
+- [ ] `PartyPanel` 腳本 11 個插座都已拖綁完成
+- [ ] `MainGameController.partyPanel` 已拖到 `PartyPanel` 元件
 - [ ] 所有節點 Layer = `UI_2D`
 - [ ] ❌ 成員列表不用手動建 — 程式會動態產生
+- [ ] ⚠️ 這一版先驗證 `X` 關閉；backdrop 關閉先不要當成必過項目
 
 ---
 
@@ -2829,7 +2868,11 @@ NPCModalNode（NPC 面板節點）← 已存在
 
 ## 63. DriftFragmentPanelNode（漂流瓶面板）— 新面板
 
-> 這是全新的面板。等程式端建好 `DriftFragmentPanel.ts` 之後再照步驟建。
+> 這個面板的程式端**已經建好**：`DriftFragmentPanel.ts` 與 `MainGameController.driftFragmentPanel` 都已存在。
+>
+> 你現在可以直接照下面步驟建節點與拖綁。
+>
+> ⚠️ 目前資料仍是 Mock，而且 `DriftFragmentPanel.ts` 只有 `closeButton` 插座，沒有 `Backdrop` 插座，所以主驗證一樣先看 `X` 關閉。
 
 ### 63-1. Hierarchy（層級結構）
 
@@ -2866,7 +2909,9 @@ PanelLayer（面板層）
 
 ### 63-3. 建立 Backdrop（背景遮罩）和 PanelBG（面板背景）
 
-做法跟 §61-3 和 §61-4 完全一樣，只是換個父節點：
+做法跟 §61-3 和 §61-4 完全一樣，只是換個父節點。
+
+⚠️ 先提醒：`Backdrop` 這一版先是視覺結構，不是已接好的關閉入口。
 
 **Backdrop：**
 - 父節點：`DriftFragmentPanelNode`
@@ -2948,10 +2993,29 @@ PanelLayer（面板層）
 
 ### 63-7. Inspector（屬性檢查器）拖綁
 
-等程式端在 MainGameController 加好 `driftFragmentPanel` 欄位後：
+先拖 `DriftFragmentPanel` 腳本本體，再拖 `MainGameController`。
 
-1. 點選 Canvas → Inspector → MainGameController 腳本
-2. 找到 `driftFragmentPanel` 欄位 → 把 `DriftFragmentPanelNode` 從 Node Tree 拖進去
+#### A. DriftFragmentPanel 腳本本體
+
+點選 `DriftFragmentPanelNode` → Inspector → 找到 **DriftFragmentPanel 腳本元件**，依序拖入：
+
+| 欄位名稱 | 拖入什麼 |
+|---|---|
+| `bgSprite` | `PanelBG` 上的 `Sprite` 元件 |
+| `titleLabel` | `TitleLabel` 上的 `Label` 元件 |
+| `closeButton` | `CloseButton` 節點 |
+| `fragmentScrollView` | `FragmentScrollView` 上的 `ScrollView` 元件 |
+| `fragmentContent` | `FragmentScrollView > view > content` 節點 |
+| `contentEditBox` | `ContentEditBox` 上的 `EditBox` 元件 |
+| `sendBtn` | `SendBtn` 節點 |
+| `emptyLabel` | `EmptyLabel` 上的 `Label` 元件 |
+
+#### B. MainGameController
+
+`MainGameController` 的 `driftFragmentPanel` 欄位已經存在，不用再等程式端補欄位。
+
+1. 點選 Canvas → Inspector → **MainGameController** 腳本
+2. 找到 `driftFragmentPanel` 欄位 → 把 `DriftFragmentPanelNode` 上的 `DriftFragmentPanel` 元件拖進去
 
 ---
 
@@ -2971,14 +3035,21 @@ PanelLayer（面板層）
 - [ ] `ContentEditBox`：EditBox，尺寸 280×70，位置 (-40, 0, 0)，Placeholder =「寫下你的漂流瓶訊息...」
 - [ ] `SendBtn`：藍色按鈕，尺寸 80×36，位置 (155, 0, 0)，文字 =「投放」
 - [ ] `EmptyLabel`：文字 =「目前沒有漂流瓶」，位置 (0, 30, 0)
+- [ ] `DriftFragmentPanel` 腳本 8 個插座都已拖綁完成
+- [ ] `MainGameController.driftFragmentPanel` 已拖到 `DriftFragmentPanel` 元件
 - [ ] 所有節點 Layer = `UI_2D`
 - [ ] ❌ 漂流瓶列表不用手動建 — 程式會動態產生
+- [ ] ⚠️ 這一版先驗證 `X` 關閉；backdrop 關閉先不要當成必過項目
 
 ---
 
 ## 64. GazettePanelNode（公報面板）— 新面板
 
-> 全新的面板。等程式端建好 `GazettePanel.ts` 之後再操作。
+> 這個面板的程式端**已經建好**：`GazettePanel.ts` 與 `MainGameController.gazettePanel` 都已存在。
+>
+> 你現在可以直接照下面步驟建節點與拖綁。
+>
+> ⚠️ 目前資料仍是 Mock，而且 `GazettePanel.ts` 只有 `closeButton` 插座，沒有 `Backdrop` 插座，所以主驗證先看 `X` 關閉與 Filter 換色。
 
 ### 64-1. Hierarchy（層級結構）
 
@@ -3017,7 +3088,9 @@ PanelLayer（面板層）
 
 ### 64-3. 建立 Backdrop（背景遮罩）和 PanelBG（面板背景）
 
-跟 §61-3 和 §61-4 完全一樣：
+跟 §61-3 和 §61-4 完全一樣。
+
+⚠️ `Backdrop` 這一版先是視覺結構，不是已接好的關閉入口。
 
 **Backdrop：**
 - 父節點：`GazettePanelNode`
@@ -3108,10 +3181,33 @@ PanelLayer（面板層）
 
 ### 64-9. Inspector（屬性檢查器）拖綁
 
-等程式端在 MainGameController 加好 `gazettePanel` 欄位後：
+先拖 `GazettePanel` 腳本本體，再拖 `MainGameController`。
 
-1. 點選 Canvas → Inspector → MainGameController 腳本
-2. 找到 `gazettePanel` 欄位 → 把 `GazettePanelNode` 從 Node Tree 拖進去
+#### A. GazettePanel 腳本本體
+
+點選 `GazettePanelNode` → Inspector → 找到 **GazettePanel 腳本元件**，依序拖入：
+
+| 欄位名稱 | 拖入什麼 |
+|---|---|
+| `bgSprite` | `PanelBG` 上的 `Sprite` 元件 |
+| `titleLabel` | `TitleLabel` 上的 `Label` 元件 |
+| `closeButton` | `CloseButton` 節點 |
+| `filterBtnAll` | `FilterBtn_All` 節點 |
+| `filterBtnMission` | `FilterBtn_Mission` 節點 |
+| `filterBtnSystem` | `FilterBtn_System` 節點 |
+| `filterBtnLeader` | `FilterBtn_Leader` 節點 |
+| `gazetteScrollView` | `GazetteScrollView` 上的 `ScrollView` 元件 |
+| `gazetteContent` | `GazetteScrollView > view > content` 節點 |
+| `gazetteEmptyLabel` | `GazetteEmptyLabel` 上的 `Label` 元件 |
+
+> ⚠️ `FilterBtn_*` 節點本身要有 `Sprite`，因為 `GazettePanel.ts` 會直接抓按鈕節點本身的 `Sprite` 來換顏色。
+
+#### B. MainGameController
+
+`MainGameController` 的 `gazettePanel` 欄位已經存在，不用再等程式端補欄位。
+
+1. 點選 Canvas → Inspector → **MainGameController** 腳本
+2. 找到 `gazettePanel` 欄位 → 把 `GazettePanelNode` 上的 `GazettePanel` 元件拖進去
 
 ---
 
@@ -3132,8 +3228,11 @@ PanelLayer（面板層）
 - [ ] `GazetteScrollView`：ScrollView 垂直捲動，尺寸 420×320，位置 (0, -25, 0)
 - [ ] `GazetteScrollView` > `view` > `content`：有 Layout 垂直排列
 - [ ] `GazetteEmptyLabel`：文字 =「目前沒有公報」
+- [ ] `GazettePanel` 腳本 10 個插座都已拖綁完成
+- [ ] `MainGameController.gazettePanel` 已拖到 `GazettePanel` 元件
 - [ ] 所有節點 Layer = `UI_2D`
 - [ ] ❌ 公報列表不用手動建 — 程式會動態產生
+- [ ] ⚠️ 這一版先驗證 `X` 關閉與 Filter 換色；backdrop 關閉先不要當成必過項目
 
 ---
 
@@ -3230,3 +3329,278 @@ OverlayLayer（覆蓋層）
 ## 67. （已移至 HANDOFF 文件）
 
 > Bug Pattern Framework（除錯模式框架）→ `COCOS_PREVIEW_DEBUG_HANDOFF.md` §十一
+
+---
+
+## 68. 下一階段到底要做什麼？
+
+到這裡為止，你可以把專案理解成兩條線同時往前走：
+
+### A 線：COCOS 端
+
+你負責把 **節點、ScrollView、FilterBar、Inspector 拖綁、Layer、Widget、基本視覺結構** 補齊。
+
+### B 線：程式端
+
+我這邊負責把 **DataManager 真 API、面板互動邏輯、通用 backdrop 關閉、正式入口事件、動態列表渲染** 補齊。
+
+所以你接下來不要再把所有未完成項目都混成一坨看。
+
+你要先分清楚：
+
+1. **哪些是你現在就能在 Cocos Editor 做的**
+2. **哪些是你現在做了也不會生效，因為程式端還沒接上**
+
+下面這幾節就是把這件事拆清楚。
+
+---
+
+## 69. 目前還沒完成的功能總表（程式端）
+
+> 這一節是給我這邊看的，也讓你知道哪些東西現在不是 COCOS 端卡住。
+
+| 功能 | 目前狀態 | 下一步 | 主要檔案 |
+|---|---|---|---|
+| 任務回報 | Cocos 端還沒有正式回報流程 | 新增 `reportMission()` / `lockMission()` 並接 QuestPanel 按鈕 | `PTD_DataManager.ts`, `QuestPanel.ts`, `MainGameController.ts` |
+| 組隊系統 API | `PartyPanel.ts` 已有 UI，但資料全是 Mock | 接 `/api/party/draw-card`、`/join`、`/end`、`/story` | `PTD_DataManager.ts`, `PartyPanel.ts` |
+| 漂流瓶 API | `DriftFragmentPanel.ts` 已有 UI，但資料全是 Mock | 接 `/api/drift/place`、`/api/drift/fragments` | `PTD_DataManager.ts`, `DriftFragmentPanel.ts` |
+| 公報 API / realtime | `GazettePanel.ts` 已有 UI，但資料全是 Mock | 接 `GET /api/gossip`，再補 Supabase realtime | `PTD_DataManager.ts`, `GazettePanel.ts` |
+| NPC 商人交易 | 只有基礎對話 UI，完整交易未接 | 補 market / buy / list-item | `NPCModal.ts`, `PTD_DataManager.ts` |
+| 人販子技能 | 節點可先規劃，但技能流程未接 | 補 kidnap / intel / pickpocket / villager mission | `NPCModal.ts`, `MainGameController.ts`, `PTD_DataManager.ts` |
+| 旅店完整功能 | 目前只有治療 | 補 rescue / toggle-open / toggle-shop | `MainGameController.ts`, `PTD_DataManager.ts` |
+| Pet 系統 | Cocos 尚未有正式 UI 路線 | 定義入口與面板 | `CharacterCard.ts` 或新面板 |
+| 褪色印記 / 遺物收集 | 只有大方向規劃 | 補 DataManager + 對應 Tab / 區塊 | `CharacterCard.ts`, `CollectionPanel.ts`, `PTD_DataManager.ts` |
+| Party / Drift / Gazette backdrop 關閉 | 目前三者都只有 `closeButton` | 統一補 backdrop 插座或共通 shell 綁定 | `PartyPanel.ts`, `DriftFragmentPanel.ts`, `GazettePanel.ts` |
+| Fog / Glitch 正式效果 | 目前只有空節點 | 等美術素材與 shader | `OverlayLayer` + Material / Shader |
+| 管理員工具 | 還沒進 Cocos | 是否真的需要搬進 Cocos 先待決定 | 待定 |
+
+---
+
+## 70. 目前還沒完成的功能總表（COCOS 端）
+
+> 這一節是你真正要看的重點：哪些你現在就能做，哪些你應該先停手等程式端。
+
+| 功能 | 現在能不能做 | 你現在要做什麼 | 先不要做什麼 |
+|---|---|---|---|
+| PartyPanelNode | ✅ 可以 | 照 §61 建節點、掛腳本、拖 `PartyPanel` 和 `MainGameController.partyPanel` | 不要自己加固定左欄入口 |
+| DriftFragmentPanelNode | ✅ 可以 | 照 §63 建節點、掛腳本、拖 `DriftFragmentPanel` 和 `MainGameController.driftFragmentPanel` | 不要把 backdrop 關閉當成必過 |
+| GazettePanelNode | ✅ 可以 | 照 §64 建節點、掛腳本、拖 `GazettePanel` 和 `MainGameController.gazettePanel` | 不要把 Filter 的 `Sprite` 掛在子節點 |
+| NPC 商店 Tab | ✅ 可以 | 照 §62 先把 `TabBar`、`ShopTabContainer`、`ShopScrollView` 補起來 | 不要手動建商品清單資料列 |
+| FogLayerNode / GlitchGhostNode | ✅ 可以 | 照 §65 建空節點佔位 | 不要現在亂加 Sprite / Animation |
+| QuestPanel 回報按鈕 | ⚠️ 先等程式端 | 先保留 QuestPanel 現有容器結構 | 不要先做假回報流程 |
+| 商人交易商品格 | ⚠️ 先等程式端 | 先補 Tab 與 ScrollView 容器即可 | 不要手工塞假商品 cell |
+| 人販子技能按鈕 | ⚠️ 先等程式端 | 先記錄技能入口想放在哪裡 | 不要先命名一堆未對齊的節點 |
+| 旅店 rescue / toggle UI | ⚠️ 先等程式端 | 先不要動既有旅店 UI | 不要自行新增流程按鈕 |
+| Pet / 印記 / 遺物 Tab | ⚠️ 先等程式端 | 先等程式端定插座與資料來源 | 不要先猜 Tab 結構 |
+| 管理員工具 | ❌ 暫不做 | 先完全跳過 | 不要在 Cocos 裡預建 |
+
+---
+
+## 71. COCOS 端下一輪的實際工作順序
+
+> 如果你明天醒來只想知道「先做哪個」，照這個順序做就好。
+
+### 第 1 輪：把已經有腳本的 3 個面板收掉
+
+1. §61 `PartyPanelNode`
+2. §63 `DriftFragmentPanelNode`
+3. §64 `GazettePanelNode`
+
+### 第 2 輪：把 NPC 商店的節點骨架補好
+
+1. §62 `TabBar`
+2. `ShopTabContainer`
+3. `ShopScrollView`
+4. `BuyConfirmBtn`
+
+### 第 3 輪：把 Overlay 的視覺佔位補齊
+
+1. §65 `FogLayerNode`
+2. `GlitchGhostNode`
+3. 確認所有面板仍看得到 `Turbid Material / Pure Material`
+
+### 第 4 輪：只做截圖與回報，不再自由發揮
+
+每完成一輪，截圖：
+
+1. Hierarchy 全展開
+2. 對應腳本 Inspector
+3. Preview 畫面
+4. Console 關鍵 log
+
+---
+
+## 72. API 接通前，COCOS 端要先完成哪些前置檢查
+
+等程式端要開始接真 API 時，你這邊先確定下面 8 件事都過：
+
+1. `PartyPanel`、`DriftFragmentPanel`、`GazettePanel` 的腳本插座都不是 `None`
+2. `MainGameController.partyPanel / driftFragmentPanel / gazettePanel` 都已拖好
+3. 三個面板都能被打開
+4. 三個面板的 `CloseButton` 都能關閉
+5. `GazettePanel` 的 Filter 按鈕會換色
+6. `DriftFragmentPanel` 的 `ContentEditBox` 能輸入
+7. `PartyPanel` 的三顆按鈕都能打出 Console
+8. `Layer` 全部是 `UI_2D`
+
+如果這 8 件沒過，先不要開始懷疑 API。
+
+因為那時候很可能不是 Server 問題，而是節點沒拖好。
+
+---
+
+## 73. API 接通後的總驗收，分成程式端跟 COCOS 端
+
+### 73-A. 程式端應該做到的
+
+1. `DataManager` 不再回 Mock
+2. 對應面板有成功拿到真資料
+3. Console 出現 API 成功 log
+4. 失敗時有明確 error log，不是無聲失敗
+
+### 73-B. COCOS 端應該看到的
+
+1. `PartyPanel` 不再永遠是「尚未加入隊伍」
+2. `DriftFragmentPanel` 列表不是固定兩筆假資料
+3. `GazettePanel` 列表不是固定三筆假資料
+4. NPC 商店切到商店 Tab 後，列表真的有內容
+5. 排行榜 / 結算 / 叛教者 / 清算者 開啟後，資料不再是固定假值
+
+---
+
+## 74. 如果你只想知道「現在還缺哪些功能沒做」
+
+最短版就是這 12 個：
+
+1. 任務回報
+2. Party 真 API
+3. Drift 真 API
+4. Gazette 真 API / realtime
+5. 商人完整交易
+6. 人販子完整技能
+7. 旅店 rescue / toggle
+8. Pet 系統
+9. 褪色印記
+10. 遺物收集擴充
+11. Party / Drift / Gazette backdrop 關閉統一化
+12. Fog / Glitch 正式 shader 視覺
+
+你可以把它理解成：
+
+1. 前 4 個是資料流
+2. 中間 4 個是玩法系統
+3. 後 4 個是體驗與視覺收尾
+
+---
+
+## 75. 我目前建議最優先優化的 8 個點
+
+### 建議 1：把 Party / Drift / Gazette 的 backdrop 關閉做成一致規格
+
+現在三者都有 Backdrop 視覺，但都沒有 backdrop 插座，這很容易讓手冊和實際行為再次分裂。
+
+### 建議 2：把 Mock → 真 API 的切換集中在 `PTD_DataManager.ts`
+
+不要讓面板腳本直接 `fetch`，不然之後你每補一個系統，文件會再裂一次。
+
+### 建議 3：決定 `party / drift / gazette` 的正式入口
+
+現在三者有面板、有路由，但沒有正式固定入口。這是下一輪最容易讓 COCOS 端白做的點。
+
+### 建議 4：把「可在 Cocos 做」和「必須等程式端」永遠分開寫
+
+這次最大的文件問題，就是兩種事情混在一起，才會出現「其實腳本已存在，但手冊還寫沒建好」。
+
+### 建議 5：把所有新面板都統一成同一種 shell 規格
+
+只要是新面板，就統一：
+
+1. `Backdrop`
+2. `PanelBG`
+3. `HeaderBar`
+4. `TitleLabel`
+5. `CloseButton`
+6. `BodyRoot`
+
+這樣之後手冊可以少掉一半重複描述。
+
+### 建議 6：把驗證條件拆成「結構驗證」和「資料驗證」
+
+不然很容易出現：其實只是 API 沒接，卻被誤判成 Cocos 節點沒做好。
+
+### 建議 7：讓 `COCOS_PROGRESS.md` 每次改腳本就同步更新
+
+這次我已經幫你修掉一批過期內容，但只要後面有人忘了更新，文件又會重新失真。
+
+### 建議 8：每做完一個系統，就固定留下 4 張圖
+
+1. Hierarchy
+2. Inspector
+3. Preview
+4. Console
+
+這會大幅降低下一次 debug 的溝通成本。
+
+---
+
+## 76. 睡醒後直接照做的最短版清單
+
+如果你明天只想照清單做，不想再重讀整份手冊，就做這 6 件：
+
+1. 先把 §61 `PartyPanelNode` 全做完
+2. 再把 §63 `DriftFragmentPanelNode` 全做完
+3. 再把 §64 `GazettePanelNode` 全做完
+4. 接著把 §62 NPC 商店 Tab 骨架補好
+5. 最後把 §65 Fog / Glitch 兩個空節點補好
+6. 做完後，照下面模板回報
+
+```text
+【下一階段完成回報】
+
+1. 已完成的節點
+- PartyPanelNode：
+- DriftFragmentPanelNode：
+- GazettePanelNode：
+- NPC Shop Tab：
+- Fog / Glitch：
+
+2. Inspector 拖綁結果
+- 哪些欄位全都拖好了：
+- 哪些欄位還是 None：
+
+3. Preview 結果
+- X 關閉正常的面板：
+- Filter 會換色的面板：
+- Console 有出現的 log：
+
+4. 卡住點
+- 哪個步驟最卡：
+- 哪個節點你不確定還要不要做：
+```
+
+---
+
+## 77. 2026-04-09 本輪補齊進度快照
+
+這一輪已經把前面最容易讓 COCOS 端卡住的文件落差補齊，重點不是新增更多猜測，而是把「現在程式端到底做到哪裡」寫成可直接照做的版本。
+
+### 今天已補齊的內容
+
+1. 已修正 §61、§63、§64，不再寫成「等程式端完成後再做」
+2. 已新增 `docs/COCOS_PANELS_61_63_64_PROGRAM_HANDOFF.md`，專門講 `PartyPanelNode`、`DriftFragmentPanelNode`、`GazettePanelNode` 的真實狀態
+3. 已補齊下一階段手冊 §68～§76，把未實作項目拆成「程式端」與「COCOS 端」
+4. 已把目前最短工作順序、Preview 驗收與回報模板寫進手冊
+
+### 本輪確認過的真實現況
+
+1. `PartyPanel.ts`、`DriftFragmentPanel.ts`、`GazettePanel.ts` 已存在
+2. `MainGameController.ts` 已有 `partyPanel`、`driftFragmentPanel`、`gazettePanel` 三個 Inspector 欄位與對應 open route
+3. 這三個面板目前仍以 `PTD_DataManager.ts` 的 Mock data 為主，尚未切真 API
+4. 這三個面板目前沒有獨立 backdrop 插座，所以主關閉方式仍以 `CloseButton` 為準
+5. `party / drift / gazette` 不是固定左欄 6 顆按鈕的一部分，正式入口仍待下一階段決定
+
+### 你醒來後先看哪份文件
+
+1. 如果要直接接節點：先看 `E:\PTD-COCOS\COCOS_61_63_64_節點連接手冊.md`
+2. 如果只想看最短做事順序：看 `E:\PTD-COCOS\COCOS_NEXT_PHASE_CHECKLIST.md`
+3. 如果要看今天這輪的濃縮摘要：看 `docs/2026-04-09_醒來後處理清單.md`
